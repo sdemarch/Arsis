@@ -13,3 +13,4 @@ backend/*.pyc
 # OS
 .DS_Store
 Thumbs.db
+.idea/
