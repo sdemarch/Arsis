@@ -35,6 +35,7 @@ export interface Corso {
 export interface Persona {
   id: number
   nome: string
+  cognome: string
   email: string
   tel: string
   nato: string

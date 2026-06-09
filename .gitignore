@@ -5,10 +5,16 @@ frontend/.env
 
 # Backend
 backend/venv/
+backend/lib/
+backend/bin/
+backend/include/
+backend/share/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/.env
 backend/*.pyc
+.lock
+uv.lock
 
 # OS
 .DS_Store

@@ -1,5 +1,5 @@
 """Business logic per pagamenti: calcolo saldi, generazione rate, aggiornamento stato."""
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
