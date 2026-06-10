@@ -13,8 +13,7 @@ install: ## Installa dipendenze frontend e backend
 	@echo "$(CYAN)→ Frontend$(RESET)"
 	cd frontend && npm install
 	@echo "$(CYAN)→ Backend$(RESET)"
-	cd backend && python -m venv venv && \
-		. venv/bin/activate && pip install -r requirements.txt
+	cd backend && uv sync
 	@echo "$(CYAN)→ Copia .env se non esistono$(RESET)"
 	@test -f frontend/.env || cp frontend/.env.example frontend/.env
 	@test -f backend/.env  || cp backend/.env.example  backend/.env
@@ -23,44 +22,43 @@ install: ## Installa dipendenze frontend e backend
 dev: ## Avvia frontend e backend in parallelo
 	@trap 'kill 0' INT; \
 		(cd frontend && npm run dev) & \
-		(cd backend && . venv/bin/activate && uvicorn app.main:app --reload --port 8000) & \
+		(cd backend && uv run uvicorn app.main:app --reload --port 8000) & \
 		wait
 
 dev-fe: ## Avvia solo il frontend
 	cd frontend && npm run dev
 
 dev-be: ## Avvia solo il backend
-	cd backend && . venv/bin/activate && uvicorn app.main:app --reload --port 8000
+	cd backend && uv run uvicorn app.main:app --reload --port 8000
 
 # ── Database ──────────────────────────────────────────────────────────────────
 migrate: ## Applica le migrazioni Alembic
-	cd backend && . venv/bin/activate && alembic upgrade head
+	cd backend && uv run alembic upgrade head
 
 migration: ## Crea una nuova migrazione (usa: make migration MSG="descrizione")
-	cd backend && . venv/bin/activate && alembic revision --autogenerate -m "$(MSG)"
+	cd backend && uv run alembic revision --autogenerate -m "$(MSG)"
 
 migrate-down: ## Rollback di una migrazione
-	cd backend && . venv/bin/activate && alembic downgrade -1
+	cd backend && uv run alembic downgrade -1
 
 # ── Build ────────────────────────────────────────────────────────────────────
 build: ## Build di produzione del frontend
 	cd frontend && npm run build
 
 # ── Qualità ──────────────────────────────────────────────────────────────────
-lint: ## Lint frontend (ESLint) e backend (ruff se disponibile)
+lint: ## Lint frontend (ESLint) e backend (ruff)
 	cd frontend && npm run lint
-	cd backend && . venv/bin/activate && \
-		(command -v ruff > /dev/null && ruff check app || echo "ruff non installato, skip")
+	cd backend && uv run ruff check app
 
 test: ## Esegui tutti i test
 	cd frontend && npm run test -- --run
-	cd backend && . venv/bin/activate && pytest tests/ -v
+	cd backend && uv run pytest tests/ -v
 
 test-fe: ## Solo test frontend
 	cd frontend && npm run test -- --run
 
 test-be: ## Solo test backend
-	cd backend && . venv/bin/activate && pytest tests/ -v
+	cd backend && uv run pytest tests/ -v
 
 # ── Utility ───────────────────────────────────────────────────────────────────
 clean: ## Rimuovi artefatti di build e cache
