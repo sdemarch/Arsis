@@ -1,6 +1,5 @@
 import React from 'react'
-import { Avatar } from '../primitives/Avatar/Avatar'
-import type { AvatarColor } from '../../../types'
+import { Avatar } from '../../primitives/Avatar/Avatar'
 import styles from './Sidebar.module.css'
 
 // Icons (inline SVG minimali — sostituibili con lucide-react)

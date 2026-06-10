@@ -1,125 +1,105 @@
-/* Arsis Design Tokens v1.0 */
-
 :root {
-  /* Brand */
-  --arsis-hue: 220;
-  --color-accent:       hsl(220, 70%, 52%);
-  --color-accent-soft:  hsl(220, 70%, 96%);
-  --color-accent-hover: hsl(220, 70%, 44%);
-
-  /* Status */
-  --color-success:      hsl(152, 60%, 36%);
-  --color-success-soft: hsl(152, 55%, 94%);
-  --color-warn:         hsl(36, 90%, 44%);
-  --color-warn-soft:    hsl(36, 90%, 94%);
-  --color-danger:       hsl(0, 65%, 50%);
-  --color-danger-soft:  hsl(0, 65%, 95%);
-
-  /* Surfaces */
-  --bg-canvas:   hsl(220, 20%, 98%);
-  --bg-surface:  hsl(0, 0%, 100%);
-  --bg-raised:   hsl(220, 18%, 96%);
-  --bg-overlay:  hsl(220, 14%, 93%);
-
-  /* Borders */
-  --border-subtle:  hsla(220, 14%, 10%, .08);
-  --border-default: hsla(220, 14%, 10%, .14);
-  --border-strong:  hsla(220, 14%, 10%, .28);
-
-  /* Text */
-  --text-primary:   hsl(220, 18%, 10%);
-  --text-secondary: hsl(220, 12%, 38%);
-  --text-tertiary:  hsl(220, 10%, 56%);
-  --text-disabled:  hsl(220, 8%, 74%);
-  --text-inverse:   hsl(0, 0%, 100%);
-
-  /* Sidebar (always dark) */
-  --sidebar-bg:     hsl(220, 18%, 14%);
-  --sidebar-text:   hsl(220, 10%, 64%);
-  --sidebar-active: hsl(0, 0%, 100%);
-  --sidebar-hover:  hsla(220, 10%, 100%, .07);
-  --sidebar-border: hsla(220, 10%, 100%, .08);
-
-  /* Shadows */
-  --shadow-xs: 0 1px 2px hsla(220, 20%, 10%, .06);
-  --shadow-sm: 0 1px 4px hsla(220, 20%, 10%, .04), 0 0 0 1px hsla(220, 14%, 10%, .04);
-  --shadow-md: 0 4px 12px hsla(220, 20%, 10%, .10), 0 0 0 1px hsla(220, 14%, 10%, .05);
-  --shadow-lg: 0 8px 28px hsla(220, 20%, 10%, .14);
-
-  /* Typography */
+  /* Font */
   --font-sans:    'DM Sans', sans-serif;
   --font-display: 'Fraunces', serif;
   --font-mono:    'DM Mono', monospace;
 
-  --text-xs:   11px;
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-lg:   17px;
-  --text-xl:   22px;
-  --text-2xl:  28px;
-  --text-3xl:  38px;
+  /* Type scale */
+  --text-xs:   11px; --text-sm:   13px; --text-base: 15px; --text-lg: 17px;
+  --text-xl:   22px; --text-2xl:  28px; --text-3xl:  38px;
 
-  --weight-regular: 400;
-  --weight-medium:  500;
-  --weight-semi:    600;
+  /* Weight */
+  --weight-regular: 400; --weight-medium: 500; --weight-semi: 600;
 
   /* Spacing */
-  --sp-1:  4px;
-  --sp-2:  8px;
-  --sp-3:  12px;
-  --sp-4:  16px;
-  --sp-5:  20px;
-  --sp-6:  24px;
-  --sp-8:  32px;
-  --sp-10: 40px;
-  --sp-12: 48px;
-  --sp-16: 64px;
+  --sp-1: 4px;  --sp-2: 8px;   --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px;  --sp-8: 32px; --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
 
-  /* Border Radius */
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   18px;
-  --radius-full: 999px;
+  /* Radius */
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+  --radius-xl: 18px; --radius-full: 999px;
 
-  /* Transitions */
-  --ease:          cubic-bezier(.16, 1, .3, 1);
-  --duration-fast: 120ms;
-  --duration-base: 200ms;
-  --duration-slow: 350ms;
+  /* Ease */
+  --ease: cubic-bezier(.16, 1, .3, 1);
+  --duration-fast: 120ms; --duration-base: 200ms; --duration-slow: 350ms;
+
+  /* Brand */
+  --arsis-hue: 160;
+  --color-accent:       hsl(160, 68%, 36%);
+  --color-accent-soft:  hsl(160, 55%, 94%);
+  --color-accent-hover: hsl(160, 70%, 28%);
+
+  /* Status */
+  --color-success:      hsl(152, 60%, 36%);
+  --color-success-soft: hsl(152, 55%, 94%);
+  --color-warn:         hsl(36,  90%, 44%);
+  --color-warn-soft:    hsl(36,  90%, 94%);
+  --color-danger:       hsl(0,   65%, 50%);
+  --color-danger-soft:  hsl(0,   65%, 95%);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px hsla(160,20%,10%,.06);
+  --shadow-sm: 0 1px 4px hsla(160,20%,10%,.08), 0 0 0 1px hsla(160,20%,10%,.04);
+  --shadow-md: 0 4px 16px hsla(160,20%,10%,.10), 0 0 0 1px hsla(160,20%,10%,.05);
+  --shadow-lg: 0 16px 48px hsla(160,20%,10%,.18);
+}
+
+[data-theme="light"] {
+  --bg-canvas:  hsl(160, 14%, 97%);
+  --bg-surface: hsl(0, 0%, 100%);
+  --bg-raised:  hsl(160, 12%, 96%);
+  --bg-overlay: hsl(160, 10%, 93%);
+
+  --border-subtle:  hsla(160, 14%, 10%, .08);
+  --border-default: hsla(160, 14%, 10%, .14);
+  --border-strong:  hsla(160, 14%, 10%, .28);
+
+  --text-primary:   hsl(160, 18%, 8%);
+  --text-secondary: hsl(160, 10%, 36%);
+  --text-tertiary:  hsl(160,  8%, 52%);
+  --text-disabled:  hsl(160,  6%, 72%);
+  --text-inverse:   hsl(0, 0%, 100%);
+
+  --sidebar-bg:     hsl(160, 42%, 10%);
+  --sidebar-text:   hsl(160, 14%, 60%);
+  --sidebar-active: hsl(0, 0%, 100%);
+  --sidebar-hover:  hsla(160, 20%, 100%, .07);
+  --sidebar-border: hsla(160, 20%, 100%, .08);
 }
 
 [data-theme="dark"] {
-  --color-accent:       hsl(220, 72%, 62%);
-  --color-accent-soft:  hsla(220, 72%, 62%, .12);
-  --color-accent-hover: hsl(220, 72%, 70%);
+  --bg-canvas:  hsl(160, 16%, 8%);
+  --bg-surface: hsl(160, 14%, 11%);
+  --bg-raised:  hsl(160, 12%, 15%);
+  --bg-overlay: hsl(160, 10%, 19%);
+
+  --border-subtle:  hsla(160, 14%, 100%, .05);
+  --border-default: hsla(160, 14%, 100%, .10);
+  --border-strong:  hsla(160, 14%, 100%, .22);
+
+  --text-primary:   hsl(160, 12%, 93%);
+  --text-secondary: hsl(160,  8%, 60%);
+  --text-tertiary:  hsl(160,  6%, 42%);
+  --text-disabled:  hsl(160,  4%, 28%);
+  --text-inverse:   hsl(160, 18%, 8%);
+
+  --color-accent:       hsl(160, 58%, 48%);
+  --color-accent-soft:  hsla(160, 58%, 48%, .14);
+  --color-accent-hover: hsl(160, 60%, 56%);
 
   --color-success-soft: hsla(152, 60%, 36%, .18);
-  --color-warn-soft:    hsla(36, 90%, 44%, .16);
-  --color-danger-soft:  hsla(0, 65%, 50%, .16);
+  --color-warn-soft:    hsla(36,  90%, 44%, .16);
+  --color-danger-soft:  hsla(0,   65%, 50%, .16);
 
-  --bg-canvas:   hsl(220, 18%, 9%);
-  --bg-surface:  hsl(220, 16%, 12%);
-  --bg-raised:   hsl(220, 14%, 16%);
-  --bg-overlay:  hsl(220, 12%, 20%);
+  --shadow-xs: 0 1px 2px hsla(0,0%,0%,.25);
+  --shadow-sm: 0 1px 4px hsla(0,0%,0%,.30), 0 0 0 1px hsla(160,14%,100%,.04);
+  --shadow-md: 0 4px 16px hsla(0,0%,0%,.35), 0 0 0 1px hsla(160,14%,100%,.06);
+  --shadow-lg: 0 16px 48px hsla(0,0%,0%,.55);
 
-  --border-subtle:  hsla(220, 14%, 100%, .05);
-  --border-default: hsla(220, 14%, 100%, .10);
-  --border-strong:  hsla(220, 14%, 100%, .22);
-
-  --text-primary:   hsl(220, 14%, 94%);
-  --text-secondary: hsl(220, 10%, 62%);
-  --text-tertiary:  hsl(220, 8%, 44%);
-  --text-disabled:  hsl(220, 6%, 30%);
-  --text-inverse:   hsl(220, 18%, 9%);
-
-  --sidebar-bg:     hsl(220, 18%, 8%);
-  --sidebar-text:   hsl(220, 10%, 50%);
-  --sidebar-hover:  hsla(220, 10%, 100%, .06);
-  --sidebar-border: hsla(220, 10%, 100%, .06);
-
-  --shadow-xs: 0 1px 2px hsla(0, 0%, 0%, .25);
-  --shadow-sm: 0 1px 4px hsla(0, 0%, 0%, .30), 0 0 0 1px hsla(220, 14%, 100%, .04);
-  --shadow-md: 0 4px 16px hsla(0, 0%, 0%, .35), 0 0 0 1px hsla(220, 14%, 100%, .06);
-  --shadow-lg: 0 12px 40px hsla(0, 0%, 0%, .50);
+  --sidebar-bg:     hsl(160, 42%, 6%);
+  --sidebar-text:   hsl(160, 12%, 48%);
+  --sidebar-active: hsl(0, 0%, 100%);
+  --sidebar-hover:  hsla(160, 20%, 100%, .06);
+  --sidebar-border: hsla(160, 20%, 100%, .06);
 }
