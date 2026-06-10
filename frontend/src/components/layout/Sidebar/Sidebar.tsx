@@ -1,5 +1,6 @@
 import React from 'react'
 import { Avatar } from '../../primitives/Avatar/Avatar'
+import logo from '../../../assets/img/logo/icon-128x128.png'
 import styles from './Sidebar.module.css'
 
 // Icons (inline SVG minimali — sostituibili con lucide-react)
@@ -78,7 +79,7 @@ export function Sidebar({ activeItem, onNavigate, theme, onThemeToggle, scadutiC
     <nav className={styles.sidebar}>
       {/* Brand */}
       <div className={styles.brand}>
-        <span className={styles.brandMark}>A</span>
+        <img src={logo} className={styles.brandMark} alt="Arsis" />
         <span className={styles.brandName}>Arsis</span>
       </div>
 
