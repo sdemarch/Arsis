@@ -1,22 +1,22 @@
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env
-
-# Backend
-backend/venv/
-backend/lib/
-backend/bin/
-backend/include/
-backend/share/
-backend/__pycache__/
-backend/**/__pycache__/
-backend/.env
-backend/*.pyc
-.lock
-uv.lock
-
-# OS
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+dist/
+.angular/
+coverage/
+.idea/
+.vscode/
+*.log
+data/*.db
+data/*.db-shm
+data/*.db-wal
+database/.lpm/
+database/lib/packages.json
+database/liquibase_libs/
 .DS_Store
 Thumbs.db
-.idea/
