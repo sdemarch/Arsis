@@ -11,7 +11,7 @@ import { NAVIGATION } from './navigation';
   template: `
     <header class="topbar">
       <a class="brand" routerLink="/home" aria-label="Arsis, vai alla Home">
-        <span class="brand__mark" aria-hidden="true">A</span>
+        <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span>
         <span>Arsis</span>
       </a>
       <nav class="topnav" aria-label="Aree principali">
@@ -19,19 +19,34 @@ import { NAVIGATION } from './navigation';
           <a [routerLink]="area.path" routerLinkActive="is-active">{{ area.label }}</a>
         }
       </nav>
-      <a class="user-menu" routerLink="/settings" aria-label="Apri configurazione">SM</a>
+      <div class="topbar-actions">
+        <button class="icon-button" type="button" aria-label="Notifiche">●</button>
+        <a class="user-menu" routerLink="/settings" aria-label="Apri configurazione">
+          <span>SM</span>
+          <small>Stefano</small>
+        </a>
+      </div>
     </header>
 
     <div class="workspace">
       <aside class="sidebar">
         <p class="sidebar__eyebrow">{{ activeArea().label }}</p>
         <nav aria-label="Navigazione area">
-          @for (item of activeArea().children; track item.path) {
-            <a [routerLink]="item.path" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
+          @for (item of activeArea().children; track item.label) {
+            <a
+              [routerLink]="item.path"
+              [queryParams]="item.queryParams ?? null"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: true }"
+            >
               {{ item.label }}
             </a>
           }
         </nav>
+        <div class="sidebar__footer">
+          <span class="status-dot"></span>
+          <div><strong>Database locale</strong><small>Connesso</small></div>
+        </div>
       </aside>
       <main class="content" id="main-content"><router-outlet /></main>
     </div>

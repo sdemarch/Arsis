@@ -1,0 +1,12 @@
+{
+  "summary": [
+    { "label": "Quote registrate", "value": "24", "note": "Anno corrente" },
+    { "label": "Da verificare", "value": "3", "note": "Pagamenti in sospeso" },
+    { "label": "Ultimo aggiornamento", "value": "Oggi", "note": "Archivio locale" }
+  ],
+  "areas": [
+    { "title": "Quote associative", "description": "Registrazione e controllo delle quote annuali dei soci.", "status": "Prossimamente" },
+    { "title": "Prima nota", "description": "Movimenti di entrata e uscita con causale e allegati.", "status": "Prossimamente" },
+    { "title": "Rendicontazione", "description": "Riepiloghi periodici pronti per verifica ed esportazione.", "status": "Prossimamente" }
+  ]
+}

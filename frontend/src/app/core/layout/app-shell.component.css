@@ -31,7 +31,7 @@
 }
 
 .brand__mark,
-.user-menu {
+.user-menu > span {
   align-items: center;
   background: var(--color-accent);
   border-radius: var(--radius-full);
@@ -40,6 +40,11 @@
   justify-content: center;
   width: 36px;
 }
+
+.brand__mark { align-items: end; gap: 3px; padding: 9px; }
+.brand__mark i { background: var(--sidebar-active); border-radius: var(--radius-full); display: block; height: 11px; width: 3px; }
+.brand__mark i:nth-child(2) { height: 18px; }
+.brand__mark i:nth-child(3) { height: 14px; }
 
 .topnav {
   align-items: stretch;
@@ -61,10 +66,11 @@
   border-bottom-color: var(--color-accent);
 }
 
-.user-menu {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semi);
-}
+.topbar-actions { align-items: center; display: flex; gap: var(--sp-3); }
+.icon-button { background: transparent; border: 0; color: var(--color-accent); cursor: pointer; font-size: 8px; padding: var(--sp-2); }
+.user-menu { align-items: center; display: flex; gap: var(--sp-2); }
+.user-menu > span { font-size: var(--text-sm); font-weight: var(--weight-semi); }
+.user-menu small { color: var(--sidebar-text); font-size: var(--text-sm); }
 
 .workspace {
   display: grid;
@@ -75,7 +81,9 @@
 .sidebar {
   background: var(--bg-raised);
   border-right: var(--border-thin) solid var(--border-default);
-  padding: var(--sp-8) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-8) var(--sp-4) var(--sp-4);
 }
 
 .sidebar__eyebrow {
@@ -91,6 +99,12 @@
   display: grid;
   gap: var(--sp-1);
 }
+
+.sidebar__footer { align-items: center; border-top: var(--border-thin) solid var(--border-default); display: flex; gap: var(--sp-3); margin-top: auto; padding: var(--sp-5) var(--sp-3) 0; }
+.sidebar__footer div { display: grid; }
+.sidebar__footer strong { font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.sidebar__footer small { color: var(--text-tertiary); font-size: var(--text-xs); }
+.status-dot { background: var(--color-success); border-radius: var(--radius-full); height: 8px; width: 8px; }
 
 .sidebar a {
   border-radius: var(--radius-md);

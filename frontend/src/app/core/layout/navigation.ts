@@ -1,7 +1,11 @@
 export interface NavigationArea {
   readonly label: string;
   readonly path: string;
-  readonly children: readonly { label: string; path: string }[];
+  readonly children: readonly {
+    label: string;
+    path: string;
+    queryParams?: Readonly<Record<string, string>>;
+  }[];
 }
 
 export const NAVIGATION: readonly NavigationArea[] = [
@@ -11,10 +15,10 @@ export const NAVIGATION: readonly NavigationArea[] = [
     path: '/people',
     children: [
       { label: 'Tutte le persone', path: '/people' },
-      { label: 'Soci', path: '/people?role=member' },
-      { label: 'Musicanti', path: '/people?role=musician' },
-      { label: 'Allievi', path: '/people?role=student' },
-      { label: 'Insegnanti', path: '/people?role=teacher' },
+      { label: 'Soci', path: '/people', queryParams: { role: 'member' } },
+      { label: 'Musicanti', path: '/people', queryParams: { role: 'musician' } },
+      { label: 'Allievi', path: '/people', queryParams: { role: 'student' } },
+      { label: 'Insegnanti', path: '/people', queryParams: { role: 'teacher' } },
     ],
   },
   {
@@ -23,9 +27,9 @@ export const NAVIGATION: readonly NavigationArea[] = [
     children: [
       { label: 'Calendario', path: '/activities/calendar' },
       { label: 'Tutte le attività', path: '/activities' },
-      { label: 'Prove', path: '/activities?type=rehearsal' },
-      { label: 'Concerti', path: '/activities?type=concert' },
-      { label: 'Eventi', path: '/activities?type=event' },
+      { label: 'Prove', path: '/activities', queryParams: { type: 'rehearsal' } },
+      { label: 'Concerti', path: '/activities', queryParams: { type: 'concert' } },
+      { label: 'Eventi', path: '/activities', queryParams: { type: 'event' } },
       { label: 'Presenze', path: '/activities/attendance' },
     ],
   },
@@ -46,4 +50,3 @@ export const NAVIGATION: readonly NavigationArea[] = [
     children: [{ label: 'Da definire', path: '/accounting' }],
   },
 ];
-

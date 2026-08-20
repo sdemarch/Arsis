@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const appRoutes: Routes = [
   {
+    path: 'login',
+    loadComponent: () =>
+      import('./features/auth/login-page.component').then((module) => module.LoginPageComponent),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('./core/layout/app-shell.component').then((module) => module.AppShellComponent),
@@ -46,4 +51,3 @@ export const appRoutes: Routes = [
   },
   { path: '**', redirectTo: 'home' },
 ];
-

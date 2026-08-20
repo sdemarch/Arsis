@@ -1,0 +1,9 @@
+{
+  "archiveUrl": "https://drive.google.com/drive/folders/arsis-demo",
+  "catalogues": [
+    { "label": "Strumenti", "count": 18, "detail": "17 attivi" },
+    { "label": "Sezioni", "count": 8, "detail": "8 attive" },
+    { "label": "Utenti responsabili", "count": 3, "detail": "3 attivi" }
+  ],
+  "database": { "engine": "SQLite", "file": "data/arsis.db", "status": "Connesso", "version": "4 changeset" }
+}

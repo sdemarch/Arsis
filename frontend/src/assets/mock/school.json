@@ -1,0 +1,14 @@
+{
+  "summary": { "courses": 12, "students": 67, "lessonsThisMonth": 84, "attendanceRate": "91%" },
+  "courses": [
+    { "id": "c1", "name": "Clarinetto", "mode": "Individuale", "teacher": "Elena Bianchi", "students": 9, "schedule": "Lun · 15:30", "fee": "€ 420", "color": "#378ADD", "background": "#EBF3FC" },
+    { "id": "c2", "name": "Saxofono", "mode": "Individuale", "teacher": "Luca Ferri", "students": 7, "schedule": "Mer · 17:00", "fee": "€ 420", "color": "#1D9E75", "background": "#E6F6F0" },
+    { "id": "c3", "name": "Propedeutica musicale", "mode": "Collettivo", "teacher": "Chiara Neri", "students": 14, "schedule": "Mar · 16:30", "fee": "€ 280", "color": "#D85A30", "background": "#FAEEE9" },
+    { "id": "c4", "name": "Musica d’insieme", "mode": "Collettivo", "teacher": "Andrea Neri", "students": 22, "schedule": "Gio · 18:30", "fee": "€ 180", "color": "#7F77DD", "background": "#EEEDF9" }
+  ],
+  "lessons": [
+    { "date": "20 AGO", "time": "15:30", "course": "Clarinetto", "teacher": "Elena Bianchi", "attendance": "Da compilare" },
+    { "date": "20 AGO", "time": "16:30", "course": "Propedeutica musicale", "teacher": "Chiara Neri", "attendance": "Da compilare" },
+    { "date": "20 AGO", "time": "18:00", "course": "Saxofono", "teacher": "Luca Ferri", "attendance": "Completa" }
+  ]
+}

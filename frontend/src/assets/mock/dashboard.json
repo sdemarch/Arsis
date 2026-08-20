@@ -1,0 +1,24 @@
+{
+  "metrics": [
+    { "label": "Persone attive", "value": 128, "detail": "+6 quest'anno", "icon": "PE" },
+    { "label": "Musicanti", "value": 42, "detail": "8 sezioni", "icon": "MU" },
+    { "label": "Allievi", "value": 67, "detail": "12 corsi attivi", "icon": "AL" },
+    { "label": "Insegnanti", "value": 9, "detail": "3 oggi in sede", "icon": "IN" }
+  ],
+  "activities": [
+    { "day": "24", "month": "AGO", "title": "Prova settimanale", "time": "20:45", "location": "Sala prove", "type": "Prova", "color": "green" },
+    { "day": "30", "month": "AGO", "title": "Concerto di fine estate", "time": "21:00", "location": "Piazza Municipale", "type": "Concerto", "color": "blue" },
+    { "day": "05", "month": "SET", "title": "Festa delle associazioni", "time": "16:30", "location": "Parco comunale", "type": "Evento", "color": "amber" }
+  ],
+  "lessons": [
+    { "time": "15:30", "course": "Clarinetto", "teacher": "Elena Bianchi", "students": "Marco R." },
+    { "time": "16:30", "course": "Propedeutica musicale", "teacher": "Chiara Neri", "students": "8 allievi" },
+    { "time": "18:00", "course": "Saxofono", "teacher": "Luca Ferri", "students": "Giulia M." }
+  ],
+  "quickActions": [
+    { "label": "Nuova persona", "path": "/people", "symbol": "+" },
+    { "label": "Nuova attività", "path": "/activities", "symbol": "+" },
+    { "label": "Nuova lezione", "path": "/school/lessons", "symbol": "+" },
+    { "label": "Apri archivio", "path": "/archive", "symbol": "↗" }
+  ]
+}
