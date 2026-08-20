@@ -1,0 +1,113 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.topbar {
+  align-items: center;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-active);
+  display: grid;
+  gap: var(--sp-8);
+  grid-template-columns: var(--sidebar-width) 1fr auto;
+  min-height: var(--topbar-height);
+  padding: 0 var(--sp-6);
+}
+
+.brand,
+.topnav a,
+.user-menu {
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand {
+  align-items: center;
+  display: flex;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semi);
+  gap: var(--sp-3);
+}
+
+.brand__mark,
+.user-menu {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.topnav {
+  align-items: stretch;
+  align-self: stretch;
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.topnav a {
+  align-items: center;
+  border-bottom: var(--border-active) solid transparent;
+  display: flex;
+  padding: 0 var(--sp-4);
+}
+
+.topnav a:hover,
+.topnav a.is-active {
+  background: var(--sidebar-hover);
+  border-bottom-color: var(--color-accent);
+}
+
+.user-menu {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semi);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: calc(100vh - var(--topbar-height));
+}
+
+.sidebar {
+  background: var(--bg-raised);
+  border-right: var(--border-thin) solid var(--border-default);
+  padding: var(--sp-8) var(--sp-4);
+}
+
+.sidebar__eyebrow {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semi);
+  letter-spacing: .08em;
+  margin: 0 var(--sp-3) var(--sp-3);
+  text-transform: uppercase;
+}
+
+.sidebar nav {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.sidebar a {
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  padding: var(--sp-3);
+  text-decoration: none;
+}
+
+.sidebar a:hover,
+.sidebar a.is-active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-hover);
+}
+
+.content {
+  margin: 0 auto;
+  max-width: var(--content-max-width);
+  padding: var(--sp-8);
+  width: 100%;
+}

@@ -1,26 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&display=swap');
+html {
+  background: var(--bg-canvas);
+  color-scheme: light;
+}
 
-html, body {
-  height: 100%;
-  background-color: var(--bg-canvas);
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg-canvas);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   line-height: 1.5;
-  transition: background-color var(--duration-base) var(--ease),
-              color var(--duration-base) var(--ease);
 }
 
-#root {
-  height: 100%;
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
 }
 
-/* Avatar color classes */
-.av-blue   { background: hsl(220, 70%, 52%); }
-.av-green  { background: hsl(152, 55%, 38%); }
-.av-amber  { background: hsl(36, 80%, 46%); }
-.av-rose   { background: hsl(340, 65%, 50%); }
-.av-violet { background: hsl(262, 65%, 54%); }
-.av-teal   { background: hsl(175, 60%, 38%); }
-.av-orange { background: hsl(20, 80%, 48%); }
-.av-slate  { background: hsl(210, 25%, 45%); }
+h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semi);
+}
+
+button,
+a {
+  transition:
+    background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease),
+    color var(--duration-fast) var(--ease);
+}
+
+:focus-visible {
+  outline: var(--border-active) solid var(--color-accent);
+  outline-offset: var(--sp-1);
+}
+
+.data-value,
+time {
+  font-family: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
