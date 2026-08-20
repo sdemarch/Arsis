@@ -8,9 +8,7 @@ import { RouterLink } from '@angular/router';
     <main class="login-layout">
       <section class="login-brand" aria-label="Arsis">
         <div class="brand-lockup">
-          <span class="brand-mark" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </span>
+          <img src="assets/brand/arsis-logo-background.svg" alt="" />
           <strong>Arsis</strong>
         </div>
         <div class="brand-message">
@@ -47,11 +45,8 @@ import { RouterLink } from '@angular/router';
     .login-layout { display: grid; grid-template-columns: minmax(420px, 46%) 1fr; min-height: 100vh; }
     .login-brand { background: var(--sidebar-bg); color: var(--sidebar-active); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; padding: var(--sp-10); position: relative; }
     .login-brand::after { border: 60px solid color-mix(in srgb, var(--color-accent) 35%, transparent); border-radius: var(--radius-full); content: ''; height: 360px; position: absolute; right: -150px; top: 24%; width: 360px; }
-    .brand-lockup { align-items: center; display: flex; font-family: var(--font-display); font-size: var(--text-xl); gap: var(--sp-3); position: relative; z-index: 1; }
-    .brand-mark { align-items: end; background: var(--color-accent); border-radius: var(--radius-md); display: flex; gap: 3px; height: 36px; justify-content: center; padding: 9px; width: 36px; }
-    .brand-mark span { background: var(--text-inverse); border-radius: var(--radius-full); display: block; height: 11px; width: 3px; }
-    .brand-mark span:nth-child(2) { height: 18px; }
-    .brand-mark span:nth-child(3) { height: 14px; }
+    .brand-lockup { align-items: center; display: flex; font-family: var(--font-display); font-size: var(--text-xl); gap: var(--sp-4); position: relative; z-index: 1; }
+    .brand-lockup img { display: block; height: var(--logo-login-size); width: var(--logo-login-size); }
     .brand-message { max-width: 560px; position: relative; z-index: 1; }
     .eyebrow { color: var(--color-accent); font-size: var(--text-xs); font-weight: var(--weight-semi); letter-spacing: .12em; margin: 0 0 var(--sp-3); text-transform: uppercase; }
     .brand-message h1 { font-size: 48px; margin: 0 0 var(--sp-5); }

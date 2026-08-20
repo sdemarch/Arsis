@@ -4,16 +4,13 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map, startWith } from 'rxjs';
 
 import { NAVIGATION } from './navigation';
+import applicationData from '../../../assets/mock/application.json';
 
 @Component({
   selector: 'arsis-app-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <header class="topbar">
-      <a class="brand" routerLink="/home" aria-label="Arsis, vai alla Home">
-        <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span>Arsis</span>
-      </a>
       <nav class="topnav" aria-label="Aree principali">
         @for (area of navigation; track area.path) {
           <a [routerLink]="area.path" routerLinkActive="is-active">{{ area.label }}</a>
@@ -30,6 +27,9 @@ import { NAVIGATION } from './navigation';
 
     <div class="workspace">
       <aside class="sidebar">
+        <a class="sidebar__brand" routerLink="/home" aria-label="Arsis, vai alla Home">
+          <img src="assets/brand/arsis-logo-icon.svg" alt="" />
+        </a>
         <p class="sidebar__eyebrow">{{ activeArea().label }}</p>
         <nav aria-label="Navigazione area">
           @for (item of activeArea().children; track item.label) {
@@ -48,7 +48,12 @@ import { NAVIGATION } from './navigation';
           <div><strong>Database locale</strong><small>Connesso</small></div>
         </div>
       </aside>
-      <main class="content" id="main-content"><router-outlet /></main>
+      <div class="page-column">
+        <main class="content" id="main-content"><router-outlet /></main>
+        <footer class="app-footer">
+          <span>{{ application.organization.name }}</span>
+        </footer>
+      </div>
     </div>
   `,
   styleUrl: './app-shell.component.css',
@@ -56,6 +61,7 @@ import { NAVIGATION } from './navigation';
 })
 export class AppShellComponent {
   protected readonly navigation = NAVIGATION;
+  protected readonly application = applicationData;
   private readonly router = inject(Router);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(

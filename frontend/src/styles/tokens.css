@@ -75,6 +75,9 @@
   --sidebar-width: 240px;
   --content-max-width: 1440px;
   --panel-min-height: 224px;
+  --footer-height: 48px;
+  --logo-sidebar-size: 72px;
+  --logo-login-size: 64px;
   --border-thin: 1px;
   --border-active: 3px;
 }
@@ -138,4 +141,3 @@
 .av-teal { background: hsl(175, 60%, 38%); }
 .av-orange { background: hsl(20, 80%, 48%); }
 .av-slate { background: hsl(210, 25%, 45%); }
-
