@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - include:
+      file: changes/0001-initial-schema.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0002-security-and-people.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0003-activities-and-school.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0004-settings-and-audit.sql
+      relativeToChangelogFile: true

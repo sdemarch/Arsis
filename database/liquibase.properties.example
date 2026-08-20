@@ -1,0 +1,4 @@
+changelog-file=changelog/db.changelog-master.yaml
+url=jdbc:sqlite:../data/arsis.db
+driver=org.sqlite.JDBC
+liquibase.hub.mode=off
