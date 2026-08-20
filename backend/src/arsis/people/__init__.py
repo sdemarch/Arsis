@@ -1,0 +1,2 @@
+"""People and roles module."""
+
