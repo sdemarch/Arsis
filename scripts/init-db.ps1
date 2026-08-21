@@ -2,7 +2,8 @@
 param(
     [switch]$ValidateOnly,
     [string]$DatabasePath = "data/arsis.db",
-    [switch]$SkipDriverInstall
+    [switch]$SkipDriverInstall,
+    [switch]$SkipCodeGeneration
 )
 
 $ErrorActionPreference = "Stop"
@@ -98,6 +99,30 @@ try {
         Write-Host "Changelog Liquibase valido." -ForegroundColor Green
     }
     else {
+        if (-not $SkipCodeGeneration) {
+            $generator = Join-Path $projectRoot "scripts/generate_backend_schema.py"
+            Write-Host "Rigenero modelli SQLAlchemy e DTO Pydantic..."
+
+            if (Get-Command py -ErrorAction SilentlyContinue) {
+                Invoke-CheckedCommand -Command "py" -Arguments @(
+                    "-3.14",
+                    $generator,
+                    "--database",
+                    $resolvedDatabasePath
+                )
+            }
+            elseif (Get-Command python -ErrorAction SilentlyContinue) {
+                Invoke-CheckedCommand -Command "python" -Arguments @(
+                    $generator,
+                    "--database",
+                    $resolvedDatabasePath
+                )
+            }
+            else {
+                throw "Python non disponibile: impossibile rigenerare il codice backend."
+            }
+        }
+
         Write-Host "Database Arsis inizializzato e allineato." -ForegroundColor Green
     }
 }
