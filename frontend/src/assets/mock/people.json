@@ -1,11 +1,11 @@
 {
   "summary": { "active": 128, "archived": 7 },
   "people": [
-    { "id": "p1", "initials": "EB", "avatar": "av-green", "name": "Elena Bianchi", "email": "elena.bianchi@example.it", "phone": "+39 333 142 9081", "roles": ["Insegnante", "Musicante"], "status": "Attiva", "updated": "18 ago 2026" },
-    { "id": "p2", "initials": "MR", "avatar": "av-blue", "name": "Marco Rossi", "email": "famiglia.rossi@example.it", "phone": "+39 347 550 1832", "roles": ["Allievo"], "status": "Attiva", "updated": "17 ago 2026" },
-    { "id": "p3", "initials": "LF", "avatar": "av-amber", "name": "Luca Ferri", "email": "luca.ferri@example.it", "phone": "+39 328 711 2045", "roles": ["Socio", "Insegnante"], "status": "Attiva", "updated": "15 ago 2026" },
-    { "id": "p4", "initials": "GM", "avatar": "av-rose", "name": "Giulia Moretti", "email": "giulia.moretti@example.it", "phone": "+39 340 901 4432", "roles": ["Allievo", "Socio"], "status": "Attiva", "updated": "12 ago 2026" },
-    { "id": "p5", "initials": "AN", "avatar": "av-violet", "name": "Andrea Neri", "email": "andrea.neri@example.it", "phone": "+39 349 224 8700", "roles": ["Musicante", "Socio"], "status": "Attiva", "updated": "10 ago 2026" },
-    { "id": "p6", "initials": "CP", "avatar": "av-teal", "name": "Chiara Pellegrini", "email": "chiara.p@example.it", "phone": "+39 333 875 1022", "roles": ["Musicante"], "status": "Attiva", "updated": "08 ago 2026" }
+    { "id": "p1", "initials": "EB", "avatar": "av-green", "name": "Elena Bianchi", "email": "elena.bianchi@example.it", "phone": "+39 333 142 9081", "roles": ["Insegnante", "Musicante"], "referencePersonId": null, "status": "Attiva", "updated": "18 ago 2026" },
+    { "id": "p2", "initials": "MR", "avatar": "av-blue", "name": "Marco Rossi", "email": "famiglia.rossi@example.it", "phone": "+39 347 550 1832", "roles": ["Allievo"], "referencePersonId": "p4", "status": "Attiva", "updated": "17 ago 2026" },
+    { "id": "p3", "initials": "LF", "avatar": "av-amber", "name": "Luca Ferri", "email": "luca.ferri@example.it", "phone": "+39 328 711 2045", "roles": ["Socio", "Insegnante"], "referencePersonId": null, "status": "Attiva", "updated": "15 ago 2026" },
+    { "id": "p4", "initials": "GM", "avatar": "av-rose", "name": "Giulia Moretti", "email": "giulia.moretti@example.it", "phone": "+39 340 901 4432", "roles": ["Allievo", "Socio"], "referencePersonId": null, "status": "Attiva", "updated": "12 ago 2026" },
+    { "id": "p5", "initials": "AN", "avatar": "av-violet", "name": "Andrea Neri", "email": "andrea.neri@example.it", "phone": "+39 349 224 8700", "roles": ["Musicante", "Socio", "Insegnante"], "referencePersonId": null, "status": "Attiva", "updated": "10 ago 2026" },
+    { "id": "p6", "initials": "CP", "avatar": "av-teal", "name": "Chiara Pellegrini", "email": "chiara.p@example.it", "phone": "+39 333 875 1022", "roles": ["Musicante", "Insegnante"], "referencePersonId": null, "status": "Attiva", "updated": "08 ago 2026" }
   ]
 }

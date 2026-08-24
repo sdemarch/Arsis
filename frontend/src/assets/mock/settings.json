@@ -1,9 +1,16 @@
 {
   "archiveUrl": "https://drive.google.com/drive/folders/arsis-demo",
   "catalogues": [
+    { "label": "Ruoli anagrafici", "count": 4, "detail": "4 attivi" },
     { "label": "Strumenti", "count": 18, "detail": "17 attivi" },
     { "label": "Sezioni", "count": 8, "detail": "8 attive" },
     { "label": "Utenti responsabili", "count": 3, "detail": "3 attivi" }
+  ],
+  "roles": [
+    { "id": "member", "label": "Socio", "description": "Persona associata all’organizzazione", "active": true },
+    { "id": "musician", "label": "Musicante", "description": "Componente dell’organico musicale", "active": true },
+    { "id": "student", "label": "Allievo", "description": "Persona iscritta a uno o più corsi", "active": true },
+    { "id": "teacher", "label": "Insegnante", "description": "Docente disponibile per corsi e lezioni", "active": true }
   ],
   "database": { "engine": "SQLite", "file": "data/arsis.db", "status": "Connesso", "version": "4 changeset" }
 }

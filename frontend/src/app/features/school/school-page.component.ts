@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import schoolData from '../../../assets/mock/school.json';
+import peopleData from '../../../assets/mock/people.json';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 
 @Component({
   selector: 'arsis-school-page',
-  imports: [PageHeaderComponent],
+  imports: [PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Scuola" title="Scuola di musica" description="Corsi, iscrizioni, lezioni e registro presenze.">
       <button class="button button--primary" type="button">＋ Nuovo corso</button>
@@ -18,10 +20,10 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
     <div class="section-heading"><div><p class="eyebrow">Offerta formativa</p><h2>Corsi attivi</h2></div><button class="button button--secondary">Tutti i corsi →</button></div>
     <section class="course-grid">
       @for (course of courses; track course.id) {
-        <article class="course-card card" [style.--course-color]="course.color" [style.--course-background]="course.background">
+        <a class="course-card card" [routerLink]="['/school/courses', course.id]" [style.--course-color]="course.color" [style.--course-background]="course.background" aria-label="Apri il corso {{ course.name }}">
           <div class="course-card__accent"></div>
-          <div class="course-card__body"><header><span>{{ course.mode }}</span><button>•••</button></header><h3>{{ course.name }}</h3><p>{{ course.teacher }}</p><dl><div><dt>Allievi</dt><dd>{{ course.students }}</dd></div><div><dt>Orario</dt><dd>{{ course.schedule }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.fee }}</dd></div></dl></div>
-        </article>
+          <div class="course-card__body"><header><span>{{ course.mode }}</span><i aria-hidden="true">•••</i></header><h3>{{ course.name }}</h3><p>{{ teacherName(course.teacherId) }}</p><dl><div><dt>Allievi</dt><dd>{{ course.students }}</dd></div><div><dt>Orario</dt><dd>{{ course.schedule }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.fee }}</dd></div></dl></div>
+        </a>
       }
     </section>
 
@@ -42,12 +44,13 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
     .section-heading h2 { font-family: var(--font-sans); font-size: var(--text-lg); margin: 0; }
     .eyebrow { color: var(--color-accent-hover); font-size: var(--text-xs); font-weight: var(--weight-semi); letter-spacing: .08em; margin: 0 0 var(--sp-1); text-transform: uppercase; }
     .course-grid { display: grid; gap: var(--sp-4); grid-template-columns: repeat(4, 1fr); }
-    .course-card { display: grid; grid-template-columns: 5px 1fr; overflow: hidden; }
+    .course-card { color: inherit; display: grid; grid-template-columns: 5px 1fr; overflow: hidden; text-decoration: none; }
+    .course-card:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
     .course-card__accent { background: var(--course-color); }
     .course-card__body { padding: var(--sp-5); }
     .course-card header { align-items: center; display: flex; justify-content: space-between; }
     .course-card header span { background: var(--course-background); border-radius: var(--radius-full); color: var(--course-color); font-size: var(--text-xs); padding: var(--sp-1) var(--sp-2); }
-    .course-card button, .row-menu { background: transparent; border: 0; color: var(--text-tertiary); cursor: pointer; }
+    .course-card header i, .row-menu { color: var(--text-tertiary); font-style: normal; }
     .course-card h3 { font-family: var(--font-sans); font-size: var(--text-lg); margin: var(--sp-4) 0 var(--sp-1); }
     .course-card p { color: var(--text-secondary); margin: 0 0 var(--sp-5); }
     .course-card dl { display: grid; gap: var(--sp-2); margin: 0; }
@@ -64,5 +67,8 @@ export class SchoolPageComponent {
   protected readonly summary = schoolData.summary;
   protected readonly courses = schoolData.courses;
   protected readonly lessons = schoolData.lessons;
-}
 
+  protected teacherName(teacherId: string): string {
+    return peopleData.people.find((person) => person.id === teacherId)?.name ?? 'Non assegnato';
+  }
+}

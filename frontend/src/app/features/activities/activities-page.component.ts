@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import activityData from '../../../assets/mock/activities.json';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 
 @Component({
   selector: 'arsis-activities-page',
-  imports: [PageHeaderComponent],
+  imports: [PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Attività" title="Calendario e attività" description="Organizza prove, concerti, eventi e presenze.">
       <button class="button button--primary" type="button">＋ Nuova attività</button>
@@ -20,11 +21,11 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
     <section class="activity-layout">
       <div class="activity-feed">
         @for (activity of activities; track activity.id) {
-          <article class="activity-card card">
+          <a class="activity-card card" [routerLink]="['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
             <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
             <div class="activity-main"><div class="activity-title"><span>{{ activity.type }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }} · {{ activity.location }}</p><div class="participants"><span class="avatar av-green">{{ activity.participants }}</span><small>partecipanti convocati</small></div></div>
-            <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.status }}</span><button class="row-menu">•••</button></div>
-          </article>
+            <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.status }}</span><span class="row-menu" aria-hidden="true">•••</span></div>
+          </a>
         }
       </div>
 
@@ -47,7 +48,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
     .result-count { color: var(--text-secondary); font-size: var(--text-sm); }
     .activity-layout { align-items: start; display: grid; gap: var(--sp-6); grid-template-columns: 1fr 320px; }
     .activity-feed { display: grid; gap: var(--sp-3); }
-    .activity-card { align-items: center; display: grid; gap: var(--sp-5); grid-template-columns: 76px 1fr auto; padding: var(--sp-5); }
+    .activity-card { align-items: center; color: inherit; display: grid; gap: var(--sp-5); grid-template-columns: 76px 1fr auto; padding: var(--sp-5); text-decoration: none; }
     .activity-card:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
     .date-block { align-items: center; border-right: var(--border-thin) solid var(--border-subtle); display: flex; flex-direction: column; }
     .date-block strong { font-family: var(--font-display); font-size: var(--text-2xl); line-height: 1; }
@@ -82,4 +83,3 @@ export class ActivitiesPageComponent {
   protected readonly calendar = activityData.calendar;
   protected readonly weekdays = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 }
-

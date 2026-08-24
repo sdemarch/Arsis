@@ -31,7 +31,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
         <thead><tr><th>Persona</th><th>Contatti</th><th>Ruoli</th><th>Stato</th><th>Ultima modifica</th><th></th></tr></thead>
         <tbody>
           @for (person of people; track person.id) {
-            <tr>
+            <tr [routerLink]="['/people', person.id]" tabindex="0" aria-label="Apri la scheda di {{ person.name }}">
               <td><a class="person" [routerLink]="['/people', person.id]"><span class="avatar {{ person.avatar }}">{{ person.initials }}</span><strong>{{ person.name }}</strong></a></td>
               <td><div class="contacts"><span>{{ person.email }}</span><small>{{ person.phone }}</small></div></td>
               <td><div class="roles">@for (role of person.roles; track role) { <span>{{ role }}</span> }</div></td>
@@ -48,6 +48,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
   styles: `
     .summary-line { color: var(--text-secondary); display: flex; font-size: var(--text-sm); gap: var(--sp-5); margin: calc(var(--sp-5) * -1) 0 var(--sp-6); }
     .summary-line strong { color: var(--text-primary); }
+    tbody tr { cursor: pointer; }
     .person { align-items: center; color: var(--text-primary); display: flex; gap: var(--sp-3); text-decoration: none; }
     .contacts { display: grid; }
     .contacts small { color: var(--text-tertiary); }

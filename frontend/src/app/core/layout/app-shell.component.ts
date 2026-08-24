@@ -18,7 +18,7 @@ import applicationData from '../../../assets/mock/application.json';
       </nav>
       <div class="topbar-actions">
         <button class="icon-button" type="button" aria-label="Notifiche">●</button>
-        <a class="user-menu" routerLink="/settings" aria-label="Apri configurazione">
+        <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo">
           <span>SM</span>
           <small>Stefano</small>
         </a>

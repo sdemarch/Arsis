@@ -9,7 +9,6 @@ export const PEOPLE_ROUTES: Routes = [
   {
     path: ':personId',
     loadComponent: () =>
-      import('./people-page.component').then((module) => module.PeoplePageComponent),
+      import('./person-detail.component').then((module) => module.PersonDetailComponent),
   },
 ];
-
