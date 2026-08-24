@@ -17,6 +17,7 @@
   --text-base: 15px;
   --text-lg: 17px;
   --text-xl: 22px;
+  --text-login: 48px;
   --text-2xl: 28px;
   --text-3xl: 38px;
 
@@ -76,8 +77,8 @@
   --content-max-width: 1440px;
   --panel-min-height: 224px;
   --footer-height: 48px;
-  --logo-sidebar-size: 72px;
-  --logo-login-size: 64px;
+  --logo-sidebar-size: 98px;
+  --logo-login-size: 128px;
   --border-thin: 1px;
   --border-active: 3px;
 }

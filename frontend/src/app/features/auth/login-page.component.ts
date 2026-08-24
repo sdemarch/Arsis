@@ -12,11 +12,11 @@ import { RouterLink } from '@angular/router';
           <strong>Arsis</strong>
         </div>
         <div class="brand-message">
-          <p class="eyebrow">Associazione musicale</p>
+          <p class="eyebrow">Banda e Orchestra</p>
           <h1>La musica, organizzata<br />con semplicità.</h1>
           <p>Persone, attività e scuola di musica in un unico spazio condiviso.</p>
         </div>
-        <p class="brand-footnote">Gestionale riservato ai responsabili</p>
+        <p class="brand-footnote">Arsis | by Stefano Demarchi | 2026</p>
       </section>
 
       <section class="login-panel">
@@ -24,7 +24,7 @@ import { RouterLink } from '@angular/router';
           <div>
             <p class="eyebrow">Bentornato</p>
             <h2>Accedi ad Arsis</h2>
-            <p class="intro">Inserisci le credenziali assegnate dall’amministratore.</p>
+            <p class="intro">Inserisci username e password.</p>
           </div>
           <label>
             <span>Email</span>
@@ -45,7 +45,7 @@ import { RouterLink } from '@angular/router';
     .login-layout { display: grid; grid-template-columns: minmax(420px, 46%) 1fr; min-height: 100vh; }
     .login-brand { background: var(--sidebar-bg); color: var(--sidebar-active); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; padding: var(--sp-10); position: relative; }
     .login-brand::after { border: 60px solid color-mix(in srgb, var(--color-accent) 35%, transparent); border-radius: var(--radius-full); content: ''; height: 360px; position: absolute; right: -150px; top: 24%; width: 360px; }
-    .brand-lockup { align-items: center; display: flex; font-family: var(--font-display); font-size: var(--text-xl); gap: var(--sp-4); position: relative; z-index: 1; }
+    .brand-lockup { align-items: center; display: flex; font-family: var(--font-display); font-size: var(--text-login); gap: var(--sp-4); position: relative; z-index: 1; }
     .brand-lockup img { display: block; height: var(--logo-login-size); width: var(--logo-login-size); }
     .brand-message { max-width: 560px; position: relative; z-index: 1; }
     .eyebrow { color: var(--color-accent); font-size: var(--text-xs); font-weight: var(--weight-semi); letter-spacing: .12em; margin: 0 0 var(--sp-3); text-transform: uppercase; }
