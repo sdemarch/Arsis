@@ -7,9 +7,9 @@
 
 :root {
   /* Font */
-  --font-sans: 'DM Sans', sans-serif;
-  --font-display: 'Fraunces', serif;
-  --font-mono: 'DM Mono', monospace;
+  --font-sans: 'Source Sans Pro', sans-serif;
+  --font-display: 'Libre Baskerville', serif;
+  --font-mono: 'Space Mono', monospace;
 
   /* Type scale */
   --text-xs: 11px;
