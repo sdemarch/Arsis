@@ -47,6 +47,10 @@ export const NAVIGATION: readonly NavigationArea[] = [
   {
     label: 'Contabilità',
     path: '/accounting',
-    children: [{ label: 'Da definire', path: '/accounting' }],
+    children: [
+      { label: 'Registro contabile', path: '/accounting', queryParams: { tab: 'register' } },
+      { label: 'Bilancio', path: '/accounting', queryParams: { tab: 'balance' } },
+      { label: 'Monitor scuola', path: '/accounting', queryParams: { tab: 'school' } },
+    ],
   },
 ];

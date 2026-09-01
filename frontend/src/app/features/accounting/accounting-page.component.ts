@@ -1,51 +1,66 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
-import accountingData from '../../../assets/mock/accounting.json';
+
+type Tab = 'register' | 'balance' | 'school';
+type Type = 'Rata' | 'Rimborso insegnanti' | 'Altro';
+interface Movement { id: number; date: string; beneficiary: string; declarant: string; amount: number; account: 'Cassa' | 'Banca'; type: Type; description: string; reference: string; course: string; }
+const rates = ['I rata', 'II rata', 'III rata', 'Rata parziale'];
+const students = ['Elena Martinelli', 'Luca Bianchi', 'Sofia Rossi'];
+const teachers = ['Marco Rinaldi', 'Giulia Ferri'];
+const courses = ['Pianoforte', 'Chitarra', 'Canto'];
 
 @Component({
-  selector: 'arsis-accounting-page',
-  imports: [PageHeaderComponent],
+  selector: 'arsis-accounting-page', imports: [FormsModule, PageHeaderComponent, DatePipe, DecimalPipe],
   template: `
-    <arsis-page-header eyebrow="Amministrazione" title="Contabilità" description="Una base ordinata per i futuri flussi amministrativi." />
-
-    <section class="summary-grid" aria-label="Riepilogo contabile">
-      @for (item of data.summary; track item.label) {
-        <article class="card summary-card">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-          <small>{{ item.note }}</small>
-        </article>
-      }
-    </section>
-
-    <section class="areas-grid" aria-label="Funzioni previste">
-      @for (area of data.areas; track area.title) {
-        <article class="card area-card">
-          <span class="area-card__icon" aria-hidden="true">€</span>
-          <div>
-            <span class="status-badge status-badge--neutral">{{ area.status }}</span>
-            <h2>{{ area.title }}</h2>
-            <p>{{ area.description }}</p>
-          </div>
-        </article>
-      }
-    </section>
+    <arsis-page-header eyebrow="Amministrazione" title="Contabilità" description="Movimenti, risultato economico e andamento della Scuola in un unico spazio." />
+    <nav class="tabs" aria-label="Sezioni contabilità"><button [class.active]="tab() === 'register'" (click)="tab.set('register')">Registro contabile</button><button [class.active]="tab() === 'balance'" (click)="tab.set('balance')">Bilancio</button><button [class.active]="tab() === 'school'" (click)="tab.set('school')">Monitor scuola</button></nav>
+    @if (tab() === 'register') {
+      <section class="intro"><div><h2>Registro contabile</h2><p>Inserisci un movimento nella riga evidenziata o apri una riga per modificarla.</p></div><span>{{ movements().length }} movimenti</span></section>
+      <section class="table-shell"><div class="scroll"><table><thead><tr><th>Data</th><th>Beneficiario</th><th>Dichiarante</th><th>Importo</th><th>Conto</th><th>Tipo</th><th>Descrizione</th><th>Riferimento</th><th>Corso</th><th></th></tr></thead><tbody>
+        <tr class="new"><td><input type="date" [(ngModel)]="draft.date" /></td><td><input placeholder="Beneficiario" [(ngModel)]="draft.beneficiary" /></td><td><input placeholder="Dichiarante" [(ngModel)]="draft.declarant" /></td><td><input class="money" type="number" min="0" step=".01" placeholder="0,00" [(ngModel)]="draft.amount" /></td><td><select [(ngModel)]="draft.account"><option>Cassa</option><option>Banca</option></select></td><td><select [(ngModel)]="draft.type" (ngModelChange)="resetDraft()">@for (type of types; track type) {<option>{{type}}</option>}</select></td><td>@if(draft.type === 'Rata'){<select [(ngModel)]="draft.description">@for(rate of rates;track rate){<option>{{rate}}</option>}</select>} @else {<input placeholder="Descrizione" [(ngModel)]="draft.description"/>}</td><td>@if(linked(draft.type)){<select [(ngModel)]="draft.reference"><option value="">Seleziona…</option>@for(person of references(draft.type);track person){<option>{{person}}</option>}</select>} @else {<em>—</em>}</td><td>@if(linked(draft.type)){<select [(ngModel)]="draft.course"><option value="">Seleziona…</option>@for(course of courses;track course){<option>{{course}}</option>}</select>} @else {<em>—</em>}</td><td><button class="add" [disabled]="!valid(draft)" (click)="add()">Aggiungi</button></td></tr>
+        @for (movement of movements(); track movement.id) {<tr class="movement" tabindex="0" (click)="open(movement)" (keydown.enter)="open(movement)"><td class="data-value">{{movement.date | date:'dd/MM/yyyy'}}</td><td>{{movement.beneficiary}}</td><td>{{movement.declarant || '—'}}</td><td class="data-value amount" [class.out]="movement.type === 'Rimborso insegnanti'">{{movement.type === 'Rimborso insegnanti' ? '−' : '+'}} {{movement.amount | number:'1.2-2'}} €</td><td><b>{{movement.account}}</b></td><td><mark [class.refund]="movement.type === 'Rimborso insegnanti'">{{movement.type}}</mark></td><td>{{movement.description}}</td><td>{{movement.reference || '—'}}</td><td>{{movement.course || '—'}}</td><td><button class="arrow" (click)="$event.stopPropagation();open(movement)">›</button></td></tr>}
+      </tbody></table></div></section><p class="note">I tipi movimento sono configurabili. Le rate vengono collegate a allievo e corso; i rimborsi a insegnante e corso.</p>
+    } @else if (tab() === 'balance') {
+      <section class="summary"><article class="card income"><span>Entrate</span><strong>{{income() | number:'1.2-2'}} €</strong><small>Rate e altri incassi registrati</small></article><article class="card expenses"><span>Uscite</span><strong>{{expenses() | number:'1.2-2'}} €</strong><small>Rimborsi insegnanti registrati</small></article><article class="card"><span>Saldo corrente</span><strong>{{balance() | number:'1.2-2'}} €</strong><small>Entrate meno uscite</small></article></section>
+      <section class="card balance"><header><div><p class="kicker">ANNO CORRENTE</p><h2>Risultato economico</h2></div><span class="status-badge status-badge--success">In attivo</span></header><div class="bar"><i [style.width.%]="incomeShare()"></i></div><p><b>● Entrate</b> {{income() | number:'1.0-0'}} € <span>● Uscite {{expenses() | number:'1.0-0'}} €</span></p></section>
+    } @else {
+      <section class="summary"><article class="card"><span>Quote annuali attese</span><strong>6.480,00 €</strong><small>12 iscrizioni attive</small></article><article class="card income"><span>Quote già incassate</span><strong>{{income() | number:'1.2-2'}} €</strong><small>{{rateCount()}} rate registrate</small></article><article class="card expenses"><span>Rimborsi docenti</span><strong>{{expenses() | number:'1.2-2'}} €</strong><small>Da verificare a fine mese</small></article></section>
+      <section class="card monitor"><header><p class="kicker">MONITOR SCUOLA</p><h2>Andamento iscrizioni e rimborsi</h2></header><table><thead><tr><th>Corso</th><th>Allievi</th><th>Quote incassate</th><th>Rimborsi docenti</th><th>Stato</th></tr></thead><tbody>@for(course of monitor;track course.name){<tr><td><strong>{{course.name}}</strong></td><td>{{course.students}}</td><td class="data-value">{{course.receipts | number:'1.2-2'}} €</td><td class="data-value">{{course.refunds | number:'1.2-2'}} €</td><td><span class="status-badge status-badge--success">In corso</span></td></tr>}</tbody></table></section>
+    }
+    @if(selected();as item){<div class="overlay" (click)="close()"><article class="editor card" role="dialog" aria-modal="true" (click)="$event.stopPropagation()"><header><div><p class="kicker">MOVIMENTO CONTABILE</p><h2>{{item.type}}</h2><p>Modifica i dati e salva per aggiornare il registro.</p></div><button class="close" (click)="close()">×</button></header><div class="form"><label>Data<input type="date" [(ngModel)]="item.date"/></label><label>Importo<input type="number" min="0" step=".01" [(ngModel)]="item.amount"/></label><label>Beneficiario<input [(ngModel)]="item.beneficiary"/></label><label>Dichiarante<input [(ngModel)]="item.declarant"/></label><label>Conto<select [(ngModel)]="item.account"><option>Cassa</option><option>Banca</option></select></label><label>Tipo<select [(ngModel)]="item.type"><option>Rata</option><option>Rimborso insegnanti</option><option>Altro</option></select></label><label class="wide">Descrizione<input [(ngModel)]="item.description"/></label>@if(linked(item.type)){<label>Riferimento<select [(ngModel)]="item.reference">@for(person of references(item.type);track person){<option>{{person}}</option>}</select></label><label>Corso<select [(ngModel)]="item.course">@for(course of courses;track course){<option>{{course}}</option>}</select></label>}</div><footer><button class="button button--secondary" (click)="close()">Annulla</button><button class="button button--primary" (click)="save()">Salva modifiche</button></footer></article></div>}
   `,
   styles: `
-    :host { display: block; }
-    .summary-grid, .areas-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .summary-grid { margin-bottom: var(--space-6); }
-    .summary-card { display: grid; gap: var(--space-2); padding: var(--space-5); }
-    .summary-card span, .summary-card small, .area-card p { color: var(--color-text-muted); }
-    .summary-card strong { color: var(--color-primary-700); font-family: var(--font-family-heading); font-size: var(--font-size-3xl); }
-    .area-card { display: flex; gap: var(--space-4); min-height: 180px; padding: var(--space-5); }
-    .area-card__icon { align-items: center; background: var(--color-primary-50); border-radius: var(--radius-lg); color: var(--color-primary-700); display: inline-flex; flex: 0 0 44px; font-family: var(--font-family-heading); font-size: var(--font-size-xl); height: 44px; justify-content: center; }
-    .area-card h2 { font-size: var(--font-size-lg); margin: var(--space-3) 0 var(--space-2); }
-    .area-card p { line-height: 1.6; margin: 0; }
-    @media (max-width: 960px) { .summary-grid, .areas-grid { grid-template-columns: 1fr; } }
+    :host { display:block; }
+    .tabs { border-bottom:var(--border-thin) solid var(--border-default); display:flex; gap:var(--sp-5); margin-bottom:var(--sp-6); }
+    .tabs button { background:none; border:0; border-bottom:2px solid transparent; color:var(--text-secondary); cursor:pointer; font:var(--weight-semi) var(--text-sm) var(--font-sans); padding:0 0 var(--sp-3); }
+    .tabs .active { border-color:var(--color-accent); color:var(--color-accent-hover); }
+    .intro { align-items:end; display:flex; justify-content:space-between; margin-bottom:var(--sp-4); } h2 { font-family:var(--font-sans); font-size:var(--text-lg); margin:0; }
+    .intro p,.editor header p { color:var(--text-secondary); margin:var(--sp-1) 0 0; } .intro>span,.note { color:var(--text-secondary); font-size:var(--text-sm); }
+    .scroll { overflow:auto; } .table-shell table { min-width:1250px; } .table-shell td { padding:var(--sp-2) var(--sp-3); }
+    .new { background:var(--color-accent-soft); } input,select { background:var(--bg-surface); border:var(--border-thin) solid var(--border-default); border-radius:var(--radius-sm); box-sizing:border-box; color:var(--text-primary); height:34px; padding:0 var(--sp-2); width:100%; }
+    .new td { min-width:112px; } .new td:nth-child(2),.new td:nth-child(3),.new td:nth-child(7) { min-width:150px; } .new em { color:var(--text-tertiary); display:block; text-align:center; }
+    .add { background:var(--color-accent); border:0; border-radius:var(--radius-sm); color:var(--text-inverse); cursor:pointer; font-size:var(--text-xs); font-weight:var(--weight-semi); height:34px; padding:0 var(--sp-3); } .add:disabled { cursor:not-allowed; opacity:.45; }
+    .movement { cursor:pointer; } .movement:hover { background:var(--bg-raised); } .amount { color:var(--color-success); font-weight:var(--weight-semi); white-space:nowrap; } .amount.out { color:var(--color-danger); }
+    mark,.table-shell b { background:var(--bg-raised); border-radius:var(--radius-full); color:var(--text-secondary); font-size:var(--text-xs); font-weight:var(--weight-medium); padding:var(--sp-1) var(--sp-2); white-space:nowrap; } .refund { background:var(--color-danger-soft); color:var(--color-danger); }
+    .arrow,.close { background:none; border:0; color:var(--text-tertiary); cursor:pointer; font-size:26px; } .arrow:hover,.close:hover { color:var(--color-accent-hover); }
+    .summary { display:grid; gap:var(--sp-4); grid-template-columns:repeat(3,1fr); margin-bottom:var(--sp-6); } .summary article { display:grid; gap:var(--sp-2); padding:var(--sp-5); } .summary span,.summary small { color:var(--text-secondary); } .summary strong { color:var(--color-accent-hover); font-family:var(--font-display); font-size:var(--text-2xl); } .expenses strong { color:var(--color-danger); }
+    .balance,.monitor { padding:var(--sp-6); } .balance header { align-items:start; display:flex; justify-content:space-between; } .kicker { color:var(--color-accent-hover); font-size:var(--text-xs); font-weight:var(--weight-semi); letter-spacing:.08em; margin:0 0 var(--sp-1); }
+    .bar { background:var(--color-danger-soft); border-radius:var(--radius-full); height:10px; margin-top:var(--sp-6); overflow:hidden; } .bar i { background:var(--color-success); display:block; height:100%; } .balance p { color:var(--text-secondary); font-size:var(--text-sm); } .balance p b { color:var(--color-success); } .balance p span { color:var(--color-danger); margin-left:var(--sp-5); }
+    .monitor { overflow:auto; } .monitor table { min-width:640px; } .overlay { align-items:center; background:rgb(16 24 40 / .42); display:flex; inset:0; justify-content:center; padding:var(--sp-5); position:fixed; z-index:10; }
+    .editor { max-height:calc(100vh - 48px); max-width:760px; overflow:auto; width:100%; } .editor header { border-bottom:var(--border-thin) solid var(--border-subtle); display:flex; justify-content:space-between; padding:var(--sp-6); }
+    .form { display:grid; gap:var(--sp-4); grid-template-columns:1fr 1fr; padding:var(--sp-6); } .form label { color:var(--text-secondary); display:grid; font-size:var(--text-xs); font-weight:var(--weight-semi); gap:var(--sp-1); } .wide { grid-column:1/-1; } .editor footer { border-top:var(--border-thin) solid var(--border-subtle); display:flex; gap:var(--sp-3); justify-content:end; padding:var(--sp-4) var(--sp-6); }
+    @media(max-width:760px) { .summary { grid-template-columns:1fr; } .form { grid-template-columns:1fr; } .wide { grid-column:auto; } .intro { align-items:start; flex-direction:column; } .tabs { overflow:auto; } .tabs button { white-space:nowrap; } }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountingPageComponent {
-  protected readonly data = accountingData;
+  private readonly route = inject(ActivatedRoute);
+  protected readonly tab = signal<Tab>('register'); protected readonly types: readonly Type[] = ['Rata','Rimborso insegnanti','Altro']; protected readonly rates = rates; protected readonly courses = courses;
+  protected readonly movements = signal<Movement[]>([{id:3,date:'2026-09-01',beneficiary:'Arsis',declarant:'Elena Martinelli',amount:180,account:'Banca',type:'Rata',description:'I rata',reference:'Elena Martinelli',course:'Pianoforte'},{id:2,date:'2026-08-30',beneficiary:'Marco Rinaldi',declarant:'Amministrazione',amount:420,account:'Banca',type:'Rimborso insegnanti',description:'Rimborso agosto',reference:'Marco Rinaldi',course:'Chitarra'},{id:1,date:'2026-08-28',beneficiary:'Arsis',declarant:'Luca Bianchi',amount:150,account:'Cassa',type:'Rata',description:'Rata parziale',reference:'Luca Bianchi',course:'Canto'}]);
+  protected readonly selected=signal<Movement|null>(null); protected draft=this.empty(); protected readonly income=computed(()=>this.movements().filter(x=>x.type!=='Rimborso insegnanti').reduce((s,x)=>s+x.amount,0)); protected readonly expenses=computed(()=>this.movements().filter(x=>x.type==='Rimborso insegnanti').reduce((s,x)=>s+x.amount,0)); protected readonly balance=computed(()=>this.income()-this.expenses()); protected readonly incomeShare=computed(()=>this.income()/(this.income()+this.expenses())*100); protected readonly rateCount=computed(()=>this.movements().filter(x=>x.type==='Rata').length); protected readonly monitor=[{name:'Pianoforte',students:5,receipts:180,refunds:0},{name:'Chitarra',students:4,receipts:0,refunds:420},{name:'Canto',students:3,receipts:150,refunds:0}];
+  protected linked(type:Type){return type!=='Altro'} protected references(type:Type){return type==='Rimborso insegnanti'?teachers:students} protected valid(x:Omit<Movement,'id'>){return !!(x.date&&x.beneficiary&&x.amount>0&&x.description)} protected resetDraft(){this.draft.reference='';this.draft.course='';this.draft.description=this.draft.type==='Rata'?'I rata':''} protected add(){if(!this.valid(this.draft))return;this.movements.update(xs=>[{...this.draft,id:Date.now()},...xs]);this.draft=this.empty()} protected open(x:Movement){this.selected.set({...x})} protected close(){this.selected.set(null)} protected save(){const x=this.selected();if(!x)return;this.movements.update(xs=>xs.map(y=>y.id===x.id?x:y));this.close()} private empty():Omit<Movement,'id'>{return{date:new Date().toISOString().slice(0,10),beneficiary:'',declarant:'',amount:0,account:'Banca',type:'Rata',description:'I rata',reference:'',course:''}}
+  constructor() { this.route.queryParamMap.subscribe((params) => { const value = params.get('tab'); this.tab.set(value === 'balance' || value === 'school' ? value : 'register'); }); }
 }
