@@ -78,12 +78,31 @@
   justify-content: center;
   margin: 0 0 var(--sp-6);
   padding: 0 0 var(--sp-5);
+  position: relative;
 }
 
 .sidebar__brand img {
   display: block;
   height: var(--logo-sidebar-size);
+  position: relative;
   width: var(--logo-sidebar-size);
+  z-index: 0;
+}
+
+.sidebar__brand-name {
+  /* Compensa lo spazio sotto ai glifi: la base visibile coincide con il cerchio. */
+  bottom: calc(var(--sp-5) - 15px);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 64px;
+  font-weight: var(--weight-semi);
+  left: 50%;
+  letter-spacing: -0.07em;
+  line-height: 1;
+  position: absolute;
+  text-shadow: 0 1px 0 var(--bg-raised), 0 0 12px var(--bg-raised);
+  transform: translateX(-50%);
+  z-index: 1;
 }
 
 .sidebar__eyebrow {

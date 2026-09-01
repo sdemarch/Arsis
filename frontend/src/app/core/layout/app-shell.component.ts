@@ -29,6 +29,7 @@ import applicationData from '../../../assets/mock/application.json';
       <aside class="sidebar">
         <a class="sidebar__brand" routerLink="/home" aria-label="Arsis, vai alla Home">
           <img src="assets/brand/arsis-logo-icon.svg" alt="" />
+          <span class="sidebar__brand-name" aria-hidden="true">Arsis</span>
         </a>
         <p class="sidebar__eyebrow">{{ activeArea().label }}</p>
         <nav aria-label="Navigazione area">

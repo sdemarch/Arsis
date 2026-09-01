@@ -1,9 +1,9 @@
 {
   "activities": [
-    { "id": "a1", "date": "24 AGO", "weekday": "Lunedì", "title": "Prova settimanale", "type": "Prova", "time": "20:45–22:30", "location": "Sala prove", "participants": 38, "status": "Confermata", "tone": "success" },
-    { "id": "a2", "date": "30 AGO", "weekday": "Domenica", "title": "Concerto di fine estate", "type": "Concerto", "time": "21:00–23:00", "location": "Piazza Municipale", "participants": 42, "status": "Confermata", "tone": "success" },
-    { "id": "a3", "date": "05 SET", "weekday": "Sabato", "title": "Festa delle associazioni", "type": "Evento", "time": "16:30–19:00", "location": "Parco comunale", "participants": 34, "status": "Pianificata", "tone": "warn" },
-    { "id": "a4", "date": "14 SET", "weekday": "Lunedì", "title": "Prova a sezioni", "type": "Prova", "time": "20:30–22:15", "location": "Sala prove", "participants": 28, "status": "Pianificata", "tone": "warn" }
+    { "id": "a1", "date": "24 AGO", "year": 2026, "weekday": "Lunedì", "title": "Prova settimanale", "type": "Prova", "time": "20:45–22:30", "location": "Sala prove", "participants": 38, "status": "Confermata", "tone": "success" },
+    { "id": "a2", "date": "30 AGO", "year": 2026, "weekday": "Domenica", "title": "Concerto di fine estate", "type": "Concerto", "time": "21:00–23:00", "location": "Piazza Municipale", "participants": 42, "status": "Confermata", "tone": "success" },
+    { "id": "a3", "date": "05 SET", "year": 2026, "weekday": "Sabato", "title": "Festa delle associazioni", "type": "Evento", "time": "16:30–19:00", "location": "Parco comunale", "participants": 34, "status": "Pianificata", "tone": "warn" },
+    { "id": "a4", "date": "14 SET", "year": 2026, "weekday": "Lunedì", "title": "Prova a sezioni", "type": "Prova", "time": "20:30–22:15", "location": "Sala prove", "participants": 28, "status": "Pianificata", "tone": "warn" }
   ],
   "calendar": [
     { "day": 1, "events": [] }, { "day": 2, "events": [] }, { "day": 3, "events": [] },
