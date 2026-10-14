@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from arsis.core.database import create_database_engine, database_is_ready
+from arsis.core.database import database_is_ready, get_database_engine
 
 router = APIRouter(tags=["health"])
 
@@ -12,7 +12,7 @@ def live() -> dict[str, str]:
 
 @router.get("/health/ready")
 def ready() -> dict[str, str]:
-    if not database_is_ready(create_database_engine()):
+    if not database_is_ready(get_database_engine()):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "DATABASE_UNAVAILABLE", "message": "Database non disponibile"},
