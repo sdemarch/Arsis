@@ -20,11 +20,16 @@ I componenti non contengono colori di brand hardcoded. La palette dei corsi è i
 
 ## Avvio locale
 
+Prerequisiti: Python 3.14, Node.js 24, Liquibase 5 e Java 17 o superiore.
+
 1. Copiare `.env.example` in `.env`.
 2. Inizializzare o aggiornare il database: `.\scripts\init-db.ps1`. Il comando applica
    Liquibase e rigenera anche modelli SQLAlchemy e DTO Pydantic.
-3. Backend: creare un virtualenv, quindi da `backend/` eseguire `pip install -e ".[dev]"` e `uvicorn arsis.main:app --reload`.
-4. Frontend: da `frontend/` eseguire `npm install` e `npm start`.
+3. Per caricare i dati dimostrativi usati dalle schermate Angular, eseguire
+   `.\scripts\seed-dev.ps1`. Il comando è idempotente ed è consentito
+   soltanto negli ambienti locali, di sviluppo e test.
+4. Backend: creare un virtualenv, quindi da `backend/` eseguire `pip install -e ".[dev]"` e `uvicorn arsis.main:app --reload`.
+5. Frontend: da `frontend/` eseguire `npm install` e `npm start`.
 
 Endpoint di controllo: `http://localhost:8000/health/live` e `http://localhost:8000/health/ready`.
 
