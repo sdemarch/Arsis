@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from contextlib import contextmanager
 from functools import lru_cache
 from typing import Any
 
@@ -50,9 +51,26 @@ def get_session_factory() -> sessionmaker[Session]:
 
 
 def get_database_session() -> Iterator[Session]:
-    """FastAPI dependency that closes the session after each request."""
+    """Yield a request session without committing service transactions implicitly."""
 
     with get_session_factory()() as session:
+        try:
+            yield session
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if session.in_transaction():
+                session.rollback()
+
+
+@contextmanager
+def transaction(session: Session) -> Iterator[Session]:
+    """Delimit a service transaction; nested implicit transactions are rejected."""
+
+    if session.in_transaction():
+        raise RuntimeError("La sessione ha già una transazione attiva")
+    with session.begin():
         yield session
 
 

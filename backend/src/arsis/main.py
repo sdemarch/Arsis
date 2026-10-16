@@ -3,10 +3,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 
+from arsis.core.api_models import ApiInfo
 from arsis.core.config import get_settings
 from arsis.core.database import dispose_database_engine, get_database_engine
+from arsis.core.exception_handlers import install_exception_handlers
 from arsis.core.logging import configure_logging
+from arsis.core.request_context import RequestIdMiddleware
 from arsis.health.router import router as health_router
 
 settings = get_settings()
@@ -22,23 +26,41 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         dispose_database_engine()
 
 
-app = FastAPI(title="Arsis API", version="0.1.0", docs_url="/docs", lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 api_v1 = APIRouter(prefix="/api/v1")
 
 
-@api_v1.get("")
-def api_index() -> dict[str, str]:
-    return {"name": "Arsis API", "version": "v1"}
+@api_v1.get("", response_model=ApiInfo, tags=["core"])
+def api_index() -> ApiInfo:
+    return ApiInfo(name="Arsis API", api_version="v1")
 
 
-app.include_router(health_router)
-app.include_router(api_v1)
+def operation_id(route: APIRoute) -> str:
+    tag = route.tags[0] if route.tags else "core"
+    return f"{tag}_{route.name}"
+
+
+def create_app() -> FastAPI:
+    application = FastAPI(
+        title="Arsis API",
+        version="0.1.0",
+        docs_url="/docs",
+        lifespan=lifespan,
+        generate_unique_id_function=operation_id,
+    )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["X-Request-ID"],
+    )
+    application.add_middleware(RequestIdMiddleware)
+    install_exception_handlers(application)
+    application.include_router(health_router)
+    application.include_router(api_v1)
+    return application
+
+
+app = create_app()
 
