@@ -4,18 +4,18 @@
 --comment Users, unified people registry, roles and musical catalogues.
 
 CREATE TABLE users (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     email TEXT NOT NULL COLLATE NOCASE,
     password_hash TEXT NOT NULL,
     display_name TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     last_login_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
@@ -23,8 +23,8 @@ CREATE UNIQUE INDEX ux_users_email ON users (lower(email));
 CREATE INDEX ix_users_active ON users (is_active, archived_at);
 
 CREATE TABLE refresh_sessions (
-    id TEXT PRIMARY KEY NOT NULL,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash TEXT NOT NULL UNIQUE,
     expires_at TEXT NOT NULL,
     revoked_at TEXT,
@@ -37,7 +37,7 @@ CREATE INDEX ix_refresh_sessions_user ON refresh_sessions (user_id, expires_at);
 CREATE INDEX ix_refresh_sessions_expiry ON refresh_sessions (expires_at, revoked_at);
 
 CREATE TABLE people (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     first_name TEXT NOT NULL CHECK (length(trim(first_name)) > 0),
     last_name TEXT NOT NULL CHECK (length(trim(last_name)) > 0),
     birth_date TEXT,
@@ -49,11 +49,11 @@ CREATE TABLE people (
     photo_key TEXT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
@@ -63,19 +63,19 @@ CREATE INDEX ix_people_email ON people (lower(email)) WHERE email IS NOT NULL;
 CREATE INDEX ix_people_archived ON people (archived_at);
 
 CREATE TABLE person_roles (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     role_type TEXT NOT NULL CHECK (role_type IN ('member', 'musician', 'student', 'teacher')),
     start_date TEXT NOT NULL,
     end_date TEXT,
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (end_date IS NULL OR end_date >= start_date)
 );
@@ -87,9 +87,9 @@ CREATE INDEX ix_person_roles_person ON person_roles (person_id, role_type, statu
 CREATE INDEX ix_person_roles_type ON person_roles (role_type, status, archived_at);
 
 CREATE TABLE associated_contacts (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
-    contact_person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    contact_person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     relationship_type TEXT NOT NULL CHECK (
         relationship_type IN ('parent', 'guardian', 'family', 'reference', 'other')
     ),
@@ -97,11 +97,11 @@ CREATE TABLE associated_contacts (
     is_payment_contact INTEGER NOT NULL DEFAULT 0 CHECK (is_payment_contact IN (0, 1)),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (person_id <> contact_person_id)
 );
@@ -113,19 +113,19 @@ CREATE INDEX ix_associated_contacts_person ON associated_contacts (person_id, ar
 CREATE INDEX ix_associated_contacts_contact ON associated_contacts (contact_person_id, archived_at);
 
 CREATE TABLE members (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_role_id TEXT NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_role_id INTEGER NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
     membership_number TEXT,
     membership_start_date TEXT NOT NULL,
     membership_end_date TEXT,
     annual_fee NUMERIC CHECK (annual_fee IS NULL OR annual_fee >= 0),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (membership_end_date IS NULL OR membership_end_date >= membership_start_date)
 );
@@ -135,58 +135,58 @@ CREATE UNIQUE INDEX ux_membership_number_active
     WHERE membership_number IS NOT NULL AND archived_at IS NULL;
 
 CREATE TABLE musicians (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_role_id TEXT NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_role_id INTEGER NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
     joined_on TEXT NOT NULL,
     left_on TEXT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (left_on IS NULL OR left_on >= joined_on)
 );
 
 CREATE TABLE students (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_role_id TEXT NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_role_id INTEGER NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
 CREATE TABLE teachers (
-    id TEXT PRIMARY KEY NOT NULL,
-    person_role_id TEXT NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    person_role_id INTEGER NOT NULL UNIQUE REFERENCES person_roles(id) ON DELETE RESTRICT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
 CREATE TABLE instruments (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     name TEXT NOT NULL CHECK (length(trim(name)) > 0),
     is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     display_order INTEGER NOT NULL DEFAULT 0 CHECK (display_order >= 0),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
@@ -194,16 +194,16 @@ CREATE UNIQUE INDEX ux_instruments_name_active
     ON instruments (lower(name)) WHERE is_active = 1 AND archived_at IS NULL;
 
 CREATE TABLE sections (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     name TEXT NOT NULL CHECK (length(trim(name)) > 0),
     is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     display_order INTEGER NOT NULL DEFAULT 0 CHECK (display_order >= 0),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1)
 );
 
@@ -211,12 +211,12 @@ CREATE UNIQUE INDEX ux_sections_name_active
     ON sections (lower(name)) WHERE is_active = 1 AND archived_at IS NULL;
 
 CREATE TABLE musician_instruments (
-    id TEXT PRIMARY KEY NOT NULL,
-    musician_id TEXT NOT NULL REFERENCES musicians(id) ON DELETE RESTRICT,
-    instrument_id TEXT NOT NULL REFERENCES instruments(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    musician_id INTEGER NOT NULL REFERENCES musicians(id) ON DELETE RESTRICT,
+    instrument_id INTEGER NOT NULL REFERENCES instruments(id) ON DELETE RESTRICT,
     is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0, 1)),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     UNIQUE (musician_id, instrument_id)
 );
 
@@ -225,11 +225,11 @@ CREATE UNIQUE INDEX ux_musician_primary_instrument
 CREATE INDEX ix_musician_instruments_instrument ON musician_instruments (instrument_id);
 
 CREATE TABLE musician_sections (
-    id TEXT PRIMARY KEY NOT NULL,
-    musician_id TEXT NOT NULL REFERENCES musicians(id) ON DELETE RESTRICT,
-    section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    musician_id INTEGER NOT NULL REFERENCES musicians(id) ON DELETE RESTRICT,
+    section_id INTEGER NOT NULL REFERENCES sections(id) ON DELETE RESTRICT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     UNIQUE (musician_id, section_id)
 );
 

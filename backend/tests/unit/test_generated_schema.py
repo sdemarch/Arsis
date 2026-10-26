@@ -1,7 +1,7 @@
 from arsis.generated.models import (
     SCHEMA_FINGERPRINT as MODEL_FINGERPRINT,
 )
-from arsis.generated.models import Base, Person, PersonRole
+from arsis.generated.models import Base, Person, PersonRole, User
 from arsis.generated.schemas import (
     SCHEMA_FINGERPRINT as DTO_FINGERPRINT,
 )
@@ -44,6 +44,8 @@ def test_generated_models_preserve_column_and_foreign_key_metadata() -> None:
     assert Person.__table__.c.email.nullable is True
     person_foreign_key = next(iter(PersonRole.__table__.c.person_id.foreign_keys))
     assert person_foreign_key.target_fullname == "people.id"
+    assert User.__table__.c.id.type.python_type is int
+    assert Person.__table__.c.created_by.type.python_type is int
 
 
 def test_generated_create_and_update_dtos_have_expected_semantics() -> None:

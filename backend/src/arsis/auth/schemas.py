@@ -38,7 +38,7 @@ class LoginRequest(ApiModel):
 
 
 class AuthUser(ApiModel):
-    id: str
+    id: int
     email: str
     display_name: str
     role: Literal["responsible"] = "responsible"

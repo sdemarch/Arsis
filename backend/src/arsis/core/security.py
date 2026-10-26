@@ -43,7 +43,7 @@ def verify_password(password: str, password_hash: str | None) -> tuple[bool, str
 
 
 def create_access_token(
-    user_id: str,
+    user_id: int,
     *,
     secret_key: str,
     ttl_seconds: int,
@@ -51,7 +51,7 @@ def create_access_token(
 ) -> str:
     issued_at = now or utc_now()
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),
         "type": "access",
         "iss": JWT_ISSUER,
         "aud": JWT_AUDIENCE,
@@ -62,7 +62,7 @@ def create_access_token(
     return jwt.encode(payload, secret_key, algorithm=JWT_ALGORITHM)
 
 
-def decode_access_token(token: str, *, secret_key: str) -> str:
+def decode_access_token(token: str, *, secret_key: str) -> int:
     try:
         payload = jwt.decode(
             token,
@@ -76,9 +76,15 @@ def decode_access_token(token: str, *, secret_key: str) -> str:
         raise InvalidAccessTokenError("Access token non valido") from exception
 
     subject = payload.get("sub")
-    if payload.get("type") != "access" or not isinstance(subject, str) or not subject:
+    if payload.get("type") != "access" or not isinstance(subject, str):
         raise InvalidAccessTokenError("Access token non valido")
-    return subject
+    try:
+        user_id = int(subject)
+    except ValueError as exception:
+        raise InvalidAccessTokenError("Access token non valido") from exception
+    if user_id < 1:
+        raise InvalidAccessTokenError("Access token non valido")
+    return user_id
 
 
 def create_refresh_token() -> str:

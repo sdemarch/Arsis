@@ -3,7 +3,6 @@
 import json
 from collections.abc import Mapping
 from typing import Any
-from uuid import uuid4
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
@@ -18,8 +17,8 @@ def record_audit_event(
     *,
     action: str,
     entity_type: str,
-    entity_id: str | None = None,
-    user_id: str | None = None,
+    entity_id: int | None = None,
+    user_id: int | None = None,
     details: Mapping[str, Any] | None = None,
     ip_address: str | None = None,
     request_id: str | None = None,
@@ -28,7 +27,6 @@ def record_audit_event(
         raise ValueError("action ed entity_type sono obbligatori")
 
     event = AuditEvent(
-        id=str(uuid4()),
         occurred_at=utc_now_iso(),
         user_id=user_id,
         action=action.strip(),

@@ -4,13 +4,13 @@
 --comment Complete settings metadata and normalize audit events against application users.
 
 ALTER TABLE app_settings
-    ADD COLUMN created_by TEXT REFERENCES users(id) ON DELETE RESTRICT;
+    ADD COLUMN created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT;
 ALTER TABLE app_settings
-    ADD COLUMN updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT;
+    ADD COLUMN updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT;
 ALTER TABLE app_settings
     ADD COLUMN archived_at TEXT;
 ALTER TABLE app_settings
-    ADD COLUMN archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT;
+    ADD COLUMN archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT;
 
 INSERT INTO app_settings (key, value, description)
 VALUES
@@ -21,12 +21,12 @@ DROP INDEX ix_audit_events_entity;
 ALTER TABLE audit_events RENAME TO audit_events_legacy;
 
 CREATE TABLE audit_events (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user_id TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     action TEXT NOT NULL,
     entity_type TEXT NOT NULL,
-    entity_id TEXT,
+    entity_id INTEGER,
     request_id TEXT,
     details TEXT NOT NULL DEFAULT '{}',
     ip_address TEXT
@@ -66,7 +66,7 @@ CREATE INDEX ix_audit_events_request
 --rollback DROP INDEX ix_audit_events_user;
 --rollback DROP INDEX ix_audit_events_entity;
 --rollback ALTER TABLE audit_events RENAME TO audit_events_v2;
---rollback CREATE TABLE audit_events (id TEXT PRIMARY KEY NOT NULL, occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, actor_id TEXT, action TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT, request_id TEXT, details TEXT NOT NULL DEFAULT '{}');
+--rollback CREATE TABLE audit_events (id INTEGER PRIMARY KEY, occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, actor_id TEXT, action TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT, request_id TEXT, details TEXT NOT NULL DEFAULT '{}');
 --rollback INSERT INTO audit_events (id, occurred_at, actor_id, action, entity_type, entity_id, request_id, details) SELECT id, occurred_at, user_id, action, entity_type, entity_id, request_id, details FROM audit_events_v2;
 --rollback DROP TABLE audit_events_v2;
 --rollback CREATE INDEX ix_audit_events_entity ON audit_events (entity_type, entity_id, occurred_at DESC);

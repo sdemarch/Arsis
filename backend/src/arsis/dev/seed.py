@@ -6,9 +6,9 @@ import sqlite3
 from collections.abc import Mapping, Sequence
 from contextlib import closing
 from dataclasses import dataclass
+from hashlib import blake2s
 from pathlib import Path
 from typing import Any
-from uuid import NAMESPACE_URL, uuid5
 
 from arsis.core.config import get_settings
 from arsis.core.security import hash_password
@@ -48,8 +48,11 @@ class SeedResult:
     lessons: int
 
 
-def _id(entity: str, key: str) -> str:
-    return str(uuid5(NAMESPACE_URL, f"https://arsis.local/dev/{entity}/{key}"))
+def _id(entity: str, key: str) -> int:
+    """Stable positive integer IDs make repeated local seeding idempotent."""
+
+    digest = blake2s(f"arsis.local/dev/{entity}/{key}".encode(), digest_size=4).digest()
+    return int.from_bytes(digest, "big") or 1
 
 
 def _upsert(
@@ -86,7 +89,7 @@ def _require_schema(connection: sqlite3.Connection) -> None:
         )
 
 
-def _seed_user(connection: sqlite3.Connection) -> str:
+def _seed_user(connection: sqlite3.Connection) -> int:
     user_id = _id("user", "responsabile")
     _upsert(
         connection,
@@ -154,8 +157,8 @@ PEOPLE: tuple[dict[str, Any], ...] = (
 )
 
 
-def _seed_people(connection: sqlite3.Connection, user_id: str) -> dict[str, str]:
-    person_ids: dict[str, str] = {}
+def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]:
+    person_ids: dict[str, int] = {}
     for person in PEOPLE:
         key = str(person["key"])
         person_id = _id("person", key)
@@ -223,8 +226,8 @@ def _seed_people(connection: sqlite3.Connection, user_id: str) -> dict[str, str]
     return person_ids
 
 
-def _seed_catalogues(connection: sqlite3.Connection, user_id: str) -> dict[str, str]:
-    instrument_ids: dict[str, str] = {}
+def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> dict[str, int]:
+    instrument_ids: dict[str, int] = {}
     for order, name in enumerate(("Clarinetto", "Saxofono"), start=1):
         instrument_id = _id("instrument", name.lower())
         instrument_ids[name.lower()] = instrument_id
@@ -310,11 +313,11 @@ COURSES: tuple[dict[str, Any], ...] = (
 
 def _seed_school(
     connection: sqlite3.Connection,
-    user_id: str,
-    person_ids: Mapping[str, str],
-    instrument_ids: Mapping[str, str],
-) -> tuple[dict[str, str], int]:
-    course_ids: dict[str, str] = {}
+    user_id: int,
+    person_ids: Mapping[str, int],
+    instrument_ids: Mapping[str, int],
+) -> tuple[dict[str, int], int]:
+    course_ids: dict[str, int] = {}
     for course in COURSES:
         key = str(course["key"])
         course_id = _id("course", key)
@@ -442,8 +445,8 @@ ACTIVITIES: tuple[tuple[str, str, str, str, str, str], ...] = (
 
 def _seed_activities(
     connection: sqlite3.Connection,
-    user_id: str,
-    person_ids: Mapping[str, str],
+    user_id: int,
+    person_ids: Mapping[str, int],
 ) -> None:
     musicians = ("elena-bianchi", "andrea-neri", "chiara-pellegrini")
     for index, (key, activity_type, title, starts_at, ends_at, location) in enumerate(
@@ -480,7 +483,7 @@ def _seed_activities(
             )
 
 
-def _seed_settings(connection: sqlite3.Connection, user_id: str) -> None:
+def _seed_settings(connection: sqlite3.Connection, user_id: int) -> None:
     _upsert(
         connection,
         "app_settings",

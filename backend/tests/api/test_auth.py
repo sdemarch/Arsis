@@ -63,6 +63,7 @@ def test_login_me_and_protected_api(auth_app) -> None:
         body = response.json()
         assert body["token_type"] == "bearer"
         assert body["expires_in"] == 900
+        assert isinstance(body["user"]["id"], int)
         assert body["user"]["email"] == EMAIL
         assert "refresh_token" not in body
         assert "HttpOnly" in response.headers["set-cookie"]

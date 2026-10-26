@@ -16,7 +16,8 @@ liste, concorrenza e tracciamento, evitando decisioni diverse in ciascun modulo.
 - Gli endpoint applicativi restano sotto `/api/v1`.
 - Nomi di proprietà e parametri usano `snake_case`, coerentemente con Python e
   con lo schema SQLite.
-- Gli identificativi pubblici sono UUID rappresentati come stringhe.
+- Gli identificativi pubblici sono interi positivi assegnati da SQLite tramite
+  colonne `INTEGER PRIMARY KEY`.
 - I timestamp sono ISO 8601 con fuso orario e vengono normalizzati in UTC; la
   forma canonica termina con `Z`.
 - I DTO pubblici derivano da `ApiModel`. I DTO generati dallo schema restano un

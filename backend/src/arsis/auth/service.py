@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from uuid import uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -49,7 +48,6 @@ def _new_session(
 ) -> tuple[RefreshSession, str]:
     refresh_token = create_refresh_token()
     refresh_session = RefreshSession(
-        id=str(uuid4()),
         user_id=user.id,
         token_hash=hash_refresh_token(refresh_token),
         expires_at=to_iso8601(now + timedelta(seconds=settings.refresh_token_ttl)),
@@ -151,6 +149,7 @@ def rotate_refresh_token(
             user, now=now, settings=settings, client_info=client_info
         )
         session.add(replacement)
+        session.flush()
         record_audit_event(
             session,
             action="auth.refresh",
@@ -214,7 +213,6 @@ def bootstrap_first_responsible(
                 code="BOOTSTRAP_ALREADY_COMPLETED",
             )
         user = User(
-            id=str(uuid4()),
             email=normalized_email,
             password_hash=hash_password(password),
             display_name=normalized_name,
