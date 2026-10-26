@@ -70,7 +70,17 @@ Il database di sviluppo predefinito è `data/arsis.db`. Non collocarlo in una ca
 
 ## Avvio
 
-In due terminali separati:
+Con Bash (Git Bash, WSL o Linux) è disponibile uno script unico dalla radice:
+
+```bash
+chmod +x run-local.sh
+./run-local.sh
+```
+
+Accetta facoltativamente `BACKEND_PORT` e `FRONTEND_PORT`, ad esempio
+`BACKEND_PORT=8080 FRONTEND_PORT=4300 ./run-local.sh`.
+
+In alternativa, avviare i due processi in terminali separati:
 
 ```powershell
 cd backend
