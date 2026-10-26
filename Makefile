@@ -1,4 +1,4 @@
-.PHONY: install dev dev-fe dev-be init-db seed setup-db build lint typecheck test test-fe test-be check-schema clean help
+.PHONY: install dev dev-fe dev-be init-db seed bootstrap-admin setup-db build lint typecheck test test-fe test-be check-schema clean help
 
 PYTHON ?= py -3.14
 NPM ?= npm
@@ -40,6 +40,9 @@ init-db: ## Applica i changeset Liquibase e rigenera il codice backend
 
 seed: ## Inserisce o aggiorna i dati dimostrativi locali
 	$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File ./scripts/seed-dev.ps1
+
+bootstrap-admin: ## Crea in modo interattivo il primo responsabile
+	cd backend && $(PYTHON) -m arsis.auth.bootstrap --email "$(EMAIL)" --display-name "$(NAME)"
 
 setup-db: init-db seed ## Inizializza il database e applica il seed locale
 

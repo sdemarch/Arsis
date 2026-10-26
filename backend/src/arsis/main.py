@@ -1,10 +1,12 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
+from arsis.auth.dependencies import get_current_user
+from arsis.auth.router import router as auth_router
 from arsis.core.api_models import ApiInfo
 from arsis.core.config import get_settings
 from arsis.core.database import dispose_database_engine, get_database_engine
@@ -29,7 +31,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 api_v1 = APIRouter(prefix="/api/v1")
 
 
-@api_v1.get("", response_model=ApiInfo, tags=["core"])
+@api_v1.get(
+    "",
+    response_model=ApiInfo,
+    tags=["core"],
+    dependencies=[Depends(get_current_user)],
+)
 def api_index() -> ApiInfo:
     return ApiInfo(name="Arsis API", api_version="v1")
 
@@ -58,6 +65,7 @@ def create_app() -> FastAPI:
     application.add_middleware(RequestIdMiddleware)
     install_exception_handlers(application)
     application.include_router(health_router)
+    application.include_router(auth_router)
     application.include_router(api_v1)
     return application
 

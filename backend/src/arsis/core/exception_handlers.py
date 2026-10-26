@@ -26,10 +26,13 @@ def _response(
     code: str,
     message: str,
     details: Any | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
+    response_headers = dict(headers or {})
+    response_headers[REQUEST_ID_HEADER] = _request_id(request)
     return JSONResponse(
         status_code=status_code,
-        headers={REQUEST_ID_HEADER: _request_id(request)},
+        headers=response_headers,
         content=jsonable_encoder(
             {
                 "error": {
@@ -52,6 +55,7 @@ async def domain_error_handler(request: Request, exception: Exception) -> JSONRe
         code=exception.code,
         message=exception.message,
         details=exception.details,
+        headers=exception.headers,
     )
 
 
@@ -85,6 +89,7 @@ async def http_error_handler(request: Request, exception: Exception) -> JSONResp
         code=code,
         message=message,
         details=details,
+        headers=dict(exception.headers or {}),
     )
 
 

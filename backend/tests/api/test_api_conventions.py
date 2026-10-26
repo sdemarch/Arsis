@@ -12,9 +12,10 @@ from arsis.main import create_app
 def test_every_response_has_a_request_id() -> None:
     response = TestClient(create_app()).get("/api/v1")
 
-    assert response.status_code == 200
-    assert response.json() == {"name": "Arsis API", "api_version": "v1"}
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "AUTHENTICATION_REQUIRED"
     assert UUID(response.headers["X-Request-ID"])
+    assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
 def test_valid_client_request_id_is_preserved() -> None:

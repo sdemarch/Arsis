@@ -12,12 +12,14 @@ class DomainError(Exception):
         message: str,
         status_code: int,
         details: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.status_code = status_code
         self.details = dict(details) if details else None
+        self.headers = dict(headers) if headers else None
 
 
 class ResourceNotFoundError(DomainError):
@@ -60,5 +62,20 @@ class InvalidSortError(DomainError):
             message=f"Ordinamento non supportato: {field}",
             status_code=422,
             details={"field": field, "allowed_fields": sorted(allowed_fields)},
+        )
+
+
+class UnauthorizedError(DomainError):
+    def __init__(
+        self,
+        message: str = "Credenziali non valide",
+        *,
+        code: str = "INVALID_CREDENTIALS",
+    ) -> None:
+        super().__init__(
+            code=code,
+            message=message,
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"},
         )
 

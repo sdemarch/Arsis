@@ -40,6 +40,26 @@ Il seed può essere eseguito più volte: usa identificativi deterministici e agg
 gli stessi record senza crearne duplicati. Non viene eseguito in ambienti diversi
 da `local`, `development` e `test`.
 
+Il seed configura anche l'utente dimostrativo:
+
+- email: `responsabile@arsis.it`;
+- password: `arsis-demo-password`.
+
+Su un database reale non eseguire il seed. Dopo le migrazioni crea il primo
+responsabile con il comando locale interattivo (la password non compare negli
+argomenti né nella cronologia della shell):
+
+```powershell
+cd backend
+py -3.14 -m arsis.auth.bootstrap `
+  --email "responsabile@example.it" `
+  --display-name "Responsabile"
+```
+
+Il bootstrap funziona soltanto quando la tabella `users` è vuota. Login, refresh,
+logout e profilo corrente sono esposti sotto `/api/v1/auth`; il refresh token è
+gestito esclusivamente tramite cookie HttpOnly.
+
 Per verificare i changelog senza applicarli:
 
 ```powershell

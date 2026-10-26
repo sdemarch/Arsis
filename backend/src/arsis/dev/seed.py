@@ -11,6 +11,7 @@ from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 from arsis.core.config import get_settings
+from arsis.core.security import hash_password
 
 ALLOWED_ENVIRONMENTS = {"local", "development", "test"}
 REQUIRED_TABLES = {
@@ -93,7 +94,7 @@ def _seed_user(connection: sqlite3.Connection) -> str:
         {
             "id": user_id,
             "email": "responsabile@arsis.it",
-            "password_hash": "!authentication-not-configured!",
+            "password_hash": hash_password("arsis-demo-password"),
             "display_name": "Stefano",
             "is_active": 1,
         },

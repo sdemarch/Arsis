@@ -1,6 +1,6 @@
 # Stato di avanzamento — Arsis
 
-_Aggiornato: 16 ottobre 2026_
+_Aggiornato: 26 ottobre 2026_
 
 ## Sintesi
 
@@ -17,6 +17,9 @@ Il progetto ha una base tecnica solida e un frontend Angular funzionante. Non è
 - Seed locale idempotente allineato agli scenari mostrati dal frontend.
 - Fondamenta API condivise per errori, request ID, paginazione, ordinamento,
   transazioni, audit e concorrenza ottimistica.
+- Autenticazione backend con password Argon2id, access token JWT, refresh token
+  ruotato in cookie HttpOnly, logout, profilo corrente e bootstrap monouso del
+  primo responsabile.
 - Frontend consolidato su **Angular**: React/Vite e i relativi componenti sono stati rimossi.
 - Pagine Angular per login, home, persone, attività, scuola, archivio, contabilità e configurazioni.
 - Build di produzione Angular verificata con successo il 3 settembre 2026; sviluppo locale disponibile su `http://localhost:4200`.
@@ -24,11 +27,11 @@ Il progetto ha una base tecnica solida e un frontend Angular funzionante. Non è
 ## Da consolidare
 
 - **Integrazione:** il frontend legge ancora JSON mock; `src/arsis` espone per ora health check e API index, non i flussi di dominio.
-- **Dominio:** le convenzioni API sono definite, ma mancano ancora autenticazione
-  ed endpoint di dominio.
+- **Dominio:** le convenzioni API e l'autenticazione sono definite; mancano ancora
+  gli endpoint dei moduli applicativi.
 
 ## Prossime priorità
 
-1. Implementare autenticazione e bootstrap del primo responsabile.
-2. Realizzare la prima fetta verticale Persone.
-3. Sostituire progressivamente i mock Angular e completare la CI.
+1. Realizzare la prima fetta verticale Persone.
+2. Collegare il login Angular e poi sostituire progressivamente i mock.
+3. Completare la CI e l'hardening di deploy (HTTPS e rate limiting).
