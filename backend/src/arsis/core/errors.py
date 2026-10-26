@@ -23,7 +23,7 @@ class DomainError(Exception):
 
 
 class ResourceNotFoundError(DomainError):
-    def __init__(self, resource: str, resource_id: str) -> None:
+    def __init__(self, resource: str, resource_id: int | str) -> None:
         super().__init__(
             code="RESOURCE_NOT_FOUND",
             message=f"Risorsa non trovata: {resource}",

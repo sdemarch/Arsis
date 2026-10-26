@@ -6,6 +6,7 @@ from typing import Any, cast
 from sqlalchemy import Table, select, update
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import FromClause
 
 from arsis.core.errors import ResourceNotFoundError, StaleVersionError
 from arsis.core.time import utc_now_iso
@@ -13,10 +14,10 @@ from arsis.core.time import utc_now_iso
 
 def update_versioned(
     session: Session,
-    table: Table,
+    table: FromClause,
     *,
     resource_name: str,
-    resource_id: str,
+    resource_id: int,
     expected_version: int,
     values: Mapping[str, Any],
 ) -> int:
@@ -37,7 +38,7 @@ def update_versioned(
     result = cast(
         CursorResult[Any],
         session.execute(
-            update(table)
+            update(cast(Table, table))
             .where(table.c.id == resource_id, table.c.version == expected_version)
             .values(**update_values)
         ),
