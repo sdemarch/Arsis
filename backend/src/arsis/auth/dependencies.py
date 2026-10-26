@@ -34,6 +34,8 @@ def get_current_user(
         raise UnauthorizedError(
             "Access token non valido o scaduto", code="INVALID_ACCESS_TOKEN"
         )
+    session.expunge(user)
+    session.rollback()
     return user
 
 

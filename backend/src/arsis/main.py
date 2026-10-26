@@ -14,6 +14,7 @@ from arsis.core.exception_handlers import install_exception_handlers
 from arsis.core.logging import configure_logging
 from arsis.core.request_context import RequestIdMiddleware
 from arsis.health.router import router as health_router
+from arsis.people.router import router as people_router
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
     install_exception_handlers(application)
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(people_router)
     application.include_router(api_v1)
     return application
 

@@ -187,12 +187,32 @@ class PeopleService:
             role = self._repository.get_role(session, role_id)
             if role is None:
                 raise ResourceNotFoundError("Ruolo persona", role_id)
+            if "status" in values and values["status"] is None:
+                raise ValueError("Lo stato ruolo non può essere nullo")
+            if "role_type" in values and values["role_type"] is None:
+                raise ValueError("Il tipo ruolo non può essere nullo")
+            person_id = int(values.get("person_id", role.person_id))
+            if person_id != role.person_id:
+                self.get_person(session, person_id)
             self._validate_role_values(
                 str(values.get("role_type", role.role_type)),
                 str(values.get("status", role.status)),
                 str(values.get("start_date", role.start_date)),
                 values.get("end_date", role.end_date),
             )
+            if (
+                str(values.get("status", role.status)) == "active"
+                and values.get("end_date", role.end_date) is None
+                and self._repository.has_active_role(
+                    session,
+                    person_id=person_id,
+                    role_type=str(values.get("role_type", role.role_type)),
+                    exclude_role_id=role_id,
+                )
+            ):
+                raise ConflictError(
+                    "La persona ha già questo ruolo attivo", code="ACTIVE_ROLE_EXISTS"
+                )
             if values:
                 values["updated_by"] = actor_id
                 update_versioned(

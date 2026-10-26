@@ -69,7 +69,12 @@ class PeopleRepository:
         return session.scalars(statement.order_by(PersonRole.start_date, PersonRole.id)).all()
 
     def has_active_role(
-        self, session: Session, *, person_id: int, role_type: str
+        self,
+        session: Session,
+        *,
+        person_id: int,
+        role_type: str,
+        exclude_role_id: int | None = None,
     ) -> bool:
         statement = select(PersonRole.id).where(
             PersonRole.person_id == person_id,
@@ -78,6 +83,8 @@ class PeopleRepository:
             PersonRole.end_date.is_(None),
             PersonRole.archived_at.is_(None),
         )
+        if exclude_role_id is not None:
+            statement = statement.where(PersonRole.id != exclude_role_id)
         return session.scalar(statement) is not None
 
     def add_role(self, session: Session, role: PersonRole) -> PersonRole:
