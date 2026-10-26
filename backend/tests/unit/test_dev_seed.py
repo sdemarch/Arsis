@@ -38,6 +38,15 @@ def test_development_seed_is_idempotent(tmp_path: Path) -> None:
         assert connection.execute(
             "SELECT count(*) FROM associated_contacts"
         ).fetchone() == (1,)
+        assert connection.execute("SELECT id FROM users").fetchone() == (1,)
+        assert connection.execute("SELECT id FROM people ORDER BY id").fetchall() == [
+            (1,),
+            (2,),
+            (3,),
+            (4,),
+            (5,),
+            (6,),
+        ]
 
 
 def test_development_seed_rejects_production(

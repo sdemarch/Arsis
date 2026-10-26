@@ -6,7 +6,6 @@ import sqlite3
 from collections.abc import Mapping, Sequence
 from contextlib import closing
 from dataclasses import dataclass
-from hashlib import blake2s
 from pathlib import Path
 from typing import Any
 
@@ -48,11 +47,25 @@ class SeedResult:
     lessons: int
 
 
-def _id(entity: str, key: str) -> int:
-    """Stable positive integer IDs make repeated local seeding idempotent."""
-
-    digest = blake2s(f"arsis.local/dev/{entity}/{key}".encode(), digest_size=4).digest()
-    return int.from_bytes(digest, "big") or 1
+SEED_IDENTITIES: dict[str, tuple[str, ...]] = {
+    "users": ("email",),
+    "people": ("email",),
+    "person_roles": ("person_id", "role_type"),
+    "members": ("person_role_id",),
+    "musicians": ("person_role_id",),
+    "students": ("person_role_id",),
+    "teachers": ("person_role_id",),
+    "associated_contacts": ("person_id", "contact_person_id", "relationship_type"),
+    "instruments": ("name",),
+    "sections": ("name",),
+    "courses": ("name",),
+    "enrollments": ("course_id", "student_person_id"),
+    "lessons": ("course_id", "starts_at"),
+    "lesson_attendances": ("lesson_id", "student_person_id"),
+    "activities": ("title", "starts_at"),
+    "activity_participants": ("activity_id", "person_id"),
+    "app_settings": ("key",),
+}
 
 
 def _upsert(
@@ -60,18 +73,33 @@ def _upsert(
     table: str,
     values: Mapping[str, Any],
     *,
-    conflict_column: str = "id",
-) -> None:
+    conflict_column: str | None = None,
+) -> int:
+    identity_columns = (
+        (conflict_column,) if conflict_column is not None else SEED_IDENTITIES[table]
+    )
+    where_clause = " AND ".join(f"{column} = ?" for column in identity_columns)
+    identity_values = tuple(values[column] for column in identity_columns)
+    existing = connection.execute(
+        f"SELECT rowid FROM {table} WHERE {where_clause}", identity_values
+    ).fetchone()
+    if existing:
+        updates = ", ".join(f"{column} = ?" for column in values)
+        connection.execute(
+            f"UPDATE {table} SET {updates} WHERE rowid = ?",
+            (*values.values(), existing[0]),
+        )
+        return int(existing[0])
+
     columns = tuple(values)
     placeholders = ", ".join("?" for _ in columns)
-    updates = ", ".join(
-        f"{column} = excluded.{column}" for column in columns if column != conflict_column
-    )
-    connection.execute(
-        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders}) "
-        f"ON CONFLICT({conflict_column}) DO UPDATE SET {updates}",
+    cursor = connection.execute(
+        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})",
         tuple(values[column] for column in columns),
     )
+    if cursor.lastrowid is None:
+        raise DevelopmentSeedError(f"Inserimento senza rowid per la tabella {table}")
+    return cursor.lastrowid
 
 
 def _require_schema(connection: sqlite3.Connection) -> None:
@@ -90,19 +118,16 @@ def _require_schema(connection: sqlite3.Connection) -> None:
 
 
 def _seed_user(connection: sqlite3.Connection) -> int:
-    user_id = _id("user", "responsabile")
-    _upsert(
+    return _upsert(
         connection,
         "users",
         {
-            "id": user_id,
             "email": "responsabile@arsis.it",
             "password_hash": hash_password("arsis-demo-password"),
             "display_name": "Stefano",
             "is_active": 1,
         },
     )
-    return user_id
 
 
 PEOPLE: tuple[dict[str, Any], ...] = (
@@ -161,13 +186,10 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
     person_ids: dict[str, int] = {}
     for person in PEOPLE:
         key = str(person["key"])
-        person_id = _id("person", key)
-        person_ids[key] = person_id
-        _upsert(
+        person_id = _upsert(
             connection,
             "people",
             {
-                "id": person_id,
                 "first_name": person["first_name"],
                 "last_name": person["last_name"],
                 "email": person["email"],
@@ -176,13 +198,12 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
                 "updated_by": user_id,
             },
         )
+        person_ids[key] = person_id
         for role_type in person["roles"]:
-            role_id = _id("person-role", f"{key}:{role_type}")
-            _upsert(
+            role_id = _upsert(
                 connection,
                 "person_roles",
                 {
-                    "id": role_id,
                     "person_id": person_id,
                     "role_type": role_type,
                     "start_date": "2020-01-01",
@@ -198,7 +219,6 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
                 "teacher": "teachers",
             }[role_type]
             subtype_values: dict[str, Any] = {
-                "id": _id(subtype_table, key),
                 "person_role_id": role_id,
                 "created_by": user_id,
                 "updated_by": user_id,
@@ -213,7 +233,6 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
         connection,
         "associated_contacts",
         {
-            "id": _id("associated-contact", "marco-rossi:giulia-moretti"),
             "person_id": person_ids["marco-rossi"],
             "contact_person_id": person_ids["giulia-moretti"],
             "relationship_type": "reference",
@@ -229,13 +248,10 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
 def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> dict[str, int]:
     instrument_ids: dict[str, int] = {}
     for order, name in enumerate(("Clarinetto", "Saxofono"), start=1):
-        instrument_id = _id("instrument", name.lower())
-        instrument_ids[name.lower()] = instrument_id
-        _upsert(
+        instrument_id = _upsert(
             connection,
             "instruments",
             {
-                "id": instrument_id,
                 "name": name,
                 "is_active": 1,
                 "display_order": order,
@@ -243,12 +259,12 @@ def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> dict[str, 
                 "updated_by": user_id,
             },
         )
+        instrument_ids[name.lower()] = instrument_id
     for order, name in enumerate(("Legni", "Ottoni", "Percussioni"), start=1):
         _upsert(
             connection,
             "sections",
             {
-                "id": _id("section", name.lower()),
                 "name": name,
                 "is_active": 1,
                 "display_order": order,
@@ -320,14 +336,11 @@ def _seed_school(
     course_ids: dict[str, int] = {}
     for course in COURSES:
         key = str(course["key"])
-        course_id = _id("course", key)
-        course_ids[key] = course_id
         instrument = course["instrument"]
-        _upsert(
+        course_id = _upsert(
             connection,
             "courses",
             {
-                "id": course_id,
                 "name": course["name"],
                 "mode": course["mode"],
                 "category": course["category"],
@@ -343,6 +356,7 @@ def _seed_school(
                 "updated_by": user_id,
             },
         )
+        course_ids[key] = course_id
 
     enrollment_pairs = (
         ("clarinetto", "marco-rossi"),
@@ -354,7 +368,6 @@ def _seed_school(
             connection,
             "enrollments",
             {
-                "id": _id("enrollment", f"{course_key}:{student_key}"),
                 "course_id": course_ids[course_key],
                 "student_person_id": person_ids[student_key],
                 "enrolled_on": "2026-01-10",
@@ -375,13 +388,11 @@ def _seed_school(
         ),
         ("saxofono-1", "saxofono", "luca-ferri", "2026-08-20T18:00:00+02:00"),
     )
-    for lesson_key, course_key, teacher_key, starts_at in lessons:
-        lesson_id = _id("lesson", lesson_key)
-        _upsert(
+    for _lesson_key, course_key, teacher_key, starts_at in lessons:
+        lesson_id = _upsert(
             connection,
             "lessons",
             {
-                "id": lesson_id,
                 "course_id": course_ids[course_key],
                 "teacher_person_id": person_ids[teacher_key],
                 "starts_at": starts_at,
@@ -397,7 +408,6 @@ def _seed_school(
                 connection,
                 "lesson_attendances",
                 {
-                    "id": _id("lesson-attendance", f"{lesson_key}:{student_key}"),
                     "lesson_id": lesson_id,
                     "student_person_id": person_ids[student_key],
                     "created_by": user_id,
@@ -449,15 +459,13 @@ def _seed_activities(
     person_ids: Mapping[str, int],
 ) -> None:
     musicians = ("elena-bianchi", "andrea-neri", "chiara-pellegrini")
-    for index, (key, activity_type, title, starts_at, ends_at, location) in enumerate(
+    for index, (_key, activity_type, title, starts_at, ends_at, location) in enumerate(
         ACTIVITIES
     ):
-        activity_id = _id("activity", key)
-        _upsert(
+        activity_id = _upsert(
             connection,
             "activities",
             {
-                "id": activity_id,
                 "type": activity_type,
                 "title": title,
                 "starts_at": starts_at,
@@ -473,7 +481,6 @@ def _seed_activities(
                 connection,
                 "activity_participants",
                 {
-                    "id": _id("activity-participant", f"{key}:{musician_key}"),
                     "activity_id": activity_id,
                     "person_id": person_ids[musician_key],
                     "source": "automatic",
