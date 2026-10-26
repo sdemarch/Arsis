@@ -1,9 +1,13 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+
+import { ApiError } from '../../core/api/api.types';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'arsis-login-page',
-  imports: [RouterLink],
+  imports: [FormsModule],
   template: `
     <main class="login-layout">
       <section class="login-brand" aria-label="Arsis">
@@ -20,7 +24,7 @@ import { RouterLink } from '@angular/router';
       </section>
 
       <section class="login-panel">
-        <form class="login-card">
+        <form class="login-card" (ngSubmit)="submit()">
           <div>
             <p class="eyebrow">Bentornato</p>
             <h2>Accedi ad Arsis</h2>
@@ -28,13 +32,14 @@ import { RouterLink } from '@angular/router';
           </div>
           <label>
             <span>Email</span>
-            <input type="email" value="responsabile@arsis.it" autocomplete="email" />
+            <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
           </label>
           <label>
             <span>Password</span>
-            <input type="password" value="password" autocomplete="current-password" />
+            <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
           </label>
-          <a class="button button--primary button--large" routerLink="/home">Accedi</a>
+          @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+          <button class="button button--primary button--large" type="submit" [disabled]="submitting()">{{ submitting() ? 'Accesso in corso…' : 'Accedi' }}</button>
           <p class="help">Problemi di accesso? Contatta l’amministratore.</p>
         </form>
       </section>
@@ -59,8 +64,35 @@ import { RouterLink } from '@angular/router';
     label { display: grid; font-size: var(--text-sm); font-weight: var(--weight-medium); gap: var(--sp-2); }
     input { background: var(--bg-surface); border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); min-height: 46px; padding: 0 var(--sp-4); }
     .button { text-align: center; }
+    .button:disabled { cursor: wait; opacity: .65; }
+    .error { color: var(--color-danger); margin: 0; }
     .help { font-size: var(--text-sm); text-align: center; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LoginPageComponent {}
+export class LoginPageComponent {
+  private readonly auth = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  protected email = 'responsabile@arsis.it';
+  protected password = 'arsis-demo-password';
+  protected readonly submitting = signal(false);
+  protected readonly error = signal<string | null>(null);
+
+  protected submit(): void {
+    if (this.submitting()) return;
+    this.submitting.set(true);
+    this.error.set(null);
+    this.auth.login(this.email, this.password).subscribe({
+      next: () => {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/home');
+      },
+      error: (response: { error?: ApiError }) => {
+        this.error.set(response.error?.error.message ?? 'Accesso non riuscito. Riprova.');
+        this.submitting.set(false);
+      },
+    });
+  }
+}

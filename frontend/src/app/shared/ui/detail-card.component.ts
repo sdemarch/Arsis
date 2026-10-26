@@ -17,9 +17,11 @@ import { RouterLink } from '@angular/router';
             <p class="detail-card__subtitle">{{ subtitle() }}</p>
           </div>
         </div>
-        <button class="button" [class.button--primary]="editing()" [class.button--secondary]="!editing()" type="button" (click)="editRequested.emit()">
-          @if (editing()) { ✓ Salva modifiche } @else { ✎ Modifica }
-        </button>
+        @if (editable()) {
+          <button class="button" [class.button--primary]="editing()" [class.button--secondary]="!editing()" type="button" (click)="editRequested.emit()">
+            @if (editing()) { ✓ Salva modifiche } @else { ✎ Modifica }
+          </button>
+        }
       </header>
 
       <div class="detail-card__body">
@@ -53,5 +55,6 @@ export class DetailCardComponent {
   readonly title = input.required<string>();
   readonly subtitle = input('');
   readonly editing = input(false);
+  readonly editable = input(true);
   readonly editRequested = output<void>();
 }

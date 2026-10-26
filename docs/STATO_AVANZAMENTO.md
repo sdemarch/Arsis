@@ -26,12 +26,13 @@ Il progetto ha una base tecnica solida e un frontend Angular funzionante. Non è
 
 ## Da consolidare
 
-- **Integrazione:** il frontend legge ancora JSON mock; `src/arsis` espone per ora health check e API index, non i flussi di dominio.
+- **Integrazione:** login, rinnovo della sessione e flusso Persone (lista, scheda
+  e creazione) leggono le API locali; gli altri moduli usano ancora JSON mock.
 - **Dominio:** le convenzioni API e l'autenticazione sono definite; mancano ancora
   gli endpoint dei moduli applicativi.
 
 ## Prossime priorità
 
-1. Realizzare la prima fetta verticale Persone.
-2. Collegare il login Angular e poi sostituire progressivamente i mock.
+1. Collegare modifica e gestione ruoli di Persone alle API già disponibili.
+2. Sostituire progressivamente i mock degli altri moduli.
 3. Completare la CI e l'hardening di deploy (HTTPS e rate limiting).
