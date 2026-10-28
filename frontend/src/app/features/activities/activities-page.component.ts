@@ -13,7 +13,7 @@ import { ActivitiesService } from './activities.service';
   imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Attività" title="Calendario e attività" description="Organizza prove, concerti, eventi e presenze.">
-      <button class="button button--primary" type="button" disabled title="La creazione sarà disponibile nella prossima fetta">＋ Nuova attività</button>
+      <a class="button button--primary" routerLink="/activities/new">＋ Nuova attività</a>
     </arsis-page-header>
 
     <div class="view-tabs"><button class="is-active">Elenco</button><button>Calendario</button></div>
