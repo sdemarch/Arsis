@@ -34,7 +34,28 @@ export interface PersonCreate {
 }
 
 export interface PersonRole {
+  readonly id: number;
+  readonly person_id: number;
   readonly role_type: string;
+  readonly start_date: string;
+  readonly end_date: string | null;
+  readonly status: string;
+  readonly notes: string | null;
+  readonly archived_at: string | null;
+  readonly version: number;
+}
+
+export interface PersonUpdate {
+  readonly version: number;
+  readonly first_name?: string;
+  readonly last_name?: string;
+  readonly birth_date?: string | null;
+  readonly birth_place?: string | null;
+  readonly tax_code?: string | null;
+  readonly residence_address?: string | null;
+  readonly email?: string | null;
+  readonly phone?: string | null;
+  readonly notes?: string | null;
 }
 
 export interface PersonListItem extends Person {
@@ -72,5 +93,28 @@ export class PeopleService {
 
   createPerson(payload: PersonCreate): Observable<PersonDetail> {
     return this.http.post<PersonDetail>(`${API_URL}/people`, payload);
+  }
+
+  updatePerson(personId: number, payload: PersonUpdate): Observable<PersonDetail> {
+    return this.http.patch<PersonDetail>(`${API_URL}/people/${personId}`, payload);
+  }
+
+  archivePerson(personId: number, version: number): Observable<PersonDetail> {
+    return this.http.delete<PersonDetail>(`${API_URL}/people/${personId}`, {
+      params: new HttpParams().set('version', version),
+    });
+  }
+
+  createRole(personId: number, roleType: string, startDate: string): Observable<PersonRole> {
+    return this.http.post<PersonRole>(`${API_URL}/people/${personId}/roles`, {
+      role_type: roleType,
+      start_date: startDate,
+    });
+  }
+
+  archiveRole(roleId: number, version: number): Observable<PersonRole> {
+    return this.http.delete<PersonRole>(`${API_URL}/people/roles/${roleId}`, {
+      params: new HttpParams().set('version', version),
+    });
   }
 }

@@ -15,10 +15,10 @@ _Aggiornato: 26 ottobre 2026_
 
 ## Aperti
 
-- [ ] **4. Persone** — prima fetta verticale completa: repository, servizi,
-  CRUD, ruoli, ricerca, archiviazione e test API.
-- [ ] **5. Integrazione Angular** — login/sessione, lista, scheda e creazione
-  Persone collegati; resta da integrare la modifica e gli altri moduli.
+- [x] **4. Persone** — prima fetta verticale completa: repository, servizi,
+  CRUD, ruoli, ricerca, archiviazione e test API, esposta anche in Angular.
+- [ ] **5. Integrazione Angular** — autenticazione e flusso Persone completi;
+  restano da collegare gli altri moduli.
 - [ ] **6. Moduli di dominio** — cataloghi, scuola, attività, contabilità,
   archivio e configurazioni, procedendo per fette verticali.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
@@ -28,5 +28,5 @@ _Aggiornato: 26 ottobre 2026_
 
 - Backend: API di autenticazione e Persone disponibili; test, Ruff e mypy puliti
   all'ultimo controllo backend.
-- Frontend: login, rinnovo sessione e flusso Persone (lista, scheda e creazione)
-  usano le API locali; gli altri moduli usano ancora dati mock.
+- Frontend: login, rinnovo sessione e flusso Persone (lista, creazione, modifica,
+  archiviazione e ruoli) usano le API locali; gli altri moduli usano ancora mock.
