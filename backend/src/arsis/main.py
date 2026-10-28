@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
+from arsis.activities.router import router as activities_router
 from arsis.auth.dependencies import get_current_user
 from arsis.auth.router import router as auth_router
 from arsis.core.api_models import ApiInfo
@@ -67,10 +68,10 @@ def create_app() -> FastAPI:
     install_exception_handlers(application)
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(activities_router)
     application.include_router(people_router)
     application.include_router(api_v1)
     return application
 
 
 app = create_app()
-

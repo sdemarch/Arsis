@@ -1,2 +1,1 @@
 """Band activities module."""
-

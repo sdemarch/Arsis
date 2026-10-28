@@ -96,9 +96,41 @@ def test_people_crud_roles_and_pagination(people_app: FastAPI) -> None:
         assert duplicate_role.status_code == 409
         assert duplicate_role.json()["error"]["code"] == "ACTIVE_ROLE_EXISTS"
 
-        archived = client.delete(
-            f"/api/v1/people/{person['id']}?version=2", headers=headers
-        )
+        archived = client.delete(f"/api/v1/people/{person['id']}?version=2", headers=headers)
         assert archived.status_code == 200
         assert archived.json()["archived_at"] is not None
         assert client.get("/api/v1/people", headers=headers).json()["items"] == []
+
+
+def test_activities_crud_and_archiving(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        created = client.post(
+            "/api/v1/activities",
+            headers=headers,
+            json={
+                "type": "rehearsal",
+                "title": "Prova generale",
+                "starts_at": "2026-10-30T20:30:00Z",
+                "location": "Sala prove",
+            },
+        )
+        assert created.status_code == 201
+        activity = created.json()
+        assert activity["status"] == "planned"
+
+        listing = client.get("/api/v1/activities?q=generale", headers=headers)
+        assert listing.status_code == 200
+        assert listing.json()["meta"]["total_items"] == 1
+
+        updated = client.patch(
+            f"/api/v1/activities/{activity['id']}",
+            headers=headers,
+            json={"version": 1, "status": "confirmed"},
+        )
+        assert updated.status_code == 200
+        assert updated.json()["version"] == 2
+
+        archived = client.delete(f"/api/v1/activities/{activity['id']}?version=2", headers=headers)
+        assert archived.status_code == 200
+        assert archived.json()["archived_at"] is not None
