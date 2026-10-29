@@ -1,3 +1,5 @@
+import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Self
@@ -8,6 +10,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
 
+def default_data_dir() -> Path:
+    """Return a writable data directory without coupling packaged data to the app binary."""
+
+    if getattr(sys, "frozen", False):
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        base = Path(local_app_data) if local_app_data else Path.home() / "AppData" / "Local"
+        return base / "Arsis"
+    return PROJECT_ROOT / "data"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -16,10 +28,8 @@ class Settings(BaseSettings):
     )
 
     app_env: str = "local"
-    app_secret_key: str = Field(
-        default="local-development-secret-key-change-me", min_length=32
-    )
-    arsis_data_dir: Path = Path("./data")
+    app_secret_key: str = Field(default="local-development-secret-key-change-me", min_length=32)
+    arsis_data_dir: Path | None = None
     allowed_origins: str = "http://localhost:4200"
     access_token_ttl: int = Field(default=900, ge=60, le=3600)
     refresh_token_ttl: int = Field(default=2_592_000, ge=300, le=31_536_000)
@@ -32,7 +42,7 @@ class Settings(BaseSettings):
 
     @property
     def data_dir(self) -> Path:
-        path = self.arsis_data_dir.expanduser()
+        path = (self.arsis_data_dir or default_data_dir()).expanduser()
         if not path.is_absolute():
             path = PROJECT_ROOT / path
         return path.resolve()
@@ -40,6 +50,14 @@ class Settings(BaseSettings):
     @property
     def database_path(self) -> Path:
         return self.data_dir / "arsis.db"
+
+    @property
+    def attachments_dir(self) -> Path:
+        return self.data_dir / "attachments"
+
+    @property
+    def backups_dir(self) -> Path:
+        return self.data_dir / "backups"
 
     @property
     def database_url(self) -> str:

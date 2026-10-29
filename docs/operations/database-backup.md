@@ -36,3 +36,7 @@ restore_database(exported)
 Il file importato viene controllato con `PRAGMA integrity_check` prima che il
 database attivo sia sostituito. Se il controllo o la copia falliscono, il file
 attivo non viene modificato.
+
+Per un salvataggio completo e trasferibile dell'applicazione, incluso il futuro
+contenuto della cartella allegati, usare invece il formato
+[`.arsis-save`](portable-saves.md).

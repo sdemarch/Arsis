@@ -25,6 +25,9 @@ _Aggiornato: 29 ottobre 2026_
   paginazione, ordinamento, archiviazione, audit e schermate Angular.
 - [ ] **6c. Moduli di dominio** — cataloghi, iscrizioni, lezioni, presenze,
   contabilità, archivio e configurazioni, procedendo per fette verticali.
+- [x] **6d. Fondamenta distribuzione locale** — percorsi dati separati dal
+  binario e salvataggi `.arsis-save` versionati, verificati e comprensivi di
+  allegati futuri.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
