@@ -15,17 +15,36 @@ from arsis.core.api_models import (
     parse_sort,
 )
 from arsis.core.database import get_database_session
-from arsis.generated.schemas import CourseCreateDTO, CourseUpdateDTO
-from arsis.school.schemas import CourseCreateRequest, CourseResponse, CourseUpdateRequest
+from arsis.generated.schemas import (
+    CourseCreateDTO,
+    CourseUpdateDTO,
+    EnrollmentCreateDTO,
+    EnrollmentUpdateDTO,
+)
+from arsis.school.enrollment_service import EnrollmentsService
+from arsis.school.schemas import (
+    CourseCreateRequest,
+    CourseResponse,
+    CourseUpdateRequest,
+    EnrollmentCreateRequest,
+    EnrollmentResponse,
+    EnrollmentUpdateRequest,
+)
 from arsis.school.service import CoursesService
 
 router = APIRouter(prefix="/api/v1/courses", tags=["school"])
+enrollments_router = APIRouter(prefix="/api/v1/enrollments", tags=["school"])
 _service = CoursesService()
+_enrollments_service = EnrollmentsService()
 _SORT_FIELDS = {"name", "annual_fee", "status", "created_at", "updated_at"}
 
 
 def _response(course: Any) -> CourseResponse:
     return CourseResponse.model_validate(course)
+
+
+def _enrollment_response(enrollment: Any) -> EnrollmentResponse:
+    return EnrollmentResponse.model_validate(enrollment)
 
 
 @router.get("", response_model=Page[CourseResponse], responses=ERROR_RESPONSES)
@@ -118,5 +137,97 @@ def archive_course(
     return _response(
         _service.archive_course(
             session, course_id=course_id, expected_version=version, actor_id=current_user.id
+        )
+    )
+
+
+@enrollments_router.get("", response_model=Page[EnrollmentResponse], responses=ERROR_RESPONSES)
+def list_enrollments(
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+    pagination: Annotated[PaginationParams, Depends()],
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    include_archived: bool = False,
+) -> Page[EnrollmentResponse]:
+    enrollments = list(
+        _enrollments_service.list_enrollments(session, search=q, include_archived=include_archived)
+    )
+    return build_page(
+        [
+            _enrollment_response(enrollment)
+            for enrollment in enrollments[
+                pagination.offset : pagination.offset + pagination.page_size
+            ]
+        ],
+        total_items=len(enrollments),
+        params=pagination,
+    )
+
+
+@enrollments_router.post(
+    "",
+    response_model=EnrollmentResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=ERROR_RESPONSES,
+)
+def create_enrollment(
+    payload: EnrollmentCreateRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> EnrollmentResponse:
+    return _enrollment_response(
+        _enrollments_service.create_enrollment(
+            session, data=EnrollmentCreateDTO(**payload.model_dump()), actor_id=current_user.id
+        )
+    )
+
+
+@enrollments_router.get(
+    "/{enrollment_id}", response_model=EnrollmentResponse, responses=ERROR_RESPONSES
+)
+def get_enrollment(
+    enrollment_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> EnrollmentResponse:
+    return _enrollment_response(_enrollments_service.get_enrollment(session, enrollment_id))
+
+
+@enrollments_router.patch(
+    "/{enrollment_id}", response_model=EnrollmentResponse, responses=ERROR_RESPONSES
+)
+def update_enrollment(
+    enrollment_id: int,
+    payload: EnrollmentUpdateRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> EnrollmentResponse:
+    values = payload.model_dump(exclude={"version"}, exclude_unset=True)
+    return _enrollment_response(
+        _enrollments_service.update_enrollment(
+            session,
+            enrollment_id=enrollment_id,
+            data=EnrollmentUpdateDTO(**values),
+            expected_version=payload.version,
+            actor_id=current_user.id,
+        )
+    )
+
+
+@enrollments_router.delete(
+    "/{enrollment_id}", response_model=EnrollmentResponse, responses=ERROR_RESPONSES
+)
+def archive_enrollment(
+    enrollment_id: int,
+    version: Annotated[int, Query(ge=1)],
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> EnrollmentResponse:
+    return _enrollment_response(
+        _enrollments_service.archive_enrollment(
+            session,
+            enrollment_id=enrollment_id,
+            expected_version=version,
+            actor_id=current_user.id,
         )
     )

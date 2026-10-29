@@ -50,3 +50,36 @@ class CourseResponse(CourseCreateRequest):
     updated_at: str
     archived_at: str | None
     version: int
+
+
+EnrollmentStatus = Literal["active", "completed", "cancelled"]
+
+
+class EnrollmentCreateRequest(ApiModel):
+    course_id: int = Field(ge=1)
+    student_person_id: int = Field(ge=1)
+    enrolled_on: str = Field(min_length=10, max_length=10)
+    starts_on: str = Field(min_length=10, max_length=10)
+    ends_on: str | None = Field(default=None, min_length=10, max_length=10)
+    status: EnrollmentStatus | None = None
+    notes: str | None = None
+
+
+class EnrollmentUpdateRequest(ApiModel):
+    version: int = Field(ge=1)
+    course_id: int | None = Field(default=None, ge=1)
+    student_person_id: int | None = Field(default=None, ge=1)
+    enrolled_on: str | None = Field(default=None, min_length=10, max_length=10)
+    starts_on: str | None = Field(default=None, min_length=10, max_length=10)
+    ends_on: str | None = Field(default=None, min_length=10, max_length=10)
+    status: EnrollmentStatus | None = None
+    notes: str | None = None
+
+
+class EnrollmentResponse(EnrollmentCreateRequest):
+    id: int
+    status: EnrollmentStatus
+    created_at: str
+    updated_at: str
+    archived_at: str | None
+    version: int

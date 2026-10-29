@@ -185,3 +185,85 @@ def test_courses_crud_search_and_archiving(people_app: FastAPI) -> None:
         assert archived.status_code == 200
         assert archived.json()["archived_at"] is not None
         assert client.get("/api/v1/courses", headers=headers).json()["items"] == []
+
+
+def test_enrollments_crud_and_active_student_rule(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        teacher = client.post(
+            "/api/v1/people",
+            headers=headers,
+            json={"first_name": "Elena", "last_name": "Verdi"},
+        ).json()
+        client.post(
+            f"/api/v1/people/{teacher['id']}/roles",
+            headers=headers,
+            json={"role_type": "teacher", "start_date": "2026-01-01"},
+        )
+        course = client.post(
+            "/api/v1/courses",
+            headers=headers,
+            json={
+                "name": "Musica d'insieme",
+                "mode": "group",
+                "category": "ensemble",
+                "teacher_person_id": teacher["id"],
+                "annual_fee": "180.00",
+                "color": "#0055AA",
+            },
+        ).json()
+        student = client.post(
+            "/api/v1/people",
+            headers=headers,
+            json={"first_name": "Anna", "last_name": "Neri"},
+        ).json()
+        client.post(
+            f"/api/v1/people/{student['id']}/roles",
+            headers=headers,
+            json={"role_type": "student", "start_date": "2026-01-01"},
+        )
+
+        created = client.post(
+            "/api/v1/enrollments",
+            headers=headers,
+            json={
+                "course_id": course["id"],
+                "student_person_id": student["id"],
+                "enrolled_on": "2026-09-01",
+                "starts_on": "2026-09-15",
+            },
+        )
+        assert created.status_code == 201
+        enrollment = created.json()
+        assert enrollment["status"] == "active"
+
+        duplicate = client.post(
+            "/api/v1/enrollments",
+            headers=headers,
+            json={
+                "course_id": course["id"],
+                "student_person_id": student["id"],
+                "enrolled_on": "2026-09-01",
+                "starts_on": "2026-09-15",
+            },
+        )
+        assert duplicate.status_code == 409
+        assert duplicate.json()["error"]["code"] == "ACTIVE_ENROLLMENT_EXISTS"
+
+        listing = client.get("/api/v1/enrollments?q=neri", headers=headers)
+        assert listing.status_code == 200
+        assert listing.json()["meta"]["total_items"] == 1
+
+        updated = client.patch(
+            f"/api/v1/enrollments/{enrollment['id']}",
+            headers=headers,
+            json={"version": 1, "notes": "Quota ricevuta"},
+        )
+        assert updated.status_code == 200
+        assert updated.json()["version"] == 2
+
+        archived = client.delete(
+            f"/api/v1/enrollments/{enrollment['id']}?version=2", headers=headers
+        )
+        assert archived.status_code == 200
+        assert archived.json()["archived_at"] is not None

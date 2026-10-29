@@ -20,28 +20,29 @@ _Aggiornato: 29 ottobre 2026_
   e audit.
 - [x] **6b. Scuola: Corsi** — CRUD, verifica dell'insegnante attivo, ricerca,
   paginazione, ordinamento, archiviazione, audit e schermate Angular.
-- [x] **6d. Fondamenta distribuzione locale** — percorsi dati separati dal
+- [x] **6c. Scuola: Iscrizioni** — CRUD, verifica di corso e ruolo allievo,
+  prevenzione duplicati, ricerca, archiviazione, audit e schermate Angular.
+- [x] **6e. Fondamenta distribuzione locale** — percorsi dati separati dal
   binario e salvataggi `.arsis-save` versionati, verificati e comprensivi di
   allegati futuri.
-- [x] **6e. Runtime locale** — comando unico loopback che serve Angular compilato
+- [x] **6f. Runtime locale** — comando unico loopback che serve Angular compilato
   e API dallo stesso processo.
 
 ## Da completare
 
-- [ ] **6c. Moduli di dominio** — cataloghi, iscrizioni, lezioni, presenze,
+- [ ] **6d. Moduli di dominio** — cataloghi, lezioni, presenze,
   contabilità, archivio e configurazioni, procedendo per fette verticali.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
 ## Stato rapido
 
-- Backend: API complete per autenticazione, persone, attività e corsi; Ruff e
-  mypy puliti, 36 test backend verdi all'ultimo controllo.
-- Frontend: login, Persone, Attività e Corsi consumano le API locali; le sezioni
+- Backend: API complete per autenticazione, persone, attività, corsi e
+  iscrizioni; Ruff e mypy puliti, 37 test backend verdi all'ultimo controllo.
+- Frontend: login, Persone, Attività, Corsi e Iscrizioni consumano le API locali; le sezioni
   rimanenti usano ancora mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: iscrizioni ai corsi, poi lezioni e registro
-  presenze.
+- Prossimo avanzamento funzionale: lezioni, poi registro presenze.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.
