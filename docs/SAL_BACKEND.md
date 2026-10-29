@@ -1,6 +1,6 @@
 # SAL backend — Arsis
 
-_Aggiornato: 26 ottobre 2026_
+_Aggiornato: 29 ottobre 2026_
 
 ## Chiusi
 
@@ -17,16 +17,21 @@ _Aggiornato: 26 ottobre 2026_
 
 - [x] **4. Persone** — prima fetta verticale completa: repository, servizi,
   CRUD, ruoli, ricerca, archiviazione e test API, esposta anche in Angular.
-- [ ] **5. Integrazione Angular** — autenticazione e flusso Persone completi;
-  restano da collegare gli altri moduli.
-- [ ] **6. Moduli di dominio** — cataloghi, scuola, attività, contabilità,
-  archivio e configurazioni, procedendo per fette verticali.
+- [x] **5. Integrazione Angular** — autenticazione, Persone, Attività e Corsi
+  collegati all'API; i mock restano solo nelle aree non implementate.
+- [x] **6a. Attività** — CRUD, ricerca, paginazione, ordinamento, archiviazione
+  e audit.
+- [x] **6b. Scuola: Corsi** — CRUD, verifica dell'insegnante attivo, ricerca,
+  paginazione, ordinamento, archiviazione, audit e schermate Angular.
+- [ ] **6c. Moduli di dominio** — cataloghi, iscrizioni, lezioni, presenze,
+  contabilità, archivio e configurazioni, procedendo per fette verticali.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
 ## Stato rapido
 
-- Backend: API di autenticazione e Persone disponibili; test, Ruff e mypy puliti
-  all'ultimo controllo backend.
-- Frontend: login, rinnovo sessione e flusso Persone (lista, creazione, modifica,
-  archiviazione e ruoli) usano le API locali; gli altri moduli usano ancora mock.
+- Backend: API complete per autenticazione, persone, attività e corsi; test della
+  verticale Corsi aggiunti, Ruff e mypy puliti.
+- Frontend: login, Persone, Attività e Corsi consumano le API locali; le sezioni
+  rimanenti usano ancora mock.
+- Prossimo avanzamento: iscrizioni ai corsi, poi lezioni e registro presenze.

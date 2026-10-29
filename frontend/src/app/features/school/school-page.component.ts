@@ -1,28 +1,29 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import schoolData from '../../../assets/mock/school.json';
-import peopleData from '../../../assets/mock/people.json';
+import { PeopleService } from '../people/people.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { Course, CoursesService } from './courses.service';
 
 @Component({
   selector: 'arsis-school-page',
   imports: [PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Scuola" title="Scuola di musica" description="Corsi, iscrizioni, lezioni e registro presenze.">
-      <button class="button button--primary" type="button">＋ Nuovo corso</button>
+      <a class="button button--primary" routerLink="/school/courses/new">＋ Nuovo corso</a>
     </arsis-page-header>
 
     <section class="school-summary">
-      <div><strong>{{ summary.courses }}</strong><span>Corsi attivi</span></div><div><strong>{{ summary.students }}</strong><span>Allievi iscritti</span></div><div><strong>{{ summary.lessonsThisMonth }}</strong><span>Lezioni questo mese</span></div><div><strong>{{ summary.attendanceRate }}</strong><span>Presenza media</span></div>
+      <div><strong>{{ courses().length }}</strong><span>Corsi attivi</span></div><div><strong>{{ summary.students }}</strong><span>Allievi iscritti</span></div><div><strong>{{ summary.lessonsThisMonth }}</strong><span>Lezioni questo mese</span></div><div><strong>{{ summary.attendanceRate }}</strong><span>Presenza media</span></div>
     </section>
 
     <div class="section-heading"><div><p class="eyebrow">Offerta formativa</p><h2>Corsi attivi</h2></div><button class="button button--secondary">Tutti i corsi →</button></div>
     <section class="course-grid">
-      @for (course of courses; track course.id) {
-        <a class="course-card card" [routerLink]="['/school/courses', course.id]" [style.--course-color]="course.color" [style.--course-background]="course.background" aria-label="Apri il corso {{ course.name }}">
+      @for (course of courses(); track course.id) {
+        <a class="course-card card" [routerLink]="['/school/courses', course.id]" [style.--course-color]="course.color" [style.--course-background]="course.color + '20'" aria-label="Apri il corso {{ course.name }}">
           <div class="course-card__accent"></div>
-          <div class="course-card__body"><header><span>{{ course.mode }}</span><i aria-hidden="true">•••</i></header><h3>{{ course.name }}</h3><p>{{ teacherName(course.teacherId) }}</p><dl><div><dt>Allievi</dt><dd>{{ course.students }}</dd></div><div><dt>Orario</dt><dd>{{ course.schedule }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.fee }}</dd></div></dl></div>
+          <div class="course-card__body"><header><span>{{ course.mode === 'individual' ? 'Individuale' : 'Gruppo' }}</span><i aria-hidden="true">•••</i></header><h3>{{ course.name }}</h3><p>{{ teacherName(course.teacher_person_id) }}</p><dl><div><dt>Allievi</dt><dd>—</dd></div><div><dt>Orario</dt><dd>{{ schedule(course) }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.annual_fee }} €</dd></div></dl></div>
         </a>
       }
     </section>
@@ -64,11 +65,25 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchoolPageComponent {
+  private readonly coursesService = inject(CoursesService);
+  private readonly peopleService = inject(PeopleService);
   protected readonly summary = schoolData.summary;
-  protected readonly courses = schoolData.courses;
+  protected readonly courses = signal<Course[]>([]);
   protected readonly lessons = schoolData.lessons;
+  private readonly teacherNames = signal(new Map<number, string>());
 
-  protected teacherName(teacherId: string): string {
-    return peopleData.people.find((person) => person.id === teacherId)?.name ?? 'Non assegnato';
+  constructor() {
+    this.coursesService.list().subscribe({ next: (page) => this.courses.set(page.items) });
+    this.peopleService.listPeople('').subscribe({
+      next: (page) => this.teacherNames.set(new Map(page.items.map((person) => [person.id, `${person.first_name} ${person.last_name}`]))),
+    });
+  }
+
+  protected teacherName(teacherId: number): string {
+    return this.teacherNames().get(teacherId) ?? 'Non assegnato';
+  }
+
+  protected schedule(course: Course): string {
+    return course.start_time && course.end_time ? `${course.start_time}–${course.end_time}` : 'Non definito';
   }
 }

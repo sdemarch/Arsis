@@ -1,52 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import schoolData from '../../../assets/mock/school.json';
-import peopleData from '../../../assets/mock/people.json';
 import { DetailCardComponent } from '../../shared/ui/detail-card.component';
+import { Course, CoursesService } from './courses.service';
 
 @Component({
-  selector: 'arsis-course-detail',
-  imports: [DetailCardComponent, FormsModule],
-  template: `
-    <arsis-detail-card backLink="/school/courses" backLabel="Tutti i corsi" eyebrow="Corso" [title]="draft.name" [subtitle]="draft.mode + ' · ' + teacherName(draft.teacherId)" [editing]="editing()" (editRequested)="toggleEditing()">
-      <div detail-visual class="course-visual" [style.background]="draft.background" [style.color]="draft.color">♫</div>
-      <div class="detail-sections">
-        <section>
-          <header><div><p class="section-kicker">Offerta formativa</p><h2>Dettagli corso</h2></div><span class="status-badge status-badge--success">Attivo</span></header>
-          <div class="field-grid">
-            <label><span>Nome corso</span>@if (editing()) { <input [(ngModel)]="draft.name" /> } @else { <strong>{{ draft.name }}</strong> }</label>
-            <label><span>Modalità</span>@if (editing()) { <select [(ngModel)]="draft.mode"><option>Individuale</option><option>Collettivo</option></select> } @else { <strong>{{ draft.mode }}</strong> }</label>
-            <label><span>Insegnante</span>@if (editing()) { <select [(ngModel)]="draft.teacherId">@for (teacher of teachers; track teacher.id) { <option [value]="teacher.id">{{ teacher.name }}</option> }</select> } @else { <strong>{{ teacherName(draft.teacherId) }}</strong> }</label>
-            <label><span>Orario</span>@if (editing()) { <input [(ngModel)]="draft.schedule" /> } @else { <strong>{{ draft.schedule }}</strong> }</label>
-            <label><span>Tariffa annua</span>@if (editing()) { <input [(ngModel)]="draft.fee" /> } @else { <strong>{{ draft.fee }}</strong> }</label>
-            <label><span>Allievi iscritti</span>@if (editing()) { <input type="number" min="0" [(ngModel)]="draft.students" /> } @else { <strong>{{ draft.students }}</strong> }</label>
-          </div>
-        </section>
-        <section>
-          <header><div><p class="section-kicker">Didattica</p><h2>Descrizione e note</h2></div></header>
-          @if (editing()) { <textarea [(ngModel)]="description" rows="4" placeholder="Aggiungi obiettivi, programma o note sul corso…"></textarea> } @else { <p class="empty-value">{{ description || 'Nessuna descrizione inserita.' }}</p> }
-        </section>
-      </div>
-    </arsis-detail-card>
-  `,
-  styleUrls: ['../../shared/ui/detail-fields.css', './course-detail.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'arsis-course-detail', imports: [DetailCardComponent, FormsModule],
+  template: `@if (course(); as item) { <arsis-detail-card backLink="/school/courses" backLabel="Tutti i corsi" eyebrow="Corso" [title]="item.name" [subtitle]="item.mode === 'individual' ? 'Individuale' : 'Gruppo'" [editing]="editing()" [editable]="!item.archived_at" (editRequested)="editing() ? save() : beginEdit()"><div detail-visual class="course-visual" [style.background]="item.color + '20'" [style.color]="item.color">♫</div><div class="detail-sections"><section><header><div><p class="section-kicker">Offerta formativa</p><h2>Dettagli corso</h2></div><span class="status-badge" [class.status-badge--success]="item.status === 'active'">{{ item.status === 'active' ? 'Attivo' : 'Inattivo' }}</span></header><div class="field-grid"><label><span>Nome corso</span>@if(editing()){<input [(ngModel)]="draft.name"/>}@else{<strong>{{item.name}}</strong>}</label><label><span>Modalità</span>@if(editing()){<select [(ngModel)]="draft.mode"><option value="individual">Individuale</option><option value="group">Gruppo</option></select>}@else{<strong>{{item.mode === 'individual' ? 'Individuale' : 'Gruppo'}}</strong>}</label><label><span>Tariffa annua</span>@if(editing()){<input type="number" min="0" [(ngModel)]="draft.annual_fee"/>}@else{<strong>{{item.annual_fee}} €</strong>}</label></div></section><section><header><div><p class="section-kicker">Didattica</p><h2>Descrizione</h2></div></header>@if(editing()){<textarea [(ngModel)]="draft.description" rows="4"></textarea>}@else{<p class="empty-value">{{item.description || 'Nessuna descrizione inserita.'}}</p>}</section>@if(!item.archived_at){<section><button class="button button--secondary" type="button" (click)="archive()">Archivia corso</button></section>}</div></arsis-detail-card> } @else { <p>Caricamento corso…</p> }`,
+  styleUrls: ['../../shared/ui/detail-fields.css', './course-detail.component.css'], changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourseDetailComponent {
-  private readonly courseId = inject(ActivatedRoute).snapshot.paramMap.get('courseId');
-  private readonly source = schoolData.courses.find((course) => course.id === this.courseId) ?? schoolData.courses[0];
-  protected readonly editing = signal(false);
-  protected readonly teachers = peopleData.people.filter((person) => person.roles.includes('Insegnante'));
-  protected draft = { ...this.source };
-  protected description = '';
-
-  protected toggleEditing(): void {
-    this.editing.update((value) => !value);
-  }
-
-  protected teacherName(teacherId: string): string {
-    return peopleData.people.find((person) => person.id === teacherId)?.name ?? 'Non assegnato';
-  }
+  private readonly service = inject(CoursesService); private readonly router = inject(Router);
+  private readonly courseId = Number(inject(ActivatedRoute).snapshot.paramMap.get('courseId'));
+  protected readonly course = signal<Course | null>(null); protected readonly editing = signal(false); protected draft: Partial<Course> = {};
+  constructor() { this.load(); }
+  protected beginEdit(): void { this.draft = { ...this.course()! }; this.editing.set(true); }
+  protected save(): void { const course = this.course(); if (course) this.service.update(course.id, { ...this.draft, version: course.version }).subscribe({ next: () => { this.editing.set(false); this.load(); } }); }
+  protected archive(): void { const course = this.course(); if (course && window.confirm(`Archiviare ${course.name}?`)) this.service.archive(course.id, course.version).subscribe({ next: () => void this.router.navigate(['/school/courses']) }); }
+  private load(): void { this.service.get(this.courseId).subscribe({ next: (course) => this.course.set(course) }); }
 }

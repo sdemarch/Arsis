@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from decimal import Decimal
 
 import pytest
 from fastapi import FastAPI
@@ -134,3 +135,53 @@ def test_activities_crud_and_archiving(people_app: FastAPI) -> None:
         archived = client.delete(f"/api/v1/activities/{activity['id']}?version=2", headers=headers)
         assert archived.status_code == 200
         assert archived.json()["archived_at"] is not None
+
+
+def test_courses_crud_search_and_archiving(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        teacher = client.post(
+            "/api/v1/people",
+            headers=headers,
+            json={"first_name": "Luca", "last_name": "Bianchi"},
+        ).json()
+        client.post(
+            f"/api/v1/people/{teacher['id']}/roles",
+            headers=headers,
+            json={"role_type": "teacher", "start_date": "2026-01-01"},
+        )
+
+        created = client.post(
+            "/api/v1/courses",
+            headers=headers,
+            json={
+                "name": "Clarinetto base",
+                "mode": "individual",
+                "category": "instrument",
+                "instrument_id": 1,
+                "teacher_person_id": teacher["id"],
+                "annual_fee": "450.00",
+                "color": "#0055AA",
+            },
+        )
+        assert created.status_code == 201
+        course = created.json()
+        assert course["status"] == "active"
+
+        listing = client.get("/api/v1/courses?q=clarinetto", headers=headers)
+        assert listing.status_code == 200
+        assert listing.json()["meta"]["total_items"] == 1
+
+        updated = client.patch(
+            f"/api/v1/courses/{course['id']}",
+            headers=headers,
+            json={"version": 1, "annual_fee": "475.00"},
+        )
+        assert updated.status_code == 200
+        assert Decimal(updated.json()["annual_fee"]) == Decimal("475.00")
+        assert updated.json()["version"] == 2
+
+        archived = client.delete(f"/api/v1/courses/{course['id']}?version=2", headers=headers)
+        assert archived.status_code == 200
+        assert archived.json()["archived_at"] is not None
+        assert client.get("/api/v1/courses", headers=headers).json()["items"] == []
