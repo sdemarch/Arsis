@@ -4,6 +4,10 @@ Questa cartella contiene automazioni ripetibili per sviluppo, CI e operazioni. G
 
 ## Inizializzazione database
 
+Liquibase 5 richiede Java 17 o superiore. Lo script interrompe subito
+l'esecuzione con un messaggio esplicito se `java` non è disponibile o se la
+versione attiva è precedente.
+
 Da PowerShell, nella radice del repository:
 
 ```powershell
@@ -27,6 +31,24 @@ Lo script crea il file SQLite locale, installa il driver JDBC nella cartella del
 ```
 
 `liquibase update` è idempotente: le esecuzioni successive applicano soltanto i changeset non ancora registrati.
+
+## Dati dimostrativi
+
+Dopo avere installato il backend in modalità editable e inizializzato il database:
+
+```powershell
+.\scripts\seed-dev.ps1
+```
+
+Per usare un database di test differente:
+
+```powershell
+.\scripts\seed-dev.ps1 -DatabasePath .\data\arsis-test.db
+```
+
+Il comando inserisce o aggiorna un insieme deterministico di persone, ruoli,
+cataloghi, corsi, iscrizioni, lezioni e attività coerente con i mock Angular. È
+idempotente e rifiuta l'esecuzione fuori dagli ambienti di sviluppo e test.
 
 ## Modelli SQLAlchemy e DTO Pydantic
 

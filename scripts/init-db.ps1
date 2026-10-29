@@ -27,6 +27,33 @@ function Invoke-CheckedCommand {
     }
 }
 
+function Assert-SupportedJava {
+    $javaCommand = if ($env:JAVA_HOME) {
+        Join-Path $env:JAVA_HOME "bin/java.exe"
+    }
+    else {
+        (Get-Command java -ErrorAction SilentlyContinue).Source
+    }
+
+    if (-not $javaCommand -or -not (Test-Path -LiteralPath $javaCommand -PathType Leaf)) {
+        throw "Java non è disponibile. Liquibase 5 richiede Java 17 o superiore."
+    }
+
+    $versionOutput = (& $javaCommand -version 2>&1 | Select-Object -First 1).ToString()
+    $versionMatch = [regex]::Match($versionOutput, 'version "(?<version>[0-9]+)(?:\.(?<minor>[0-9]+))?')
+    if (-not $versionMatch.Success) {
+        throw "Impossibile determinare la versione Java da: $versionOutput"
+    }
+
+    $majorVersion = [int]$versionMatch.Groups["version"].Value
+    if ($majorVersion -eq 1 -and $versionMatch.Groups["minor"].Success) {
+        $majorVersion = [int]$versionMatch.Groups["minor"].Value
+    }
+    if ($majorVersion -lt 17) {
+        throw "Java $majorVersion rilevato tramite JAVA_HOME. Liquibase 5 richiede Java 17 o superiore; aggiornare JAVA_HOME."
+    }
+}
+
 function Install-SqliteDriver {
     $lpmExecutable = Join-Path $lpmHome "lpm.exe"
     $packageManifest = Join-Path $databaseProject "lib/packages.json"
@@ -58,6 +85,7 @@ try {
     if (-not (Get-Command liquibase -ErrorAction SilentlyContinue)) {
         throw "Liquibase non è disponibile. Installare Liquibase 5 e aggiungerlo al PATH."
     }
+    Assert-SupportedJava
 
     $resolvedDatabasePath = if ([System.IO.Path]::IsPathRooted($DatabasePath)) {
         [System.IO.Path]::GetFullPath($DatabasePath)

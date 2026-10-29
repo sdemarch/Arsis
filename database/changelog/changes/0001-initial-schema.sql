@@ -13,12 +13,12 @@ CREATE TABLE app_settings (
 );
 
 CREATE TABLE audit_events (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    actor_id TEXT,
+    actor_id INTEGER,
     action TEXT NOT NULL,
     entity_type TEXT NOT NULL,
-    entity_id TEXT,
+    entity_id INTEGER,
     request_id TEXT,
     details TEXT NOT NULL DEFAULT '{}'
 );

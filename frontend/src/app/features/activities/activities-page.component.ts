@@ -1,23 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
-import activityData from '../../../assets/mock/activities.json';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { ActivitiesService } from './activities.service';
 
 @Component({
   selector: 'arsis-activities-page',
   imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Attività" title="Calendario e attività" description="Organizza prove, concerti, eventi e presenze.">
-      <button class="button button--primary" type="button">＋ Nuova attività</button>
+      <a class="button button--primary" routerLink="/activities/new">＋ Nuova attività</a>
     </arsis-page-header>
 
     <div class="view-tabs"><button class="is-active">Elenco</button><button>Calendario</button></div>
     <div class="toolbar">
-      <div class="toolbar__group"><input class="search-input" type="search" placeholder="Cerca attività…" aria-label="Cerca attività" [ngModel]="search()" (ngModelChange)="setSearch($event)" /><arsis-filter-dropdown label="Tutte le tipologie" [options]="typeOptions" [selected]="selectedTypes()" [multiple]="true" (selectionChange)="setTypes($event)" /><arsis-filter-dropdown label="Tutti gli anni" [options]="yearOptions" [selected]="selectedYears()" (selectionChange)="setYears($event)" /></div>
+      <div class="toolbar__group"><input class="search-input" type="search" placeholder="Cerca attività…" aria-label="Cerca attività" [ngModel]="search()" (ngModelChange)="setSearch($event)" /><arsis-filter-dropdown label="Tutte le tipologie" [options]="typeOptions" [selected]="selectedTypes()" [multiple]="true" (selectionChange)="setTypes($event)" /><arsis-filter-dropdown label="Tutti gli anni" [options]="yearOptions()" [selected]="selectedYears()" (selectionChange)="setYears($event)" /></div>
       <div class="toolbar__result"><span class="result-count">{{ filteredActivities().length }} attività in programma</span><button class="button button--secondary" type="button" [disabled]="!hasFilters()" (click)="clearFilters()">Azzera filtri</button></div>
     </div>
 
@@ -89,18 +90,20 @@ export class ActivitiesPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly queryParams = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
+  private readonly activitiesService = inject(ActivitiesService);
 
-  protected readonly activities = activityData.activities;
-  protected readonly calendar = activityData.calendar;
+  private readonly response = toSignal(toObservable(computed(() => this.queryParams().get('q')?.trim() ?? '')).pipe(debounceTime(200), distinctUntilChanged(), switchMap((query) => this.activitiesService.list(query))), { initialValue: null });
+  protected readonly activities = computed(() => (this.response()?.items ?? []).map((activity) => { const date = new Date(activity.starts_at); return { ...activity, date: new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(date).toUpperCase(), year: date.getFullYear(), weekday: new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(date), time: new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(date), participants: 0, tone: activity.status === 'confirmed' ? 'success' : 'warn', type: ({ rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' } as const)[activity.type] }; }));
+  protected readonly calendar: { day: number; events: string[] }[] = [];
   protected readonly weekdays = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
   protected readonly typeOptions: readonly FilterOption[] = [
     { label: 'Prove', value: 'rehearsal' },
     { label: 'Concerti', value: 'concert' },
     { label: 'Eventi', value: 'event' },
   ];
-  protected readonly yearOptions: readonly FilterOption[] = [...new Set(this.activities.map((activity) => activity.year))]
+  protected readonly yearOptions = computed<readonly FilterOption[]>(() => [...new Set(this.activities().map((activity) => activity.year))]
     .sort((first, second) => second - first)
-    .map((year) => ({ label: String(year), value: String(year) }));
+    .map((year) => ({ label: String(year), value: String(year) })));
   protected readonly search = computed(() => this.queryParams().get('q')?.trim() ?? '');
   protected readonly selectedTypes = computed(() => this.queryParams().getAll('type'));
   protected readonly selectedYears = computed(() => this.queryParams().getAll('year'));
@@ -111,8 +114,8 @@ export class ActivitiesPageComponent {
     const selectedTypeLabels = this.selectedTypes().map((type) => typeLabels[type]).filter(Boolean);
     const years = this.selectedYears();
 
-    return this.activities.filter((activity) => {
-      const matchesQuery = !query || [activity.title, activity.location, activity.type].some((value) => value.toLocaleLowerCase('it').includes(query));
+    return this.activities().filter((activity) => {
+      const matchesQuery = !query || [activity.title, activity.location ?? '', activity.type].some((value) => value.toLocaleLowerCase('it').includes(query));
       const matchesType = !selectedTypeLabels.length || selectedTypeLabels.includes(activity.type);
       const matchesYear = !years.length || years.includes(String(activity.year));
       return matchesQuery && matchesType && matchesYear;

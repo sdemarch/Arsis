@@ -1,4 +1,8 @@
-.PHONY: install dev build lint test migrate clean help
+.PHONY: install dev dev-fe dev-be init-db seed bootstrap-admin setup-db build lint typecheck test test-fe test-be check-schema clean help
+
+PYTHON ?= py -3.14
+NPM ?= npm
+POWERSHELL ?= powershell
 
 # ── Colori ──────────────────────────────────────────────────────────────────
 CYAN  := \033[0;36m
@@ -11,54 +15,61 @@ help: ## Mostra questo messaggio
 # ── Setup ────────────────────────────────────────────────────────────────────
 install: ## Installa dipendenze frontend e backend
 	@echo "$(CYAN)→ Frontend$(RESET)"
-	cd frontend && npm install
+	cd frontend && $(NPM) install
 	@echo "$(CYAN)→ Backend$(RESET)"
-	cd backend && uv sync
-	@echo "$(CYAN)→ Copia .env se non esistono$(RESET)"
-	@test -f frontend/.env || cp frontend/.env.example frontend/.env
-	@test -f backend/.env  || cp backend/.env.example  backend/.env
+	cd backend && $(PYTHON) -m pip install -e ".[dev]"
+	@echo "$(CYAN)→ Configurazione$(RESET)"
+	@test -f .env || cp .env.example .env
 
 # ── Sviluppo ─────────────────────────────────────────────────────────────────
 dev: ## Avvia frontend e backend in parallelo
 	@trap 'kill 0' INT; \
-		(cd frontend && npm run dev) & \
-		(cd backend && uv run uvicorn app.main:app --reload --port 8000) & \
+		(cd frontend && $(NPM) start) & \
+		(cd backend && $(PYTHON) -m uvicorn arsis.main:app --reload --port 8000) & \
 		wait
 
 dev-fe: ## Avvia solo il frontend
-	cd frontend && npm run dev
+	cd frontend && $(NPM) start
 
 dev-be: ## Avvia solo il backend
-	cd backend && uv run uvicorn app.main:app --reload --port 8000
+	cd backend && $(PYTHON) -m uvicorn arsis.main:app --reload --port 8000
 
 # ── Database ──────────────────────────────────────────────────────────────────
-migrate: ## Applica le migrazioni Alembic
-	cd backend && uv run alembic upgrade head
+init-db: ## Applica i changeset Liquibase e rigenera il codice backend
+	$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File ./scripts/init-db.ps1
 
-migration: ## Crea una nuova migrazione (usa: make migration MSG="descrizione")
-	cd backend && uv run alembic revision --autogenerate -m "$(MSG)"
+seed: ## Inserisce o aggiorna i dati dimostrativi locali
+	$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File ./scripts/seed-dev.ps1
 
-migrate-down: ## Rollback di una migrazione
-	cd backend && uv run alembic downgrade -1
+bootstrap-admin: ## Crea in modo interattivo il primo responsabile
+	cd backend && $(PYTHON) -m arsis.auth.bootstrap --email "$(EMAIL)" --display-name "$(NAME)"
+
+setup-db: init-db seed ## Inizializza il database e applica il seed locale
+
+check-schema: ## Verifica changelog e codice generato
+	$(POWERSHELL) -NoProfile -ExecutionPolicy Bypass -File ./scripts/init-db.ps1 -ValidateOnly
+	$(PYTHON) ./scripts/generate_backend_schema.py --check
 
 # ── Build ────────────────────────────────────────────────────────────────────
 build: ## Build di produzione del frontend
-	cd frontend && npm run build
+	cd frontend && $(NPM) run build
 
 # ── Qualità ──────────────────────────────────────────────────────────────────
-lint: ## Lint frontend (ESLint) e backend (ruff)
-	cd frontend && npm run lint
-	cd backend && uv run ruff check app
+lint: ## Esegue Ruff sul backend
+	cd backend && $(PYTHON) -m ruff check src tests
+
+typecheck: ## Verifica i tipi del backend
+	cd backend && $(PYTHON) -m mypy src/arsis
 
 test: ## Esegui tutti i test
-	cd frontend && npm run test -- --run
-	cd backend && uv run pytest tests/ -v
+	cd frontend && $(NPM) test
+	cd backend && $(PYTHON) -m pytest tests/ -v
 
 test-fe: ## Solo test frontend
-	cd frontend && npm run test -- --run
+	cd frontend && $(NPM) test
 
 test-be: ## Solo test backend
-	cd backend && uv run pytest tests/ -v
+	cd backend && $(PYTHON) -m pytest tests/ -v
 
 # ── Utility ───────────────────────────────────────────────────────────────────
 clean: ## Rimuovi artefatti di build e cache

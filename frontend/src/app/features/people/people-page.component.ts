@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 
-import peopleData from '../../../assets/mock/people.json';
-import { ConfigurationStore } from '../../core/config/configuration.store';
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { PeopleService } from './people.service';
 
 @Component({
   selector: 'arsis-people-page',
@@ -17,14 +17,14 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
     </arsis-page-header>
 
     <div class="summary-line">
-      <span><strong>{{ summary.active }}</strong> persone attive</span>
-      <span><strong>{{ summary.archived }}</strong> archiviate</span>
+      <span><strong>{{ summary().active }}</strong> persone attive</span>
+      <span><strong>{{ summary().archived }}</strong> archiviate</span>
     </div>
 
     <div class="toolbar">
       <div class="toolbar__group">
         <input class="search-input" type="search" placeholder="Cerca nome, email o telefono…" aria-label="Cerca persone" [ngModel]="search()" (ngModelChange)="setSearch($event)" />
-        <arsis-filter-dropdown label="Tutti i ruoli" [options]="roleOptions()" [selected]="selectedRoles()" [multiple]="true" (selectionChange)="setRoles($event)" />
+        <arsis-filter-dropdown label="Tutti i ruoli" [options]="roleOptions" [selected]="selectedRoles()" [multiple]="true" (selectionChange)="setRoles($event)" />
         <arsis-filter-dropdown label="Tutti gli stati" [options]="statusOptions" [selected]="selectedStatuses()" (selectionChange)="setStatuses($event)" />
       </div>
       <button class="button button--secondary" type="button" [disabled]="!hasFilters()" (click)="clearFilters()">Azzera filtri</button>
@@ -38,7 +38,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
             <tr [routerLink]="['/people', person.id]" tabindex="0" aria-label="Apri la scheda di {{ person.name }}">
               <td><a class="person" [routerLink]="['/people', person.id]"><span class="avatar {{ person.avatar }}">{{ person.initials }}</span><strong>{{ person.name }}</strong></a></td>
               <td><div class="contacts"><span>{{ person.email }}</span><small>{{ person.phone }}</small></div></td>
-              <td><div class="roles">@for (role of person.roles; track role) { <span>{{ role }}</span> }</div></td>
+              <td><div class="roles">@for (role of person.roles; track role) { <span>{{ roleLabel(role) }}</span> }</div></td>
               <td><span class="status-badge status-badge--success">{{ person.status }}</span></td>
               <td><time>{{ person.updated }}</time></td>
               <td><button class="row-menu" type="button" aria-label="Azioni per {{ person.name }}">•••</button></td>
@@ -47,7 +47,7 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
           @empty { <tr><td class="empty-state" colspan="6">Nessuna persona corrisponde ai filtri selezionati.</td></tr> }
         </tbody>
       </table>
-      <footer class="table-footer"><span>Mostrate {{ filteredPeople().length }} di {{ people.length }} persone</span><div><button disabled>←</button><strong>1</strong><button>2</button><button>3</button><button>→</button></div></footer>
+      <footer class="table-footer"><span>Mostrate {{ filteredPeople().length }} di {{ people().length }} persone</span></footer>
     </div>
   `,
   styles: `
@@ -73,17 +73,40 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 export class PeoplePageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly configuration = inject(ConfigurationStore);
+  private readonly peopleService = inject(PeopleService);
   private readonly queryParams = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
 
-  protected readonly people = peopleData.people;
-  protected readonly summary = peopleData.summary;
   protected readonly search = computed(() => this.queryParams().get('q')?.trim() ?? '');
   protected readonly selectedRoles = computed(() => this.queryParams().getAll('role'));
   protected readonly selectedStatuses = computed(() => this.queryParams().getAll('status'));
-  protected readonly roleOptions = computed<readonly FilterOption[]>(() =>
-    this.configuration.roles().filter((role) => role.active).map((role) => ({ label: role.label, value: role.id })),
+  private readonly response = toSignal(
+    toObservable(this.search).pipe(
+      debounceTime(200),
+      distinctUntilChanged(),
+      switchMap((query) => this.peopleService.listPeople(query).pipe(catchError(() => of(null)))),
+    ),
+    { initialValue: null },
   );
+  protected readonly people = computed(() =>
+    (this.response()?.items ?? []).map((person) => ({
+      ...person,
+      name: `${person.first_name} ${person.last_name}`,
+      initials: `${person.first_name[0] ?? ''}${person.last_name[0] ?? ''}`,
+      avatar: `av-${['green', 'blue', 'amber', 'rose', 'violet', 'teal'][person.id % 6]}`,
+      status: person.archived_at ? 'Archiviata' : 'Attiva',
+      updated: new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' }).format(new Date(person.updated_at)),
+    })),
+  );
+  protected readonly summary = computed(() => ({
+    active: this.people().filter((person) => !person.archived_at).length,
+    archived: this.people().filter((person) => Boolean(person.archived_at)).length,
+  }));
+  protected readonly roleOptions: readonly FilterOption[] = [
+    { label: 'Socio', value: 'member' },
+    { label: 'Musicante', value: 'musician' },
+    { label: 'Allievo', value: 'student' },
+    { label: 'Insegnante', value: 'teacher' },
+  ];
   protected readonly statusOptions: readonly FilterOption[] = [
     { label: 'Attive', value: 'active' },
     { label: 'Archiviate', value: 'archived' },
@@ -91,14 +114,12 @@ export class PeoplePageComponent {
   protected readonly hasFilters = computed(() => Boolean(this.search() || this.selectedRoles().length || this.selectedStatuses().length));
   protected readonly filteredPeople = computed(() => {
     const query = this.search().toLocaleLowerCase('it');
-    const selectedRoleLabels = this.selectedRoles()
-      .map((roleId) => this.configuration.roles().find((role) => role.id === roleId)?.label)
-      .filter((role): role is string => Boolean(role));
+    const selectedRoleTypes = this.selectedRoles();
     const statuses = this.selectedStatuses();
 
-    return this.people.filter((person) => {
-      const matchesQuery = !query || [person.name, person.email, person.phone].some((value) => value.toLocaleLowerCase('it').includes(query));
-      const matchesRoles = !selectedRoleLabels.length || selectedRoleLabels.some((role) => person.roles.includes(role));
+    return this.people().filter((person) => {
+      const matchesQuery = !query || [person.name, person.email ?? '', person.phone ?? ''].some((value) => value.toLocaleLowerCase('it').includes(query));
+      const matchesRoles = !selectedRoleTypes.length || selectedRoleTypes.some((role) => person.roles.includes(role));
       const personStatus = person.status === 'Attiva' ? 'active' : 'archived';
       const matchesStatus = !statuses.length || statuses.includes(personStatus);
       return matchesQuery && matchesRoles && matchesStatus;
@@ -119,6 +140,10 @@ export class PeoplePageComponent {
 
   protected clearFilters(): void {
     this.updateQuery({ q: null, role: null, status: null });
+  }
+
+  protected roleLabel(role: string): string {
+    return this.roleOptions.find((option) => option.value === role)?.label ?? role;
   }
 
   private updateQuery(queryParams: Record<string, string | string[] | null>): void {

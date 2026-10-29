@@ -4,7 +4,7 @@
 --comment Band activities, courses, enrollments, lessons and attendance registers.
 
 CREATE TABLE activities (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     type TEXT NOT NULL CHECK (type IN ('rehearsal', 'concert', 'event')),
     title TEXT NOT NULL CHECK (length(trim(title)) > 0),
     description TEXT,
@@ -14,14 +14,14 @@ CREATE TABLE activities (
     status TEXT NOT NULL DEFAULT 'planned' CHECK (
         status IN ('planned', 'confirmed', 'cancelled', 'completed')
     ),
-    reference_person_id TEXT REFERENCES people(id) ON DELETE RESTRICT,
+    reference_person_id INTEGER REFERENCES people(id) ON DELETE RESTRICT,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (ends_at IS NULL OR ends_at > starts_at)
 );
@@ -32,19 +32,19 @@ CREATE INDEX ix_activities_status_date ON activities (status, starts_at);
 CREATE INDEX ix_activities_archived ON activities (archived_at);
 
 CREATE TABLE activity_participants (
-    id TEXT PRIMARY KEY NOT NULL,
-    activity_id TEXT NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
-    person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    activity_id INTEGER NOT NULL REFERENCES activities(id) ON DELETE RESTRICT,
+    person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     source TEXT NOT NULL CHECK (source IN ('automatic', 'manual')),
     attendance TEXT CHECK (attendance IS NULL OR attendance IN ('present', 'absent')),
     attendance_recorded_at TEXT,
-    attendance_recorded_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    attendance_recorded_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     UNIQUE (activity_id, person_id),
     CHECK (attendance IS NOT NULL OR attendance_recorded_at IS NULL)
@@ -54,13 +54,13 @@ CREATE INDEX ix_activity_participants_person ON activity_participants (person_id
 CREATE INDEX ix_activity_participants_attendance ON activity_participants (activity_id, attendance);
 
 CREATE TABLE courses (
-    id TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY,
     name TEXT NOT NULL CHECK (length(trim(name)) > 0),
     description TEXT,
     mode TEXT NOT NULL CHECK (mode IN ('individual', 'group')),
     category TEXT NOT NULL CHECK (category IN ('instrument', 'ensemble')),
-    instrument_id TEXT REFERENCES instruments(id) ON DELETE RESTRICT,
-    teacher_person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    instrument_id INTEGER REFERENCES instruments(id) ON DELETE RESTRICT,
+    teacher_person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     weekday INTEGER CHECK (weekday IS NULL OR weekday BETWEEN 1 AND 7),
     start_time TEXT,
     end_time TEXT,
@@ -74,11 +74,11 @@ CREATE TABLE courses (
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (
         (category = 'instrument' AND instrument_id IS NOT NULL)
@@ -93,8 +93,8 @@ CREATE INDEX ix_courses_instrument ON courses (instrument_id, status);
 CREATE INDEX ix_courses_status ON courses (status, archived_at);
 
 CREATE TABLE course_installment_templates (
-    id TEXT PRIMARY KEY NOT NULL,
-    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
     sequence_number INTEGER NOT NULL CHECK (sequence_number > 0),
     description TEXT,
     amount NUMERIC NOT NULL CHECK (amount >= 0),
@@ -102,11 +102,11 @@ CREATE TABLE course_installment_templates (
     due_day INTEGER CHECK (due_day IS NULL OR due_day BETWEEN 1 AND 31),
     proposed_due_date TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     UNIQUE (course_id, sequence_number),
     CHECK (
@@ -119,9 +119,9 @@ CREATE INDEX ix_installment_templates_course
     ON course_installment_templates (course_id, sequence_number);
 
 CREATE TABLE enrollments (
-    id TEXT PRIMARY KEY NOT NULL,
-    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
-    student_person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+    student_person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     enrolled_on TEXT NOT NULL,
     starts_on TEXT NOT NULL,
     ends_on TEXT,
@@ -130,11 +130,11 @@ CREATE TABLE enrollments (
     ),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (ends_on IS NULL OR ends_on >= starts_on)
 );
@@ -146,17 +146,17 @@ CREATE INDEX ix_enrollments_course ON enrollments (course_id, status, starts_on,
 CREATE INDEX ix_enrollments_student ON enrollments (student_person_id, status, starts_on, ends_on);
 
 CREATE TABLE enrollment_discounts (
-    id TEXT PRIMARY KEY NOT NULL,
-    enrollment_id TEXT NOT NULL UNIQUE REFERENCES enrollments(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    enrollment_id INTEGER NOT NULL UNIQUE REFERENCES enrollments(id) ON DELETE RESTRICT,
     type TEXT NOT NULL CHECK (type IN ('fixed', 'percentage')),
     value NUMERIC NOT NULL,
     reason TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (
         (type = 'percentage' AND value >= 0 AND value <= 100)
@@ -165,9 +165,9 @@ CREATE TABLE enrollment_discounts (
 );
 
 CREATE TABLE lessons (
-    id TEXT PRIMARY KEY NOT NULL,
-    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
-    teacher_person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE RESTRICT,
+    teacher_person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     starts_at TEXT NOT NULL,
     ends_at TEXT,
     topic TEXT,
@@ -176,11 +176,11 @@ CREATE TABLE lessons (
     ),
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     CHECK (ends_at IS NULL OR ends_at > starts_at)
 );
@@ -191,18 +191,18 @@ CREATE INDEX ix_lessons_status_date ON lessons (status, starts_at);
 CREATE INDEX ix_lessons_archived ON lessons (archived_at);
 
 CREATE TABLE lesson_attendances (
-    id TEXT PRIMARY KEY NOT NULL,
-    lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE RESTRICT,
-    student_person_id TEXT NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
+    id INTEGER PRIMARY KEY,
+    lesson_id INTEGER NOT NULL REFERENCES lessons(id) ON DELETE RESTRICT,
+    student_person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE RESTRICT,
     attendance TEXT CHECK (attendance IS NULL OR attendance IN ('present', 'absent')),
     recorded_at TEXT,
-    recorded_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    recorded_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    created_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     archived_at TEXT,
-    archived_by TEXT REFERENCES users(id) ON DELETE RESTRICT,
+    archived_by INTEGER REFERENCES users(id) ON DELETE RESTRICT,
     version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
     UNIQUE (lesson_id, student_person_id),
     CHECK (attendance IS NOT NULL OR recorded_at IS NULL)

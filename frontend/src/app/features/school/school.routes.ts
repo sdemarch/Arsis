@@ -4,6 +4,7 @@ import { SchoolPageComponent } from './school-page.component';
 export const SCHOOL_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'courses' },
   { path: 'courses', component: SchoolPageComponent },
+  { path: 'courses/new', loadComponent: () => import('./course-create.component').then((module) => module.CourseCreateComponent) },
   { path: 'courses/:courseId', loadComponent: () => import('./course-detail.component').then((module) => module.CourseDetailComponent) },
   { path: 'enrollments', component: SchoolPageComponent },
   { path: 'lessons', component: SchoolPageComponent },

@@ -1,13 +1,17 @@
 import { Routes } from '@angular/router';
 
+import { anonymousGuard, authenticatedGuard } from './core/auth/auth.guards';
+
 export const appRoutes: Routes = [
   {
     path: 'login',
+    canActivate: [anonymousGuard],
     loadComponent: () =>
       import('./features/auth/login-page.component').then((module) => module.LoginPageComponent),
   },
   {
     path: '',
+    canActivate: [authenticatedGuard],
     loadComponent: () =>
       import('./core/layout/app-shell.component').then((module) => module.AppShellComponent),
     children: [

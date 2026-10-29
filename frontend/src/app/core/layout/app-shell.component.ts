@@ -5,6 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 
 import { NAVIGATION } from './navigation';
 import applicationData from '../../../assets/mock/application.json';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'arsis-app-shell',
@@ -19,9 +20,10 @@ import applicationData from '../../../assets/mock/application.json';
       <div class="topbar-actions">
         <button class="icon-button" type="button" aria-label="Notifiche">●</button>
         <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo">
-          <span>SM</span>
-          <small>Stefano</small>
+          <span>{{ userInitials() }}</span>
+          <small>{{ auth.user()?.display_name }}</small>
         </a>
+        <button class="icon-button" type="button" aria-label="Esci" (click)="logout()">↪</button>
       </div>
     </header>
 
@@ -64,6 +66,7 @@ export class AppShellComponent {
   protected readonly navigation = NAVIGATION;
   protected readonly application = applicationData;
   private readonly router = inject(Router);
+  protected readonly auth = inject(AuthService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -77,4 +80,23 @@ export class AppShellComponent {
     () =>
       this.navigation.find((area) => this.currentUrl().startsWith(area.path)) ?? this.navigation[0],
   );
+
+  protected userInitials(): string {
+    return (this.auth.user()?.display_name ?? 'U')
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  protected logout(): void {
+    this.auth.logout().subscribe({
+      next: () => void this.router.navigateByUrl('/login'),
+      error: () => {
+        this.auth.clearSession();
+        void this.router.navigateByUrl('/login');
+      },
+    });
+  }
 }
