@@ -80,6 +80,17 @@ chmod +x run-local.sh
 Accetta facoltativamente `BACKEND_PORT` e `FRONTEND_PORT`, ad esempio
 `BACKEND_PORT=8080 FRONTEND_PORT=4300 ./run-local.sh`.
 
+Per provare lo stesso processo unico previsto per l'installazione locale, lo
+script compila Angular e avvia `arsis-local`:
+
+```bash
+ARSIS_MODE=runtime LOCAL_RUNTIME_PORT=8765 ./run-local.sh
+```
+
+La modalità predefinita `development` resta quella consigliata per lo sviluppo
+quotidiano: conserva hot reload per backend e frontend. Per dettagli sul runtime
+integrato, vedere [Runtime locale](local-runtime.md).
+
 In alternativa, avviare i due processi in terminali separati:
 
 ```powershell

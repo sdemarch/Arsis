@@ -27,6 +27,7 @@ dev = [
 [project.scripts]
 arsis-bootstrap-admin = "arsis.auth.bootstrap:main"
 arsis-seed = "arsis.dev.seed:main"
+arsis-local = "arsis.local_runtime:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arsis"]

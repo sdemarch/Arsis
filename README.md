@@ -18,7 +18,7 @@ Colori, font, spaziature, raggi, ombre e transizioni si modificano in un solo pu
 
 I componenti non contengono colori di brand hardcoded. La palette dei corsi è invece un dato applicativo e si trova in `frontend/src/app/core/config/course-colors.ts`.
 
-## Avvio locale
+## Avvio in sviluppo
 
 Prerequisiti: Python 3.14, Node.js 24, Liquibase 5 e Java 17 o superiore.
 
@@ -28,8 +28,20 @@ Prerequisiti: Python 3.14, Node.js 24, Liquibase 5 e Java 17 o superiore.
 3. Per caricare i dati dimostrativi usati dalle schermate Angular, eseguire
    `.\scripts\seed-dev.ps1`. Il comando è idempotente ed è consentito
    soltanto negli ambienti locali, di sviluppo e test.
-4. Backend: creare un virtualenv, quindi da `backend/` eseguire `pip install -e ".[dev]"` e `uvicorn arsis.main:app --reload`.
-5. Frontend: da `frontend/` eseguire `npm install` e `npm start`.
+4. Installare le dipendenze backend e frontend:
+
+   ```powershell
+   Set-Location backend
+   py -3.14 -m pip install -e ".[dev]"
+   Set-Location ..\frontend
+   npm install
+   ```
+
+5. Dalla radice, avviare i due processi di sviluppo con hot reload:
+
+   ```bash
+   ./run-local.sh
+   ```
 
 Endpoint di controllo: `http://localhost:8000/health/live` e `http://localhost:8000/health/ready`.
 
@@ -38,12 +50,28 @@ tabelle nel backend: rieseguendo `.\scripts\init-db.ps1` vengono aggiornati i fi
 `backend/src/arsis/generated/`. Il controllo
 `py -3.14 .\scripts\generate_backend_schema.py --check` segnala eventuali disallineamenti.
 
-In produzione Angular viene compilato e incluso nel pacchetto: Node.js e `npm` non vengono avviati sul PC server. Il file `data/arsis.db` deve restare sul disco locale ed essere aperto esclusivamente dal backend.
+## Runtime locale
+
+Per provare il processo unico previsto per l'installazione locale, compilare
+Angular e usare il runtime integrato:
+
+```bash
+ARSIS_MODE=runtime ./run-local.sh
+```
+
+Il runtime serve API e SPA dallo stesso processo su `127.0.0.1:8765`. In un exe
+i dati non vengono inclusi nel bundle: senza `ARSIS_DATA_DIR` usano
+`%LOCALAPPDATA%\Arsis`. Il database resta sul disco locale ed è aperto
+esclusivamente dal backend.
 
 ## Documenti di riferimento
 
-- [Specifica funzionale](SPECIFICA_FUNZIONALE.md)
-- [Specifica tecnica](SPECIFICA_TECNICA.md)
-- [Design tokens v1.1](arsis-design-tokens.md)
+- [Specifica funzionale](docs/SPECIFICA_FUNZIONALE.md)
+- [Specifica tecnica](docs/SPECIFICA_TECNICA.md)
+- [Design tokens v1.1](docs/arsis-design-tokens.md)
 - [ADR stack iniziale](docs/adr/0001-stack-iniziale.md)
 - [ADR distribuzione on-premise e SQLite](docs/adr/0002-on-premise-sqlite.md)
+- [Sviluppo locale](docs/operations/local-development.md)
+- [Runtime locale](docs/operations/local-runtime.md)
+- [Salvataggi portabili](docs/operations/portable-saves.md)
+- [Promemoria distribuzione locale](docs/DISTRIBUZIONE_LOCALE.md)

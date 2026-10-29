@@ -1,6 +1,6 @@
 # Arsis — Specifica tecnica della webapp
 
-> **Decisione successiva:** per la distribuzione on-premise su singolo PC, le indicazioni relative a PostgreSQL, Docker e componenti distribuibili sono superate da [ADR 0002 — Distribuzione on-premise e SQLite](docs/adr/0002-on-premise-sqlite.md). I requisiti funzionali e le restanti linee guida architetturali rimangono validi.
+> **Decisione successiva:** per la distribuzione on-premise su singolo PC, le indicazioni relative a PostgreSQL, Docker e componenti distribuibili sono superate da [ADR 0002 — Distribuzione on-premise e SQLite](adr/0002-on-premise-sqlite.md). I requisiti funzionali e le restanti linee guida architetturali rimangono validi.
 
 **Versione:** 0.2  
 **Stato:** proposta tecnica per MVP  
@@ -1245,12 +1245,12 @@ Staging e produzione devono avere configurazioni separate e non condividere data
 ```text
 arsis/
 ├── README.md
-├── SPECIFICA_FUNZIONALE.md
-├── SPECIFICA_TECNICA.md
 ├── database/
 │   ├── liquibase.properties.example
 │   └── changelog/
 ├── docs/
+│   ├── SPECIFICA_FUNZIONALE.md
+│   ├── SPECIFICA_TECNICA.md
 │   ├── adr/
 │   ├── api/
 │   └── operations/

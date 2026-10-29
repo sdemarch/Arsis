@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Start the Arsis API and Angular application for local development.
+# Start Arsis either in development mode or through the packaged-style local runtime.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
 FRONTEND_PORT="${FRONTEND_PORT:-4200}"
+ARSIS_MODE="${ARSIS_MODE:-development}"
+LOCAL_RUNTIME_PORT="${LOCAL_RUNTIME_PORT:-8765}"
 
 if command -v py >/dev/null 2>&1; then
   PYTHON=(py -3.14)
@@ -38,6 +40,22 @@ fi
 
 if [[ ! -f "$ROOT_DIR/data/arsis.db" ]]; then
   echo "Database assente. Inizializzarlo prima con: ./scripts/init-db.ps1" >&2
+  exit 1
+fi
+
+if [[ "$ARSIS_MODE" == "runtime" ]]; then
+  echo "Compilazione frontend per il runtime locale"
+  (
+    cd "$ROOT_DIR/frontend"
+    npm run build
+  )
+  echo "Avvio runtime locale: http://127.0.0.1:${LOCAL_RUNTIME_PORT}"
+  cd "$ROOT_DIR/backend"
+  exec "${PYTHON[@]}" -c "from arsis.local_runtime import main; main()" --port "$LOCAL_RUNTIME_PORT"
+fi
+
+if [[ "$ARSIS_MODE" != "development" ]]; then
+  echo "Modalita non supportata: $ARSIS_MODE (usare development o runtime)" >&2
   exit 1
 fi
 

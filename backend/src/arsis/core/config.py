@@ -20,6 +20,14 @@ def default_data_dir() -> Path:
     return PROJECT_ROOT / "data"
 
 
+def application_root() -> Path:
+    """Return the directory that contains bundled, read-only application assets."""
+
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    return PROJECT_ROOT
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -30,6 +38,10 @@ class Settings(BaseSettings):
     app_env: str = "local"
     app_secret_key: str = Field(default="local-development-secret-key-change-me", min_length=32)
     arsis_data_dir: Path | None = None
+    serve_frontend: bool = False
+    frontend_dist_dir: Path | None = None
+    local_bind_host: str = "127.0.0.1"
+    local_bind_port: int = Field(default=8765, ge=1, le=65535)
     allowed_origins: str = "http://localhost:4200"
     access_token_ttl: int = Field(default=900, ge=60, le=3600)
     refresh_token_ttl: int = Field(default=2_592_000, ge=300, le=31_536_000)
@@ -58,6 +70,19 @@ class Settings(BaseSettings):
     @property
     def backups_dir(self) -> Path:
         return self.data_dir / "backups"
+
+    @property
+    def frontend_dir(self) -> Path:
+        default_frontend_dir = (
+            application_root() / "frontend"
+            if getattr(sys, "frozen", False)
+            else PROJECT_ROOT / "frontend" / "dist" / "arsis" / "browser"
+        )
+        path = self.frontend_dist_dir or default_frontend_dir
+        path = path.expanduser()
+        if not path.is_absolute():
+            path = application_root() / path
+        return path.resolve()
 
     @property
     def database_url(self) -> str:
