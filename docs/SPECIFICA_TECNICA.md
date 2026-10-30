@@ -331,6 +331,7 @@ La quota annuale è informativa e non produce transazioni contabili.
 ##### `instruments`
 
 - `name` univoco tra i record attivi;
+- `section_id` FK obbligatoria;
 - `is_active`;
 - ordine di visualizzazione.
 
@@ -349,11 +350,8 @@ La quota annuale è informativa e non produce transazioni contabili.
 
 Deve esistere al massimo uno strumento principale per musicante.
 
-##### `musician_sections`
-
-- `musician_id` FK;
-- `section_id` FK;
-- vincolo univoco sulla coppia.
+Le sezioni del musicante sono ricavate da `musician_instruments` →
+`instruments.section_id`; non esiste una tabella di assegnazione manuale.
 
 #### Attività
 
@@ -1153,7 +1151,7 @@ Devono essere tracciate almeno:
 1. Login e logout.
 2. Creazione persona con più ruoli.
 3. Collegamento contatto associato.
-4. Assegnazione strumenti e sezioni.
+4. Assegnazione strumenti e verifica delle sezioni inferite.
 5. Creazione attività con convocati automatici.
 6. Registrazione presenze attività.
 7. Creazione corso, piano rate e iscrizione agevolata.

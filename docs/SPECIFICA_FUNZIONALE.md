@@ -276,11 +276,12 @@ Dati specifici:
 - eventuale data di uscita;
 - stato attivo/inattivo;
 - uno o più strumenti;
-- una o più sezioni;
+- una o più sezioni inferite dagli strumenti;
 - eventuale indicazione dello strumento principale;
 - note.
 
-Strumenti e sezioni provengono da elenchi configurabili.
+Ogni strumento appartiene a una sezione del catalogo; la sezione non viene
+assegnata manualmente al musicante.
 
 ### 8.7 Ruolo Allievo
 
@@ -588,6 +589,7 @@ erDiagram
     STRUMENTO {
         uuid id PK
         string nome
+        uuid sezione_id FK
         boolean attivo
     }
 
@@ -601,11 +603,6 @@ erDiagram
         uuid musicante_ruolo_id FK
         uuid strumento_id FK
         boolean principale
-    }
-
-    MUSICANTE_SEZIONE {
-        uuid musicante_ruolo_id FK
-        uuid sezione_id FK
     }
 
     ATTIVITA {
@@ -682,8 +679,7 @@ erDiagram
     PERSONA ||--o{ CONTATTO_ASSOCIATO : viene_associata
     RUOLO_PERSONA ||--o{ MUSICANTE_STRUMENTO : utilizza
     STRUMENTO ||--o{ MUSICANTE_STRUMENTO : classifica
-    RUOLO_PERSONA ||--o{ MUSICANTE_SEZIONE : appartiene
-    SEZIONE ||--o{ MUSICANTE_SEZIONE : raggruppa
+    SEZIONE ||--o{ STRUMENTO : raggruppa
     ATTIVITA ||--o{ PARTECIPAZIONE_ATTIVITA : include
     PERSONA ||--o{ PARTECIPAZIONE_ATTIVITA : partecipa
     PERSONA ||--o{ CORSO : insegna
@@ -712,7 +708,7 @@ erDiagram
 |---|---|
 | RB-01 | Una persona viene registrata una sola volta e può avere più ruoli contemporanei. |
 | RB-02 | Un contatto associato deve essere una persona già presente nell’anagrafica. |
-| RB-03 | Un musicante può essere collegato a più strumenti e più sezioni. |
+| RB-03 | Un musicante può essere collegato a più strumenti; le sue sezioni sono dedotte dalle sezioni degli strumenti assegnati. |
 | RB-04 | Alla creazione di un’attività vengono proposti tutti i musicanti attivi. |
 | RB-05 | Le presenze alle attività e alle lezioni sono presente/assente; il valore può restare inizialmente non registrato. |
 | RB-06 | La tariffa annuale è definita sul corso ed è comune agli iscritti. |
@@ -822,7 +818,7 @@ L’MVP può essere considerato funzionalmente accettabile quando un responsabil
 2. creare una persona con tutti i dati personali disponibili;
 3. assegnare più ruoli alla stessa persona;
 4. collegare un minorenne a un contatto già registrato;
-5. associare più strumenti e sezioni a un musicante;
+5. associare più strumenti a un musicante e verificarne le sezioni inferite;
 6. creare una prova, un concerto o un evento;
 7. ottenere automaticamente l’elenco dei musicanti attivi e modificarlo;
 8. registrare presenti e assenti a un’attività;

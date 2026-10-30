@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-SCHEMA_FINGERPRINT = "3f9476bdd9d7adcc"
+SCHEMA_FINGERPRINT = "1ec6024936658ce8"
 
 
 class GeneratedDTO(BaseModel):
@@ -355,12 +355,14 @@ class EnrollmentReadDTO(GeneratedDTO):
 
 class InstrumentCreateDTO(GeneratedDTO):
     name: str
+    section_id: int
     is_active: bool | None = None
     display_order: int | None = None
 
 
 class InstrumentUpdateDTO(GeneratedDTO):
     name: str | None = None
+    section_id: int | None = None
     is_active: bool | None = None
     display_order: int | None = None
 
@@ -368,6 +370,7 @@ class InstrumentUpdateDTO(GeneratedDTO):
 class InstrumentReadDTO(GeneratedDTO):
     id: int
     name: str
+    section_id: int
     is_active: bool
     display_order: int
     created_at: str
@@ -501,24 +504,6 @@ class MusicianInstrumentReadDTO(GeneratedDTO):
     musician_id: int
     instrument_id: int
     is_primary: bool
-    created_at: str
-    created_by: int | None
-
-
-class MusicianSectionCreateDTO(GeneratedDTO):
-    musician_id: int
-    section_id: int
-
-
-class MusicianSectionUpdateDTO(GeneratedDTO):
-    musician_id: int | None = None
-    section_id: int | None = None
-
-
-class MusicianSectionReadDTO(GeneratedDTO):
-    id: int
-    musician_id: int
-    section_id: int
     created_at: str
     created_by: int | None
 
@@ -764,4 +749,4 @@ class UserReadDTO(GeneratedDTO):
     version: int
 
 
-__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianSectionCreateDTO', 'MusicianSectionUpdateDTO', 'MusicianSectionReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']
+__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']

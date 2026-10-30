@@ -75,9 +75,7 @@ def _upsert(
     *,
     conflict_column: str | None = None,
 ) -> int:
-    identity_columns = (
-        (conflict_column,) if conflict_column is not None else SEED_IDENTITIES[table]
-    )
+    identity_columns = (conflict_column,) if conflict_column is not None else SEED_IDENTITIES[table]
     where_clause = " AND ".join(f"{column} = ?" for column in identity_columns)
     identity_values = tuple(values[column] for column in identity_columns)
     existing = connection.execute(
@@ -245,23 +243,10 @@ def _seed_people(connection: sqlite3.Connection, user_id: int) -> dict[str, int]
     return person_ids
 
 
-def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> dict[str, int]:
-    instrument_ids: dict[str, int] = {}
-    for order, name in enumerate(("Clarinetto", "Saxofono"), start=1):
-        instrument_id = _upsert(
-            connection,
-            "instruments",
-            {
-                "name": name,
-                "is_active": 1,
-                "display_order": order,
-                "created_by": user_id,
-                "updated_by": user_id,
-            },
-        )
-        instrument_ids[name.lower()] = instrument_id
-    for order, name in enumerate(("Legni", "Ottoni", "Percussioni"), start=1):
-        _upsert(
+def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> None:
+    section_ids: dict[str, int] = {}
+    for order, name in enumerate(BAND_SECTIONS, start=1):
+        section_ids[name] = _upsert(
             connection,
             "sections",
             {
@@ -272,149 +257,62 @@ def _seed_catalogues(connection: sqlite3.Connection, user_id: int) -> dict[str, 
                 "updated_by": user_id,
             },
         )
-    return instrument_ids
-
-
-COURSES: tuple[dict[str, Any], ...] = (
-    {
-        "key": "clarinetto",
-        "name": "Clarinetto",
-        "mode": "individual",
-        "category": "instrument",
-        "instrument": "clarinetto",
-        "teacher": "elena-bianchi",
-        "weekday": 1,
-        "start_time": "15:30",
-        "annual_fee": "420.00",
-        "color": "#378ADD",
-    },
-    {
-        "key": "saxofono",
-        "name": "Saxofono",
-        "mode": "individual",
-        "category": "instrument",
-        "instrument": "saxofono",
-        "teacher": "luca-ferri",
-        "weekday": 3,
-        "start_time": "17:00",
-        "annual_fee": "420.00",
-        "color": "#1D9E75",
-    },
-    {
-        "key": "propedeutica-musicale",
-        "name": "Propedeutica musicale",
-        "mode": "group",
-        "category": "ensemble",
-        "instrument": None,
-        "teacher": "chiara-pellegrini",
-        "weekday": 2,
-        "start_time": "16:30",
-        "annual_fee": "280.00",
-        "color": "#D85A30",
-    },
-    {
-        "key": "musica-insieme",
-        "name": "Musica d'insieme",
-        "mode": "group",
-        "category": "ensemble",
-        "instrument": None,
-        "teacher": "andrea-neri",
-        "weekday": 4,
-        "start_time": "18:30",
-        "annual_fee": "180.00",
-        "color": "#7F77DD",
-    },
-)
-
-
-def _seed_school(
-    connection: sqlite3.Connection,
-    user_id: int,
-    person_ids: Mapping[str, int],
-    instrument_ids: Mapping[str, int],
-) -> tuple[dict[str, int], int]:
-    course_ids: dict[str, int] = {}
-    for course in COURSES:
-        key = str(course["key"])
-        instrument = course["instrument"]
-        course_id = _upsert(
-            connection,
-            "courses",
-            {
-                "name": course["name"],
-                "mode": course["mode"],
-                "category": course["category"],
-                "instrument_id": instrument_ids[str(instrument)] if instrument else None,
-                "teacher_person_id": person_ids[str(course["teacher"])],
-                "weekday": course["weekday"],
-                "start_time": course["start_time"],
-                "annual_fee": course["annual_fee"],
-                "color": course["color"],
-                "valid_from": "2026-01-01",
-                "status": "active",
-                "created_by": user_id,
-                "updated_by": user_id,
-            },
-        )
-        course_ids[key] = course_id
-
-    enrollment_pairs = (
-        ("clarinetto", "marco-rossi"),
-        ("saxofono", "giulia-moretti"),
-        ("propedeutica-musicale", "giulia-moretti"),
-    )
-    for course_key, student_key in enrollment_pairs:
+    for order, (name, section) in enumerate(BAND_INSTRUMENTS, start=1):
         _upsert(
             connection,
-            "enrollments",
+            "instruments",
             {
-                "course_id": course_ids[course_key],
-                "student_person_id": person_ids[student_key],
-                "enrolled_on": "2026-01-10",
-                "starts_on": "2026-01-15",
-                "status": "active",
+                "name": name,
+                "section_id": section_ids[section],
+                "is_active": 1,
+                "display_order": order,
                 "created_by": user_id,
                 "updated_by": user_id,
             },
         )
 
-    lessons = (
-        ("clarinetto-1", "clarinetto", "elena-bianchi", "2026-08-20T15:30:00+02:00"),
-        (
-            "propedeutica-1",
-            "propedeutica-musicale",
-            "chiara-pellegrini",
-            "2026-08-20T16:30:00+02:00",
-        ),
-        ("saxofono-1", "saxofono", "luca-ferri", "2026-08-20T18:00:00+02:00"),
-    )
-    for _lesson_key, course_key, teacher_key, starts_at in lessons:
-        lesson_id = _upsert(
-            connection,
-            "lessons",
-            {
-                "course_id": course_ids[course_key],
-                "teacher_person_id": person_ids[teacher_key],
-                "starts_at": starts_at,
-                "status": "planned",
-                "created_by": user_id,
-                "updated_by": user_id,
-            },
-        )
-        for enrolled_course, student_key in enrollment_pairs:
-            if enrolled_course != course_key:
-                continue
-            _upsert(
-                connection,
-                "lesson_attendances",
-                {
-                    "lesson_id": lesson_id,
-                    "student_person_id": person_ids[student_key],
-                    "created_by": user_id,
-                    "updated_by": user_id,
-                },
-            )
-    return course_ids, len(lessons)
+
+BAND_SECTIONS = (
+    "Clarinetti",
+    "Trombe",
+    "Corni",
+    "Oboi",
+    "Flauti",
+    "Ottoni",
+    "Percussioni",
+    "Sax",
+)
+
+BAND_INSTRUMENTS: tuple[tuple[str, str], ...] = (
+    ("Clarinetto", "Clarinetti"),
+    ("Clarinetto Basso", "Clarinetti"),
+    ("Clarinetto Piccolo", "Clarinetti"),
+    ("Cornetta", "Trombe"),
+    ("Corno", "Corni"),
+    ("Corno Inglese", "Oboi"),
+    ("Flauto Traverso", "Flauti"),
+    ("Flicorno Baritono", "Ottoni"),
+    ("Flicorno Contralto", "Corni"),
+    ("Flicorno Soprano", "Ottoni"),
+    ("Flicorno Tenore", "Ottoni"),
+    ("Glockenspiel", "Percussioni"),
+    ("Grancassa", "Percussioni"),
+    ("Marimba", "Percussioni"),
+    ("Oboe", "Oboi"),
+    ("Ottavino", "Flauti"),
+    ("Piatti", "Percussioni"),
+    ("Rullante", "Percussioni"),
+    ("Sax Baritono", "Sax"),
+    ("Sax Contralto", "Sax"),
+    ("Sax Soprano", "Sax"),
+    ("Sax Tenore", "Sax"),
+    ("Timpani", "Percussioni"),
+    ("Tromba", "Ottoni"),
+    ("Trombone", "Ottoni"),
+    ("Tuba", "Ottoni"),
+    ("Vibrafono", "Percussioni"),
+    ("Xilofono", "Percussioni"),
+)
 
 
 ACTIVITIES: tuple[tuple[str, str, str, str, str, str], ...] = (
@@ -459,9 +357,7 @@ def _seed_activities(
     person_ids: Mapping[str, int],
 ) -> None:
     musicians = ("elena-bianchi", "andrea-neri", "chiara-pellegrini")
-    for index, (_key, activity_type, title, starts_at, ends_at, location) in enumerate(
-        ACTIVITIES
-    ):
+    for index, (_key, activity_type, title, starts_at, ends_at, location) in enumerate(ACTIVITIES):
         activity_id = _upsert(
             connection,
             "activities",
@@ -526,19 +422,16 @@ def seed_database(database_path: Path | None = None) -> SeedResult:
         _require_schema(connection)
         user_id = _seed_user(connection)
         person_ids = _seed_people(connection, user_id)
-        instrument_ids = _seed_catalogues(connection, user_id)
-        course_ids, lesson_count = _seed_school(
-            connection, user_id, person_ids, instrument_ids
-        )
+        _seed_catalogues(connection, user_id)
         _seed_activities(connection, user_id, person_ids)
         _seed_settings(connection, user_id)
 
     return SeedResult(
         database_path=path,
         people=len(person_ids),
-        courses=len(course_ids),
+        courses=0,
         activities=len(ACTIVITIES),
-        lessons=lesson_count,
+        lessons=0,
     )
 
 

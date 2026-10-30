@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "3f9476bdd9d7adcc"
+SCHEMA_FINGERPRINT = "1ec6024936658ce8"
 
 
 class Base(DeclarativeBase):
@@ -194,6 +194,7 @@ class Instrument(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    section_id: Mapped[int] = mapped_column(Integer, ForeignKey('sections.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('1'))
     display_order: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
     created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
@@ -269,16 +270,6 @@ class MusicianInstrument(Base):
     musician_id: Mapped[int] = mapped_column(Integer, ForeignKey('musicians.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
     instrument_id: Mapped[int] = mapped_column(Integer, ForeignKey('instruments.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
     is_primary: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('0'))
-    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
-    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
-
-
-class MusicianSection(Base):
-    __tablename__ = "musician_sections"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
-    musician_id: Mapped[int] = mapped_column(Integer, ForeignKey('musicians.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
-    section_id: Mapped[int] = mapped_column(Integer, ForeignKey('sections.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
     created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
 
@@ -418,4 +409,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'MusicianSection', 'Musician', 'Person', 'PersonRole', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
