@@ -83,3 +83,59 @@ class EnrollmentResponse(EnrollmentCreateRequest):
     updated_at: str
     archived_at: str | None
     version: int
+
+
+LessonStatus = Literal["planned", "completed", "cancelled"]
+
+
+class LessonCreateRequest(ApiModel):
+    course_id: int = Field(ge=1)
+    teacher_person_id: int = Field(ge=1)
+    starts_at: str = Field(min_length=16, max_length=40)
+    ends_at: str | None = Field(default=None, min_length=16, max_length=40)
+    topic: str | None = Field(default=None, max_length=300)
+    status: LessonStatus | None = None
+    notes: str | None = None
+
+
+class LessonUpdateRequest(ApiModel):
+    version: int = Field(ge=1)
+    course_id: int | None = Field(default=None, ge=1)
+    teacher_person_id: int | None = Field(default=None, ge=1)
+    starts_at: str | None = Field(default=None, min_length=16, max_length=40)
+    ends_at: str | None = Field(default=None, min_length=16, max_length=40)
+    topic: str | None = Field(default=None, max_length=300)
+    status: LessonStatus | None = None
+    notes: str | None = None
+
+
+class LessonResponse(LessonCreateRequest):
+    id: int
+    status: LessonStatus
+    created_at: str
+    updated_at: str
+    archived_at: str | None
+    version: int
+
+
+AttendanceStatus = Literal["present", "absent"]
+
+
+class AttendanceWrite(ApiModel):
+    student_person_id: int = Field(ge=1)
+    attendance: AttendanceStatus | None = None
+
+
+class AttendanceBulkRequest(ApiModel):
+    rows: list[AttendanceWrite] = Field(min_length=1, max_length=500)
+
+
+class LessonAttendanceResponse(AttendanceWrite):
+    student_name: str
+    recorded_at: str | None
+    version: int | None
+
+
+class AttendanceImportResponse(ApiModel):
+    lesson_id: int
+    processed_rows: int
