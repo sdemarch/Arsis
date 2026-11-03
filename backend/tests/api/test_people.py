@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from arsis.auth.service import bootstrap_first_responsible
 from arsis.core.database import get_database_session
-from arsis.generated.models import Base
+from arsis.generated.models import AppSetting, Base
 from arsis.main import create_app
 
 
@@ -30,6 +30,14 @@ def people_app(tmp_path) -> Iterator[FastAPI]:
             display_name="Responsabile",
             password="correct horse battery staple",
         )
+        session.add_all(
+            [
+                AppSetting(key="organization.name", value='"Filarmonica di test"'),
+                AppSetting(key="archive.google_drive_url", value='""'),
+                AppSetting(key="ui.default_theme", value='"light"'),
+            ]
+        )
+        session.commit()
 
     def override_session() -> Iterator[Session]:
         with factory() as session:
@@ -54,6 +62,81 @@ def _headers(client: TestClient) -> dict[str, str]:
         },
     )
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_general_settings_are_persisted(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        initial = client.get("/api/v1/settings/general", headers=headers)
+        assert initial.status_code == 200
+        assert initial.json()["organization_name"] == "Filarmonica di test"
+
+        saved = client.put(
+            "/api/v1/settings/general",
+            headers=headers,
+            json={
+                **initial.json(),
+                "organization_name": "Nuova filarmonica",
+                "archive_google_drive_url": "https://drive.google.com/drive/folders/test",
+                "default_theme": "dark",
+            },
+        )
+        assert saved.status_code == 200
+        assert saved.json()["organization_name"] == "Nuova filarmonica"
+        assert saved.json()["organization_name_version"] == 2
+        assert saved.json()["default_theme"] == "dark"
+
+        persisted = client.get("/api/v1/settings/general", headers=headers)
+        assert persisted.json() == saved.json()
+
+        stale = client.put(
+            "/api/v1/settings/general",
+            headers=headers,
+            json={**initial.json(), "organization_name": "Versione obsoleta"},
+        )
+        assert stale.status_code == 409
+        assert stale.json()["error"]["code"] == "STALE_VERSION"
+
+
+def test_responsible_users_are_managed_from_settings(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        created = client.post(
+            "/api/v1/settings/responsible-users",
+            headers=headers,
+            json={
+                "email": "secondo@example.it",
+                "display_name": "Secondo responsabile",
+                "password": "another secure password",
+            },
+        )
+        assert created.status_code == 201
+        second_user = created.json()
+        assert second_user["is_active"] is True
+
+        listing = client.get("/api/v1/settings/responsible-users", headers=headers)
+        assert listing.status_code == 200
+        assert [user["email"] for user in listing.json()] == [
+            "responsabile@example.it",
+            "secondo@example.it",
+        ]
+        current_user = listing.json()[0]
+
+        deactivated = client.patch(
+            f"/api/v1/settings/responsible-users/{second_user['id']}",
+            headers=headers,
+            json={"is_active": False, "version": second_user["version"]},
+        )
+        assert deactivated.status_code == 200
+        assert deactivated.json()["is_active"] is False
+
+        self_deactivation = client.patch(
+            "/api/v1/settings/responsible-users/1",
+            headers=headers,
+            json={"is_active": False, "version": current_user["version"]},
+        )
+        assert self_deactivation.status_code == 409
+        assert self_deactivation.json()["error"]["code"] == "CANNOT_DEACTIVATE_SELF"
 
 
 def test_people_crud_roles_and_pagination(people_app: FastAPI) -> None:

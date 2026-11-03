@@ -20,6 +20,7 @@ from arsis.health.router import router as health_router
 from arsis.people.router import router as people_router
 from arsis.school.router import enrollments_router, lessons_router
 from arsis.school.router import router as school_router
+from arsis.settings.router import router as settings_router
 
 
 @asynccontextmanager
@@ -78,6 +79,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(school_router)
     application.include_router(enrollments_router)
     application.include_router(lessons_router)
+    application.include_router(settings_router)
     application.include_router(api_v1)
     if runtime_settings.serve_frontend:
         frontend_dir = runtime_settings.frontend_dir

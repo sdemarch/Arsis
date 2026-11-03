@@ -387,9 +387,7 @@ def _seed_activities(
 
 
 def _seed_settings(connection: sqlite3.Connection, user_id: int) -> None:
-    _upsert(
-        connection,
-        "app_settings",
+    settings = (
         {
             "key": "archive.google_drive_url",
             "value": json.dumps(
@@ -399,8 +397,16 @@ def _seed_settings(connection: sqlite3.Connection, user_id: int) -> None:
             "created_by": user_id,
             "updated_by": user_id,
         },
-        conflict_column="key",
+        {
+            "key": "organization.name",
+            "value": json.dumps("Società Filarmonica G. Rossini", ensure_ascii=False),
+            "description": "Denominazione visualizzata dell’organizzazione",
+            "created_by": user_id,
+            "updated_by": user_id,
+        },
     )
+    for values in settings:
+        _upsert(connection, "app_settings", values, conflict_column="key")
 
 
 def seed_database(database_path: Path | None = None) -> SeedResult:
