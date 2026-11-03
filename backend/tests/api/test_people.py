@@ -469,3 +469,39 @@ def test_lesson_attendance_register_and_excel_import(people_app: FastAPI) -> Non
         assert template.headers["content-type"].startswith(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+
+def test_catalogues_manage_sections_and_instruments(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        section = client.post(
+            "/api/v1/sections", headers=headers, json={"name": "Archi", "display_order": 10}
+        )
+        assert section.status_code == 201
+        section_data = section.json()
+        instrument = client.post(
+            "/api/v1/instruments",
+            headers=headers,
+            json={"name": "Violino", "section_id": section_data["id"], "display_order": 10},
+        )
+        assert instrument.status_code == 201
+        instrument_data = instrument.json()
+        assert client.get("/api/v1/instruments", headers=headers).json()["meta"]["total_items"] == 1
+
+        blocked = client.delete(
+            f"/api/v1/sections/{section_data['id']}?version={section_data['version']}",
+            headers=headers,
+        )
+        assert blocked.status_code == 409
+        assert blocked.json()["error"]["code"] == "SECTION_HAS_ACTIVE_INSTRUMENTS"
+
+        archived = client.delete(
+            f"/api/v1/instruments/{instrument_data['id']}?version={instrument_data['version']}",
+            headers=headers,
+        )
+        assert archived.status_code == 200
+        section_archived = client.delete(
+            f"/api/v1/sections/{section_data['id']}?version={section_data['version']}",
+            headers=headers,
+        )
+        assert section_archived.status_code == 200

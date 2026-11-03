@@ -22,9 +22,9 @@ _Aggiornato: 3 novembre 2026_
   paginazione, ordinamento, archiviazione, audit e schermate Angular.
 - [x] **6c. Scuola: Iscrizioni** — CRUD, verifica di corso e ruolo allievo,
   prevenzione duplicati, ricerca, archiviazione, audit e schermate Angular.
-- [x] **6d. Catalogo strumenti e sezioni** — catalogo iniziale, sezione
-  obbligatoria per strumento e sezioni dei musicanti inferite dagli strumenti;
-  eliminata l'assegnazione manuale musicante–sezione.
+- [x] **6d. Catalogo strumenti e sezioni** — catalogo iniziale e gestione
+  CRUD/archiviazione, sezione obbligatoria per strumento e sezioni dei musicanti
+  inferite dagli strumenti; eliminata l'assegnazione manuale musicante–sezione.
 - [x] **6e. Scuola: Lezioni** — CRUD, validazione di corso e insegnante attivi,
   intervallo orario, ricerca, archiviazione, audit e schermate Angular.
 - [x] **6f. Scuola: Registro presenze** — roster dedotto dalle iscrizioni valide,
@@ -38,7 +38,7 @@ _Aggiornato: 3 novembre 2026_
 ## Da completare
 
 - [ ] **6i. Moduli di dominio rimanenti** — contabilità, archivio e
-  configurazioni, procedendo per fette verticali.
+  configurazioni generali, procedendo per fette verticali.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
@@ -50,6 +50,6 @@ _Aggiornato: 3 novembre 2026_
   API locali; le sezioni rimanenti usano ancora mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: cataloghi/configurazioni, poi contabilità.
+- Prossimo avanzamento funzionale: configurazioni generali, poi contabilità.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.

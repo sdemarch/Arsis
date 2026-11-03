@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import settingsData from '../../../assets/mock/settings.json';
 import { ConfigurationStore } from '../../core/config/configuration.store';
@@ -7,12 +8,12 @@ import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 
 @Component({
   selector: 'arsis-settings-page',
-  imports: [PageHeaderComponent, FormsModule],
+  imports: [PageHeaderComponent, FormsModule, RouterLink],
   template: `
     <arsis-page-header eyebrow="Profilo" title="Configurazioni" description="Gestisci etichette, cataloghi e preferenze generali dell’applicazione." />
     <section class="settings-grid">
       @for (catalogue of catalogues; track catalogue.label) {
-        <article class="settings-card card"><div class="settings-icon">{{ catalogue.label.slice(0, 2).toUpperCase() }}</div><div><h2>{{ catalogue.label }}</h2><p>{{ catalogue.count }} elementi · {{ catalogue.detail }}</p></div>@if (catalogue.label === 'Ruoli anagrafici') { <a class="button button--secondary" href="#roles">Gestisci</a> } @else { <button class="button button--secondary" type="button">Gestisci</button> }</article>
+        <article class="settings-card card"><div class="settings-icon">{{ catalogue.label.slice(0, 2).toUpperCase() }}</div><div><h2>{{ catalogue.label }}</h2><p>{{ catalogue.count }} elementi · {{ catalogue.detail }}</p></div>@if (catalogue.label === 'Ruoli anagrafici') { <a class="button button--secondary" href="#roles">Gestisci</a> } @else if (catalogue.label === 'Strumenti') { <a class="button button--secondary" routerLink="/settings/catalogues">Gestisci</a> } @else { <button class="button button--secondary" type="button">Gestisci</button> }</article>
       }
     </section>
     <section class="config-section card" id="roles">

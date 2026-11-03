@@ -8,6 +8,7 @@ from fastapi.routing import APIRoute
 from arsis.activities.router import router as activities_router
 from arsis.auth.dependencies import get_current_user
 from arsis.auth.router import router as auth_router
+from arsis.catalogues.router import instruments_router, sections_router
 from arsis.core.api_models import ApiInfo
 from arsis.core.config import Settings, get_settings
 from arsis.core.database import dispose_database_engine, get_database_engine
@@ -70,6 +71,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_exception_handlers(application)
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(sections_router)
+    application.include_router(instruments_router)
     application.include_router(activities_router)
     application.include_router(people_router)
     application.include_router(school_router)
