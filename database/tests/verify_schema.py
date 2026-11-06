@@ -7,6 +7,9 @@ from pathlib import Path
 EXPECTED_TABLES = {
     "DATABASECHANGELOG",
     "DATABASECHANGELOGLOCK",
+    "accounting_categories",
+    "accounting_movements",
+    "accounting_opening_balances",
     "activities",
     "activity_participants",
     "app_settings",
@@ -21,7 +24,6 @@ EXPECTED_TABLES = {
     "lessons",
     "members",
     "musician_instruments",
-    "musician_sections",
     "musicians",
     "people",
     "person_roles",
@@ -51,7 +53,7 @@ def verify_schema(database_path: Path) -> None:
 
     missing = EXPECTED_TABLES - tables
     unexpected = tables - EXPECTED_TABLES
-    if missing or unexpected or foreign_key_errors or changesets != 4:
+    if missing or unexpected or foreign_key_errors or changesets != 7:
         raise SystemExit(
             "Schema non valido: "
             f"missing={sorted(missing)}, unexpected={sorted(unexpected)}, "

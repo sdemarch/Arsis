@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
+from arsis.accounting.router import router as accounting_router
 from arsis.activities.router import router as activities_router
 from arsis.auth.dependencies import get_current_user
 from arsis.auth.router import router as auth_router
@@ -80,6 +81,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(enrollments_router)
     application.include_router(lessons_router)
     application.include_router(settings_router)
+    application.include_router(accounting_router)
     application.include_router(api_v1)
     if runtime_settings.serve_frontend:
         frontend_dir = runtime_settings.frontend_dir

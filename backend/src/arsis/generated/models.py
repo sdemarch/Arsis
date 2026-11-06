@@ -8,11 +8,66 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "1ec6024936658ce8"
+SCHEMA_FINGERPRINT = "5bbdef9b7d2f8968"
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class AccountingCategory(Base):
+    __tablename__ = "accounting_categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    direction: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    required_person_role: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    course_required: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
+    color: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('1'))
+    display_order: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+
+
+class AccountingMovement(Base):
+    __tablename__ = "accounting_movements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    occurred_on: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    direction: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    account: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey('accounting_categories.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric, primary_key=False, nullable=False)
+    subject: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    person_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('people.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    course_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('courses.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    description: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    document_reference: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+
+
+class AccountingOpeningBalance(Base):
+    __tablename__ = "accounting_opening_balances"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    fiscal_year: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False)
+    account: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric, primary_key=False, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
 class Activity(Base):
@@ -409,4 +464,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']

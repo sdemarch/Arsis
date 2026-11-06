@@ -8,6 +8,9 @@ from arsis.generated.schemas import (
 from arsis.generated.schemas import AppSettingUpdateDTO, PersonCreateDTO, PersonUpdateDTO
 
 EXPECTED_TABLES = {
+    "accounting_categories",
+    "accounting_movements",
+    "accounting_opening_balances",
     "activities",
     "activity_participants",
     "app_settings",
