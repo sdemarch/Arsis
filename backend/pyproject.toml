@@ -30,6 +30,7 @@ dev = [
 arsis-bootstrap-admin = "arsis.auth.bootstrap:main"
 arsis-seed = "arsis.dev.seed:main"
 arsis-local = "arsis.local_runtime:main"
+arsis-migrate = "arsis.migrate:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arsis"]

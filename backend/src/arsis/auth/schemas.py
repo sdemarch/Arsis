@@ -37,6 +37,21 @@ class LoginRequest(ApiModel):
         return normalize_email(value)
 
 
+class SetupStatus(ApiModel):
+    required: bool
+
+
+class SetupRequest(ApiModel):
+    email: Email
+    display_name: str = Field(min_length=1, max_length=200)
+    password: SecretStr = Field(min_length=12, max_length=256)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        return normalize_email(value)
+
+
 class AuthUser(ApiModel):
     id: int
     email: str

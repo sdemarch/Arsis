@@ -72,6 +72,11 @@ class Settings(BaseSettings):
         return self.data_dir / "backups"
 
     @property
+    def changelog_dir(self) -> Path:
+        """Liquibase changelog, bundled read-only next to the app in an exe."""
+        return application_root() / "database" / "changelog"
+
+    @property
     def frontend_dir(self) -> Path:
         default_frontend_dir = (
             application_root() / "frontend"

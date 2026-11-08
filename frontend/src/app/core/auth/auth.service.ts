@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
 
 const API_URL = '/api/v1';
 
@@ -32,6 +32,18 @@ export class AuthService {
     return this.http
       .post<TokenResponse>(`${API_URL}/auth/login`, { email, password }, { withCredentials: true })
       .pipe(tap((response) => this.setSession(response)));
+  }
+
+  /** True on a fresh installation that still has no responsible user. */
+  setupRequired(): Observable<boolean> {
+    return this.http.get<{ required: boolean }>(`${API_URL}/auth/setup`).pipe(map((status) => status.required));
+  }
+
+  /** Create the first responsible, then sign in with the same credentials. */
+  completeSetup(email: string, displayName: string, password: string): Observable<TokenResponse> {
+    return this.http
+      .post<AuthUser>(`${API_URL}/auth/setup`, { email, display_name: displayName, password })
+      .pipe(switchMap(() => this.login(email, password)));
   }
 
   refresh(): Observable<TokenResponse> {
