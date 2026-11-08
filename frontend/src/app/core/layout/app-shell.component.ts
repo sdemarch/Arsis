@@ -24,12 +24,11 @@ function firstSegment(url: string): string {
         }
       </nav>
       <div class="topbar-actions">
-        <button class="icon-button" type="button" aria-label="Notifiche">●</button>
         <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo" [attr.aria-current]="matchedArea()?.path === '/settings' ? 'page' : null">
           <span>{{ userInitials() }}</span>
           <small>{{ auth.user()?.display_name }}</small>
         </a>
-        <button class="icon-button" type="button" aria-label="Esci" (click)="logout()">↪</button>
+        <button class="icon-button" type="button" aria-label="Esci" title="Esci" (click)="logout()">↪</button>
       </div>
     </header>
 
