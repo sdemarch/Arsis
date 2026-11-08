@@ -1,8 +1,8 @@
 # Arsis — Specifica funzionale della webapp gestionale
 
-**Versione:** 0.2  
+**Versione:** 0.3  
 **Stato:** bozza consolidata per MVP  
-**Data:** 19 agosto 2026  
+**Data:** 8 novembre 2026  
 **Destinatari:** responsabili dell’associazione, progettisti e sviluppatori
 
 ---
@@ -21,7 +21,7 @@ La specifica raccoglie le decisioni emerse durante l’intervista iniziale e def
 - requisiti di sicurezza e usabilità;
 - funzionalità escluse o rinviate.
 
-La gestione della **Contabilità** è intenzionalmente lasciata da definire, perché richiede un’analisi dedicata.
+La **Contabilità** dell’MVP è limitata a una prima nota di Banca e Cassa (sezione 12). Rate, pagamenti degli allievi, compensi e rendicontazione restano da definire, perché richiedono un’analisi dedicata.
 
 ### 1.1 Documenti di riferimento
 
@@ -38,7 +38,7 @@ La webapp deve offrire ai responsabili un unico punto di accesso per:
 2. organizzare prove, concerti ed eventi della banda;
 3. configurare corsi, iscrizioni, lezioni e presenze della scuola;
 4. accedere rapidamente all’archivio documentale su Google Drive;
-5. predisporre un’area futura per la gestione contabile.
+5. registrare entrate e uscite in una prima nota di Banca e Cassa.
 
 ## 3. Perimetro dell’MVP
 
@@ -60,12 +60,14 @@ La webapp deve offrire ai responsabili un unico punto di accesso per:
 - Registro delle presenze alle lezioni.
 - Collegamento a una cartella Google Drive.
 - Archiviazione logica dei dati, senza cancellazione definitiva.
+- Importazione delle presenze di una lezione da un modello Excel `.xlsx`.
+- Prima nota contabile di Banca e Cassa con categorie configurabili, saldi iniziali e bilancio annuale.
 - Dashboard Home essenziale.
 
 ### 3.2 Funzionalità escluse o rinviate
 
-- Contabilità di rate, pagamenti, compensi e rimborsi: **TBD**.
-- Importazione Excel di lezioni e presenze: fuori dall’MVP.
+- Contabilità di rate, scadenze, insoluti, ricevute e compensi calcolati: **TBD**.
+- Importazione Excel massiva delle lezioni: rinviata.
 - Collegamento di documenti Drive a persone, corsi o attività.
 - Gestione delle spese e dei rimborsi associati alle attività.
 - Portale dedicato ad allievi, genitori o insegnanti.
@@ -122,7 +124,7 @@ La selezione di un’area aggiorna il contenuto della sidebar sinistra.
 | Attività | Calendario; Tutte le attività; Prove; Concerti; Eventi; Presenze |
 | Scuola | Corsi; Iscrizioni; Lezioni; Registro presenze |
 | Archivio | Apri Google Drive |
-| Contabilità | Pagina informativa “Funzionalità da definire” |
+| Contabilità | Registro contabile; Bilancio |
 
 Le liste di Soci, Musicanti, Allievi e Insegnanti sono viste filtrate della stessa anagrafica e non archivi separati.
 
@@ -502,7 +504,9 @@ Il registro deve consentire:
 
 ### 10.8 Importazione Excel
 
-L’importazione Excel di lezioni e presenze è un requisito futuro, non bloccante per l’MVP. Il modello dati deve comunque permettere l’inserimento massivo senza cambiare le entità Lezione e Presenza lezione.
+Dal registro presenze di una lezione il responsabile può scaricare un modello `.xlsx` con gli allievi iscritti e reimportarlo compilato. L’importazione aggiorna solo le presenze della lezione aperta.
+
+L’importazione massiva delle lezioni resta un requisito futuro. Il modello dati deve comunque permetterla senza cambiare le entità Lezione e Presenza lezione.
 
 ## 11. Area Archivio
 
@@ -520,17 +524,37 @@ L’accesso effettivo ai file dipende dai permessi configurati su Google Drive.
 
 ## 12. Area Contabilità
 
-La voce **Contabilità** deve essere visibile nella topbar per rendere stabile l’architettura di navigazione, ma nell’MVP apre una pagina segnaposto.
+L’area Contabilità è una **prima nota**: registra le entrate e le uscite effettive di due conti, **Banca** e **Cassa**, e ne ricava i saldi. Non genera movimenti in automatico da corsi, iscrizioni o attività.
 
-La pagina deve indicare che sono da definire:
+### RF-CO-01 — Categorie contabili
 
-- rate e pagamenti degli allievi;
-- compensi degli insegnanti;
-- rimborsi;
-- eventuali ricevute, documenti e report;
-- regole di calcolo e collegamenti con corsi, lezioni e attività.
+Ogni movimento appartiene a una categoria configurabile da **Configurazioni → Categorie contabili**. Una categoria definisce:
 
-La progettazione futura dovrà partire da un’intervista dedicata. Il piano rate dei corsi e le agevolazioni non devono essere interpretati come movimenti contabili fino a tale analisi.
+- nome univoco;
+- verso ammesso: entrata, uscita oppure entrambi;
+- ruolo richiesto alla persona collegata, facoltativo: allievo, insegnante o socio;
+- corso obbligatorio, sì o no;
+- colore e ordine di visualizzazione.
+
+Le categorie usate non si cancellano: vengono archiviate e restano visibili sui movimenti già registrati. All’installazione sono proposte, tra le altre, Retta scuola, Quota associativa, Contributo o donazione, Rimborso insegnante e Commissione bancaria.
+
+### RF-CO-02 — Registro dei movimenti
+
+Il registro mostra i movimenti dell’esercizio selezionato, dal più recente, con data, soggetto, categoria, conto, descrizione, riferimento documento e importo. È possibile filtrare per mese, conto e categoria e cercare in soggetto, descrizione e riferimento.
+
+Un movimento contiene: data, verso, conto, categoria, importo positivo, soggetto, descrizione, persona e corso collegati quando richiesti, riferimento documento facoltativo.
+
+Quando la categoria richiede una persona, il modulo propone solo le persone con quel ruolo e compila il soggetto con il loro nome. Quando richiede un corso, il corso è obbligatorio; per un insegnante sono proposti solo i suoi corsi.
+
+I movimenti si possono modificare ed eliminare. L’eliminazione chiede conferma ed è tracciata nell’audit.
+
+### RF-CO-03 — Saldi iniziali e bilancio
+
+Per ogni esercizio il responsabile inserisce il saldo iniziale di Banca e di Cassa. La vista **Bilancio** mostra per ciascun conto saldo iniziale, entrate, uscite e saldo finale, il totale disponibile e i totali di entrate e uscite per categoria.
+
+### RF-CO-04 — Fuori perimetro
+
+Restano da definire con un’intervista dedicata (sezione 18): generazione delle rate, scadenze e insoluti, ricevute, compensi calcolati degli insegnanti e report di rendicontazione. Il piano rate dei corsi e le agevolazioni restano dati organizzativi e non producono movimenti.
 
 ## 13. Configurazione
 
@@ -700,6 +724,7 @@ erDiagram
 - Le presenze usano tre condizioni tecniche: non registrata, presente e assente. Nell’interfaccia operativa gli stati selezionabili sono solo presente e assente.
 - Le partecipazioni vengono materializzate per preservare l’elenco storico dei convocati.
 - Tariffe, rate proposte e agevolazioni sono dati organizzativi, non movimenti contabili.
+- I movimenti contabili sono registrati a mano nella prima nota; il collegamento a persona e corso serve a verificarne la coerenza, non a calcolare crediti.
 - Tutte le entità principali includono metadati di creazione, modifica e archiviazione anche quando non riportati nel diagramma.
 
 ## 15. Regole di business riepilogative
@@ -718,8 +743,11 @@ erDiagram
 | RB-10 | Non è previsto hard delete; i record vengono archiviati o disattivati. |
 | RB-11 | L’anno solare è un filtro operativo, non un contenitore rigido dei dati. |
 | RB-12 | Il collegamento all’archivio apre Google Drive in una nuova scheda. |
-| RB-13 | Piano rate e quote non producono movimenti contabili nell’MVP. |
+| RB-13 | Piano rate e quote non producono movimenti contabili nell’MVP; i movimenti si registrano a mano nella prima nota. |
 | RB-14 | Il colore del corso deve essere scelto dalla palette applicativa prevista dai design token. |
+| RB-15 | Il verso di un movimento deve essere ammesso dalla sua categoria. |
+| RB-16 | Se la categoria richiede un ruolo, la persona collegata deve averlo attivo alla data del movimento; per le rette l’allievo deve essere iscritto al corso a quella data, per i rimborsi l’insegnante deve essere assegnato al corso. |
+| RB-17 | Il saldo finale di un conto è saldo iniziale + entrate − uscite dell’esercizio. Gli importi sono espressi in euro con due decimali. |
 
 ## 16. Requisiti non funzionali
 
@@ -830,25 +858,25 @@ L’MVP può essere considerato funzionalmente accettabile quando un responsabil
 14. consultare corsi e presenze dalla scheda della persona;
 15. archiviare e riattivare record senza perdita dello storico;
 16. aprire la cartella Google Drive in una nuova scheda;
-17. vedere la voce Contabilità senza che vengano introdotte regole contabili premature.
+17. registrare entrate e uscite di Banca e Cassa e consultarne il bilancio annuale;
+18. importare le presenze di una lezione da un file Excel.
 
 ## 18. Decisioni aperte per le fasi successive
 
 ### Contabilità
 
-Da approfondire tramite intervista dedicata:
+La prima nota di Banca e Cassa è disponibile (sezione 12). Da approfondire tramite intervista dedicata:
 
-- generazione e gestione delle rate;
+- generazione e gestione delle rate a partire dal piano del corso;
 - pagamenti parziali, scadenze e insoluti;
 - ricevute e metodi di pagamento;
-- compensi degli insegnanti;
-- rimborsi e spese;
-- collegamento tra contabilità, lezioni e attività;
+- calcolo dei compensi degli insegnanti dalle lezioni;
+- collegamento dei movimenti alle attività;
 - report e rendicontazione.
 
 ### Evoluzioni possibili
 
-- importazione Excel di lezioni e presenze;
+- importazione Excel massiva delle lezioni;
 - ruoli e permessi differenziati tra responsabili;
 - portale per insegnanti, allievi e contatti associati;
 - notifiche e promemoria;

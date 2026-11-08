@@ -2,9 +2,9 @@
 
 > **Decisione successiva:** per la distribuzione on-premise su singolo PC, le indicazioni relative a PostgreSQL, Docker e componenti distribuibili sono superate da [ADR 0002 — Distribuzione on-premise e SQLite](adr/0002-on-premise-sqlite.md). I requisiti funzionali e le restanti linee guida architetturali rimangono validi.
 
-**Versione:** 0.2  
+**Versione:** 0.3  
 **Stato:** proposta tecnica per MVP  
-**Data:** 19 agosto 2026  
+**Data:** 8 novembre 2026  
 **Documento funzionale di riferimento:** [SPECIFICA_FUNZIONALE.md](./SPECIFICA_FUNZIONALE.md)
 
 ---
@@ -22,7 +22,7 @@ Questo documento traduce la specifica funzionale di Arsis in un’architettura i
 
 Il documento descrive componenti, responsabilità, modello di persistenza, contratti API, sicurezza, test, distribuzione e criteri tecnici di accettazione.
 
-La Contabilità e l’importazione Excel restano fuori dall’MVP, come stabilito nella specifica funzionale.
+Della Contabilità l’MVP include solo la prima nota di Banca e Cassa; dell’importazione Excel solo quella delle presenze di una lezione, come stabilito nella specifica funzionale.
 
 ## 2. Principi architetturali
 
@@ -199,7 +199,7 @@ Il carico previsto non giustifica da solo l’adozione dello stack asincrono.
 - Chiavi primarie UUID generate dall’applicazione o dal database.
 - Timestamp memorizzati come `timestamp with time zone` e gestiti internamente in UTC.
 - Date di dominio senza orario memorizzate come `date`.
-- Importi memorizzati come `numeric`, mai come floating point.
+- Importi memorizzati come `numeric`, mai come floating point. Con SQLite (ADR 0002) il valore è conservato con affinità numerica: i modelli ORM lo rileggono come `Numeric(scale=2)` e le API lo restituiscono come stringa con due decimali (`"180.50"`).
 - Nomi di tabelle e colonne in `snake_case`.
 - Vincoli di foreign key espliciti.
 - Indici definiti sulla base delle query reali.
@@ -517,6 +517,51 @@ I segreti non devono essere salvati in questa tabella.
 
 L’audit non deve contenere password, token o copie indiscriminate di dati personali.
 
+#### Contabilità
+
+##### `accounting_categories`
+
+- `name` univoco;
+- `direction`: `income`, `expense`, `both`;
+- `required_person_role` nullable: `student`, `teacher`, `member`;
+- `course_required` booleano;
+- `color` nullable, `display_order`;
+- `is_active`;
+- colonne comuni.
+
+Le categorie si archiviano, non si cancellano. La migrazione crea un insieme iniziale di categorie modificabili.
+
+##### `accounting_movements`
+
+- `occurred_on` data;
+- `direction`: `income`, `expense`;
+- `account`: `bank`, `cash`;
+- `category_id` FK;
+- `amount` numeric, maggiore di zero;
+- `subject`, `description`;
+- `person_id` FK nullable, `course_id` FK nullable;
+- `document_reference` nullable;
+- colonne comuni, senza archiviazione.
+
+Regole verificate dal servizio:
+
+- categoria attiva e verso ammesso dalla categoria;
+- se la categoria richiede un ruolo, persona attiva con quel ruolo valido alla data del movimento;
+- se la categoria richiede un corso, corso indicato e non archiviato;
+- per il ruolo allievo, iscrizione attiva o conclusa al corso alla data del movimento;
+- per il ruolo insegnante, insegnante assegnato al corso.
+
+I movimenti sono cancellabili definitivamente perché correggono una registrazione manuale; ogni cancellazione è registrata in `audit_events`.
+
+##### `accounting_opening_balances`
+
+- `fiscal_year` compreso tra 2000 e 2100;
+- `account`: `bank`, `cash`;
+- `amount` numeric, anche negativo;
+- vincolo univoco su esercizio e conto.
+
+Il saldo finale non è memorizzato: è calcolato come saldo iniziale + entrate − uscite dell’esercizio.
+
 ### 6.4 Vincoli di cancellazione
 
 Le foreign key devono privilegiare `RESTRICT` o `NO ACTION` per le entità di dominio.
@@ -750,6 +795,26 @@ GET    /api/v1/lessons/{lessonId}/attendance
 PUT    /api/v1/lessons/{lessonId}/attendance
 ```
 
+#### Contabilità
+
+```text
+GET    /api/v1/accounting/categories?include_archived=
+POST   /api/v1/accounting/categories
+PATCH  /api/v1/accounting/categories/{categoryId}
+DELETE /api/v1/accounting/categories/{categoryId}?version=   (archiviazione)
+
+GET    /api/v1/accounting/movements?fiscal_year=&month=&account=&direction=&category_id=&person_id=&course_id=&q=
+POST   /api/v1/accounting/movements
+PATCH  /api/v1/accounting/movements/{movementId}
+DELETE /api/v1/accounting/movements/{movementId}
+
+GET    /api/v1/accounting/opening-balances/{fiscalYear}
+PUT    /api/v1/accounting/opening-balances/{fiscalYear}
+GET    /api/v1/accounting/summary/{fiscalYear}
+```
+
+`summary` restituisce, per Banca e Cassa, saldo iniziale, entrate, uscite e saldo finale, più i totali per categoria e verso. Un nome di categoria già usato restituisce `409` con codice `ACCOUNTING_CATEGORY_EXISTS`; le violazioni delle regole sui movimenti restituiscono `409` con codici `INVALID_ACCOUNTING_*` o `ACCOUNTING_COURSE_REQUIRED`.
+
 #### Dashboard, archivio e configurazione
 
 ```text
@@ -771,7 +836,7 @@ Le modifiche devono inviare la versione letta. Se il record è stato modificato 
 
 - Le operazioni massive di salvataggio presenze devono sostituire in modo deterministico lo stato del registro.
 - Un retry della stessa richiesta non deve creare partecipazioni duplicate.
-- La futura importazione Excel dovrà usare una chiave di importazione idempotente.
+- L’importazione Excel delle presenze aggiorna le righe della lezione ed è quindi ripetibile; una futura importazione massiva delle lezioni dovrà usare una chiave di importazione idempotente.
 
 ## 8. Autenticazione e sicurezza
 
@@ -889,11 +954,13 @@ frontend/
 /school/lessons/:lessonId
 /school/lessons/:lessonId/attendance
 /archive
-/accounting
+/accounting?tab=register|balance
 /settings
+/settings/catalogues
+/settings/accounting-categories
 ```
 
-Le route protette utilizzano una guard di autenticazione. La pagina Contabilità presenta esclusivamente il segnaposto previsto.
+Le route protette utilizzano una guard di autenticazione. La pagina Contabilità ha due schede, Registro e Bilancio, selezionate dal parametro `tab`.
 
 ### 9.4 Layout
 
@@ -1297,7 +1364,7 @@ L’MVP è tecnicamente accettabile quando:
 12. log e risposte non espongono password, token o stack trace;
 13. backup e procedura di ripristino sono documentati e provati prima della produzione;
 14. health check e monitoraggio minimo sono attivi;
-15. la Contabilità rimane isolata come placeholder e non introduce modelli prematuri.
+15. la Contabilità resta limitata alla prima nota e non genera movimenti da rate, iscrizioni o lezioni.
 
 ## 21. Fuori perimetro tecnico dell’MVP
 
@@ -1309,8 +1376,8 @@ L’MVP è tecnicamente accettabile quando:
 - Applicazione mobile nativa.
 - Funzionamento offline.
 - Integrazione API con Google Drive.
-- Importazione Excel.
-- Motore contabile.
+- Importazione Excel massiva delle lezioni.
+- Motore contabile: generazione automatica di rate, crediti e compensi.
 - Portali separati per insegnanti, allievi e famiglie.
 - Multi-tenancy per più associazioni.
 
