@@ -26,6 +26,7 @@ def runtime_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Pat
     monkeypatch.setenv("ARSIS_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.setenv("FRONTEND_DIST_DIR", str(frontend))
     monkeypatch.setenv("SERVE_FRONTEND", "false")  # start() overrides it; restored after
+    monkeypatch.setenv("APP_SECRET_KEY", "local-development-secret-key-change-me")
     monkeypatch.setattr(local_runtime, "port_in_use", lambda host, port: False)
     get_settings.cache_clear()
     yield tmp_path / "data"
@@ -93,3 +94,22 @@ def test_failed_migration_is_reported_and_nothing_is_served(
     assert "errore di prova" in report.calls[0][0]
     assert str(runtime_env / "backups") in report.calls[0][0]
     assert serve.calls == []
+
+
+def test_placeholder_secret_is_replaced_by_a_stable_per_install_key(runtime_env: Path) -> None:
+    local_runtime.start(["--no-browser"], serve=Recorder(), report=Recorder())
+    key = (runtime_env / "secret.key").read_text(encoding="utf-8")
+    assert len(key) >= 32
+    assert get_settings().app_secret_key == key
+
+    local_runtime.start(["--no-browser"], serve=Recorder(), report=Recorder())
+    assert (runtime_env / "secret.key").read_text(encoding="utf-8") == key
+
+
+def test_configured_secret_is_kept(runtime_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("APP_SECRET_KEY", "a-real-secret-configured-by-the-administrator")
+
+    local_runtime.start(["--no-browser"], serve=Recorder(), report=Recorder())
+
+    assert not (runtime_env / "secret.key").exists()
+    assert get_settings().app_secret_key == "a-real-secret-configured-by-the-administrator"

@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import secrets
 import socket
 import sys
 import threading
@@ -52,6 +53,21 @@ def is_arsis(url: str) -> bool:
         return False
 
 
+def local_secret_key(data_dir: Path) -> str:
+    """Per-installation signing key, created on first start in the data folder."""
+    path = data_dir / "secret.key"
+    if path.is_file() and len(key := path.read_text(encoding="utf-8").strip()) >= 32:
+        return key
+    data_dir.mkdir(parents=True, exist_ok=True)
+    key = secrets.token_urlsafe(48)
+    path.write_text(key, encoding="utf-8")
+    return key
+
+
+def _uses_placeholder_secret(secret: str) -> bool:
+    return "change-me" in secret.lower() or secret.startswith("replace-with-")
+
+
 def _redirect_output_to_log(data_dir: Path) -> None:
     # A windowed exe has no console: uvicorn would fail writing to a missing stream.
     if sys.stdout is not None and sys.stderr is not None:
@@ -83,6 +99,11 @@ def start(
 
     get_settings.cache_clear()
     settings = get_settings()
+    if _uses_placeholder_secret(settings.app_secret_key):
+        # Never sign tokens with the key shipped in the source: every install gets its own.
+        os.environ["APP_SECRET_KEY"] = local_secret_key(settings.data_dir)
+        get_settings.cache_clear()
+        settings = get_settings()
     _redirect_output_to_log(settings.data_dir)
     host = options.host or settings.local_bind_host
     port = options.port or settings.local_bind_port
