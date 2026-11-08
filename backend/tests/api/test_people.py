@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from decimal import Decimal
 from io import BytesIO
 
 import pytest
@@ -245,17 +244,19 @@ def test_courses_crud_search_and_archiving(people_app: FastAPI) -> None:
                 "category": "instrument",
                 "instrument_id": 1,
                 "teacher_person_id": teacher["id"],
-                "annual_fee": "450.00",
+                "annual_fee": "450",
                 "color": "#0055AA",
             },
         )
         assert created.status_code == 201
         course = created.json()
         assert course["status"] == "active"
+        assert course["annual_fee"] == "450.00"
 
         listing = client.get("/api/v1/courses?q=clarinetto", headers=headers)
         assert listing.status_code == 200
         assert listing.json()["meta"]["total_items"] == 1
+        assert listing.json()["items"][0]["annual_fee"] == "450.00"
 
         updated = client.patch(
             f"/api/v1/courses/{course['id']}",
@@ -263,7 +264,7 @@ def test_courses_crud_search_and_archiving(people_app: FastAPI) -> None:
             json={"version": 1, "annual_fee": "475.00"},
         )
         assert updated.status_code == 200
-        assert Decimal(updated.json()["annual_fee"]) == Decimal("475.00")
+        assert updated.json()["annual_fee"] == "475.00"
         assert updated.json()["version"] == 2
 
         archived = client.delete(f"/api/v1/courses/{course['id']}?version=2", headers=headers)

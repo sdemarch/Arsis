@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from arsis.core.api_models import ApiModel
+from arsis.core.api_models import ApiModel, Money
 
 
 class CourseCreateRequest(ApiModel):
@@ -44,6 +44,7 @@ class CourseUpdateRequest(ApiModel):
 
 
 class CourseResponse(CourseCreateRequest):
+    annual_fee: Money
     id: int
     status: Literal["active", "inactive"]
     created_at: str

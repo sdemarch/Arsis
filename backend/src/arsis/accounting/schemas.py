@@ -1,18 +1,14 @@
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import Field, PlainSerializer
+from pydantic import Field
 
-from arsis.core.api_models import ApiModel
+from arsis.core.api_models import ApiModel, Money
 
 Direction = Literal["income", "expense", "both"]
 MovementDirection = Literal["income", "expense"]
 Account = Literal["bank", "cash"]
 PersonRole = Literal["student", "teacher", "member"]
-# SQLite hands NUMERIC values back with ten decimal places: answer with cents.
-Money = Annotated[
-    Decimal, PlainSerializer(lambda value: str(value.quantize(Decimal("0.01"))), return_type=str)
-]
 
 
 class CategoryCreateRequest(ApiModel):
