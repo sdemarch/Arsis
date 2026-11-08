@@ -8,6 +8,11 @@ import { AuthService } from '../auth/auth.service';
 import { DatabaseStatusService } from '../health/database-status.service';
 import { SettingsService } from '../../features/settings/settings.service';
 
+/** `/school/lessons/3?tab=x` → `school`. */
+function firstSegment(url: string): string {
+  return url.split(/[?#]/)[0].split('/').filter(Boolean)[0] ?? '';
+}
+
 @Component({
   selector: 'arsis-app-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
@@ -15,7 +20,7 @@ import { SettingsService } from '../../features/settings/settings.service';
     <header class="topbar">
       <nav class="topnav" aria-label="Aree principali">
         @for (area of navigation; track area.path) {
-          <a [routerLink]="area.path" routerLinkActive="is-active">{{ area.label }}</a>
+          <a [routerLink]="area.path" [class.is-active]="area === matchedArea()" [attr.aria-current]="area === matchedArea() ? 'page' : null">{{ area.label }}</a>
         }
       </nav>
       <div class="topbar-actions">
@@ -78,10 +83,13 @@ export class AppShellComponent {
     { initialValue: this.router.url },
   );
 
-  protected readonly activeArea = computed(
-    () =>
-      this.navigation.find((area) => this.currentUrl().startsWith(area.path)) ?? this.navigation[0],
-  );
+  /** Area owning the current page, matched on the first URL segment: /school/lessons → Scuola. */
+  protected readonly matchedArea = computed(() => {
+    const section = firstSegment(this.currentUrl());
+    return this.navigation.find((area) => firstSegment(area.path) === section) ?? null;
+  });
+  // Pages outside the areas (e.g. Configurazioni) keep the Home sidebar.
+  protected readonly activeArea = computed(() => this.matchedArea() ?? this.navigation[0]);
 
   constructor() {
     this.settings.loadGeneral().subscribe({ error: () => undefined });
