@@ -221,3 +221,20 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
                 "attendance": "absent",
             }
         ]
+
+
+def test_activities_can_be_listed_by_local_date_range(activities_app: FastAPI) -> None:
+    with TestClient(activities_app) as client:
+        headers = _headers(client)
+        _activity(client, headers, "2026-10-31T23:30:00+01:00")
+        november = _activity(client, headers, "2026-11-01T00:30:00+01:00")
+        _activity(client, headers, "2026-12-01T20:45:00+01:00")
+
+        listed = client.get(
+            "/api/v1/activities?starts_from=2026-11-01&starts_to=2026-11-30", headers=headers
+        )
+        assert [item["id"] for item in listed.json()["items"]] == [november["id"]]
+        assert (
+            client.get("/api/v1/activities?starts_from=01/11/2026", headers=headers).status_code
+            == 422
+        )

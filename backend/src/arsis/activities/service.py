@@ -25,10 +25,20 @@ class ActivitiesService:
         self._participants = participants or ParticipantsService()
 
     def list_activities(
-        self, session: Session, *, search: str | None = None, include_archived: bool = False
+        self,
+        session: Session,
+        *,
+        search: str | None = None,
+        include_archived: bool = False,
+        starts_from: str | None = None,
+        starts_to: str | None = None,
     ) -> Sequence[Activity]:
         return self._repository.list_activities(
-            session, search=search, include_archived=include_archived
+            session,
+            search=search,
+            include_archived=include_archived,
+            starts_from=starts_from,
+            starts_to=starts_to,
         )
 
     def get_activity(

@@ -58,6 +58,8 @@ def list_activities(
     q: Annotated[str | None, Query(max_length=200)] = None,
     sort: str | None = None,
     include_archived: bool = False,
+    starts_from: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None,
+    starts_to: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None,
 ) -> Page[ActivityResponse]:
     sort_spec = parse_sort(
         sort,
@@ -66,7 +68,13 @@ def list_activities(
         default_direction=SortDirection.DESC,
     )
     activities = list(
-        _service.list_activities(session, search=q, include_archived=include_archived)
+        _service.list_activities(
+            session,
+            search=q,
+            include_archived=include_archived,
+            starts_from=starts_from,
+            starts_to=starts_to,
+        )
     )
     activities.sort(
         key=lambda activity: (

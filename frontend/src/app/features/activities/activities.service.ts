@@ -37,6 +37,8 @@ export interface ActivityWrite { readonly type: Activity['type']; readonly title
 export class ActivitiesService {
   constructor(private readonly http: HttpClient) {}
   list(query = ''): Observable<Page<Activity>> { let params = new HttpParams().set('page_size', '100'); if (query.trim()) params = params.set('q', query.trim()); return this.http.get<Page<Activity>>(`${API_URL}/activities`, { params }); }
+  /** Activities whose local start date falls between two `YYYY-MM-DD` days, inclusive. */
+  listBetween(from: string, to: string): Observable<Page<Activity>> { return this.http.get<Page<Activity>>(`${API_URL}/activities`, { params: new HttpParams().set('page_size', '100').set('starts_from', from).set('starts_to', to).set('sort', 'starts_at') }); }
   get(id: number): Observable<Activity> { return this.http.get<Activity>(`${API_URL}/activities/${id}`); }
   create(payload: ActivityWrite): Observable<Activity> { return this.http.post<Activity>(`${API_URL}/activities`, payload); }
   update(id: number, payload: ActivityWrite): Observable<Activity> { return this.http.patch<Activity>(`${API_URL}/activities/${id}`, payload); }
