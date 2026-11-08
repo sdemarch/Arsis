@@ -2,6 +2,7 @@
 
 Arsis si distribuisce come cartella `Arsis\` con `Arsis.exe` (PyInstaller) e,
 facoltativamente, come installer `Arsis-Setup-<versione>.exe` (Inno Setup 6).
+La sequenza per pubblicare una versione è in [Guida rapida al rilascio](RELEASE.md).
 
 ## Build
 

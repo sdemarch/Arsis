@@ -55,14 +55,72 @@ _Aggiornato: 8 novembre 2026_
   `/dashboard/summary` per Home e panoramica della Scuola; rimossi tutti i
   dati mock del frontend.
 
-## Da completare
-
 - [x] **7a. Preparazione al rilascio** — CI su ogni PR, migrazioni automatiche
   senza Java con backup, primo responsabile dal primo avvio, chiave di firma per
   installazione, limite agli accessi falliti, launcher con singola istanza e
   messaggi d'errore, exe PyInstaller e installer Inno Setup.
-- [ ] **7b. Rilascio** — interfaccia export/import `.arsis-save`, test
-  end-to-end, verifica su PC pulito. HTTPS solo per un'eventuale versione online.
+
+## Da completare
+
+- [ ] **7b. Primo rilascio** — interfaccia export/import `.arsis-save`, test
+  end-to-end, build dell'installer e verifica su PC pulito secondo la
+  [guida rapida al rilascio](operations/RELEASE.md).
+
+## Lavori aperti
+
+Aggiornato all'8 novembre 2026. Chiudere le voci qui quando vengono completate.
+
+### Prima del primo rilascio
+
+- [ ] **Export/import dei salvataggi dall'interfaccia.** Il formato
+  `.arsis-save` esiste ([Salvataggi portabili](operations/portable-saves.md)) ma
+  l'utente non può usarlo. Serve una modalità manutenzione: backup preventivo,
+  blocco delle scritture, import e riavvio del runtime.
+- [ ] **Test end-to-end** (Playwright) sul runtime locale, per i flussi minimi
+  della specifica: primo avvio, persone e ruoli, attività con convocati e
+  presenze, corsi, iscrizioni, lezioni e registro, prima nota, archivio. Oggi le
+  schermate sono verificate solo dalla build.
+- [ ] **Installer e collaudo su PC pulito.** Installare Inno Setup 6, generare
+  l'installer e completare la checklist della guida al rilascio (installazione
+  nuova, aggiornamento con backup, secondo avvio, disinstallazione).
+
+### Qualità e manutenzione
+
+- [ ] **Shell responsive.** Topbar e sidebar fissa da 240 px non hanno
+  breakpoint comuni (vedi [Check interfaccia](CHECK_INTERFACCIA.md)).
+- [ ] **Font allineati ai token.** I font importati (DM Sans, DM Mono, Fraunces)
+  non coincidono con quelli dichiarati in `tokens.css`.
+- [ ] **Lockfile delle dipendenze.** `uv.lock` è escluso da git: build e CI
+  installano le versioni più recenti ammesse. Versionarlo, o fissare le versioni,
+  rende riproducibili CI ed eseguibile.
+- [ ] **Test del frontend.** Non esistono test Angular; partire da autenticazione,
+  interceptor HTTP e moduli con logica (prima nota, registro presenze).
+- [ ] **Aggiornamento a SQLAlchemy 2.1.** La dipendenza è limitata a `<2.1`: la
+  2.1 cambia la tipizzazione dei risultati e mypy segnala errori in otto moduli.
+  Da pianificare insieme a una passata completa dei test.
+
+### Minori
+
+- [ ] **Elenco attività oltre 100 voci.** La lista carica al massimo 100 attività
+  (il calendario no, usa l'intervallo di date): aggiungere paginazione o filtro
+  per anno lato server.
+- [ ] **Firma dell'installer.** Senza certificato Windows mostra l'avviso
+  SmartScreen al primo avvio.
+- [ ] **Stile del codice.** Ruff `format` non è applicato in modo uniforme
+  (26 file da riformattare): farlo in un commit dedicato, poi aggiungerlo alla CI.
+
+### Decisioni di prodotto
+
+- [ ] **Contabilità oltre la prima nota.** Rate, scadenze e insoluti, ricevute,
+  compensi degli insegnanti e rendicontazione richiedono l'intervista prevista
+  (specifica funzionale §18).
+
+### Ambiente di sviluppo locale
+
+- `JAVA_HOME` deve puntare a Java 17 o superiore, altrimenti `init-db.ps1` si ferma.
+- Dopo l'aggiornamento di `pyproject.toml` reinstallare il backend
+  (`pip install -e ".[dev]"`): un `.venv` vecchio può non avere tutte le
+  dipendenze.
 
 ## Stato rapido
 
@@ -71,8 +129,7 @@ _Aggiornato: 8 novembre 2026_
   contabilità e dashboard; Ruff e mypy puliti, test backend verdi all'ultimo
   controllo.
 - Frontend: tutte le aree consumano le API locali; non restano dati mock.
-- Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
-  salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento: punto 7b.
-- Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
-  launcher e installer Windows.
+- Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo,
+  applica le migrazioni all'avvio e gestisce il primo avvio; exe e installer si
+  generano con `scripts/build-windows.ps1`.
+- Prossimo avanzamento: punto 7b e la sezione "Prima del primo rilascio".
