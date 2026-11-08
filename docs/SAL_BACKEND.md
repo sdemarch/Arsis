@@ -57,8 +57,12 @@ _Aggiornato: 8 novembre 2026_
 
 ## Da completare
 
-- [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
-  installazione e aggiornamento on-premise.
+- [x] **7a. Preparazione al rilascio** — CI su ogni PR, migrazioni automatiche
+  senza Java con backup, primo responsabile dal primo avvio, chiave di firma per
+  installazione, limite agli accessi falliti, launcher con singola istanza e
+  messaggi d'errore, exe PyInstaller e installer Inno Setup.
+- [ ] **7b. Rilascio** — interfaccia export/import `.arsis-save`, test
+  end-to-end, verifica su PC pulito. HTTPS solo per un'eventuale versione online.
 
 ## Stato rapido
 
@@ -69,6 +73,6 @@ _Aggiornato: 8 novembre 2026_
 - Frontend: tutte le aree consumano le API locali; non restano dati mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento: rilascio (punto 7).
+- Prossimo avanzamento: punto 7b.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.

@@ -24,18 +24,26 @@ salvataggio trasferibile dell'intero stato dell'app.
   restare compatibili con salvataggi esistenti.
 - Ogni nuova area con file deve essere inclusa nell'export/import `.arsis-save`.
 
-## Lavori da chiudere prima dell'exe
+## Lavori prima dell'exe
 
-1. Inizializzazione e migrazioni automatiche al primo avvio e durante gli
-   aggiornamenti, con backup precedente alla migrazione.
-2. Modalità manutenzione e interfaccia per esportare/importare `.arsis-save`.
+Procedura completa in [Rilascio Windows](operations/release-windows.md).
+
+1. ✅ Inizializzazione e migrazioni automatiche al primo avvio e durante gli
+   aggiornamenti, con backup precedente alla migrazione (`arsis.core.migrations`,
+   senza Java né Liquibase).
+2. ⬜ Modalità manutenzione e interfaccia per esportare/importare `.arsis-save`.
    L'import deve creare un backup preventivo, fermare le scritture e riavviare
    il runtime.
-3. Launcher Windows: controllo della singola istanza, apertura browser e
-   messaggi chiari in caso di porta occupata o migrazione fallita.
-4. Packaging e installer: includere Python/runtime, backend, build Angular e
-   strumenti di migrazione; non includere dati utente nel bundle.
-5. Verifica di installazione, aggiornamento, backup e ripristino su un PC pulito.
+3. ✅ Launcher Windows: singola istanza, apertura browser, messaggi chiari per
+   porta occupata o migrazione fallita, log su file senza console.
+4. ✅ Packaging e installer: PyInstaller (`packaging/arsis.spec`) e Inno Setup
+   (`packaging/arsis.iss`) tramite `scripts/build-windows.ps1`; nessun dato
+   utente nel bundle.
+5. ⬜ Verifica di installazione, aggiornamento, backup e ripristino su un PC pulito.
+
+Inoltre: primo responsabile creato dalla pagina di accesso al primo avvio,
+chiave di firma generata per ogni installazione, limite ai tentativi di accesso
+falliti.
 
 ## Dopo l'MVP locale
 
