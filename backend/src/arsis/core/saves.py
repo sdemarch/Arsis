@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import shutil
 import sqlite3
 import tempfile
 import zipfile
@@ -133,6 +134,17 @@ def inspect_save(source: Path) -> dict[str, Any]:
         raise SaveError(f"Salvataggio non valido: {exc}") from exc
 
 
+def extract_save_database(source: Path, destination: Path) -> Path:
+    """Write the database of an already inspected save to ``destination``."""
+
+    try:
+        with zipfile.ZipFile(source) as archive:
+            destination.write_bytes(archive.read(_DATABASE_MEMBER))
+    except (OSError, KeyError, zipfile.BadZipFile) as exc:
+        raise SaveError(f"Salvataggio non valido: {exc}") from exc
+    return destination
+
+
 def restore_save(
     source: Path,
     *,
@@ -170,6 +182,7 @@ def restore_save(
                 if attachment_root.exists():
                     os.replace(attachment_root, previous)
                 os.replace(replacement, attachment_root)
+                shutil.rmtree(previous, ignore_errors=True)
             finally:
                 if replacement.exists():
                     os.replace(replacement, attachment_root)

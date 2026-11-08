@@ -38,7 +38,7 @@ def _set_refresh_cookie(response: Response, token: str, settings: Settings) -> N
     )
 
 
-def _clear_refresh_cookie(response: Response, settings: Settings) -> None:
+def clear_refresh_cookie(response: Response, settings: Settings) -> None:
     response.delete_cookie(
         key=settings.refresh_cookie_name,
         httponly=True,
@@ -136,7 +136,7 @@ def logout(
         refresh_token=request.cookies.get(settings.refresh_cookie_name),
         ip_address=_client_ip(request),
     )
-    _clear_refresh_cookie(response, settings)
+    clear_refresh_cookie(response, settings)
 
 
 @router.get("/me", response_model=AuthUser)

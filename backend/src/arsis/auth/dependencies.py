@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from arsis.core.config import get_settings
 from arsis.core.database import get_database_session
 from arsis.core.errors import UnauthorizedError
+from arsis.core.maintenance import maintenance_gate
 from arsis.core.security import InvalidAccessTokenError, decode_access_token
 from arsis.generated.models import User
 
@@ -23,6 +24,7 @@ def get_current_user(
         user_id = decode_access_token(
             credentials.credentials,
             secret_key=get_settings().app_secret_key,
+            not_before=maintenance_gate.tokens_not_before,
         )
     except InvalidAccessTokenError as exception:
         raise UnauthorizedError(

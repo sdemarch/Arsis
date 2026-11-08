@@ -120,6 +120,24 @@ def pending_changesets(database_path: Path, changelog_dir: Path) -> list[Changes
     return [changeset for changeset in changesets if changeset.key not in applied]
 
 
+@dataclass(frozen=True)
+class ChangelogStatus:
+    pending: Sequence[Changeset]
+    unknown: Sequence[str]
+
+
+def changelog_status(database_path: Path, changelog_dir: Path) -> ChangelogStatus:
+    """Changesets still to apply, and those applied by a newer Arsis than this one."""
+    changesets = read_changelog(changelog_dir)
+    with closing(sqlite3.connect(f"{database_path.as_uri()}?mode=ro", uri=True)) as connection:
+        applied = _applied_keys(connection)
+    known = {changeset.key for changeset in changesets}
+    return ChangelogStatus(
+        pending=[changeset for changeset in changesets if changeset.key not in applied],
+        unknown=sorted(key[0] for key in applied - known),
+    )
+
+
 def _applied_keys(connection: sqlite3.Connection) -> set[tuple[str, str, str]]:
     exists = connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'DATABASECHANGELOG'"

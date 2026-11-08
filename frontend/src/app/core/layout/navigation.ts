@@ -63,6 +63,7 @@ export const NAVIGATION: readonly NavigationArea[] = [
       { label: 'Generali e responsabili', path: '/settings' },
       { label: 'Strumenti e sezioni', path: '/settings/catalogues' },
       { label: 'Categorie contabili', path: '/settings/accounting-categories' },
+      { label: 'Salvataggi', path: '/settings/saves' },
     ],
   },
 ];

@@ -59,6 +59,11 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'settings/saves',
+        loadComponent: () =>
+          import('./features/settings/saves-page.component').then((module) => module.SavesPageComponent),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings-page.component').then((module) => module.SettingsPageComponent),

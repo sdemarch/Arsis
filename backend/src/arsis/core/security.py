@@ -55,14 +55,18 @@ def create_access_token(
         "type": "access",
         "iss": JWT_ISSUER,
         "aud": JWT_AUDIENCE,
-        "iat": issued_at,
+        # Fractional, so a revocation (see ``not_before``) separates tokens of the same second.
+        "iat": issued_at.timestamp(),
         "exp": issued_at + timedelta(seconds=ttl_seconds),
         "jti": str(uuid4()),
     }
     return jwt.encode(payload, secret_key, algorithm=JWT_ALGORITHM)
 
 
-def decode_access_token(token: str, *, secret_key: str) -> int:
+def decode_access_token(
+    token: str, *, secret_key: str, not_before: datetime | None = None
+) -> int:
+    """Return the user ID; tokens issued before ``not_before`` are rejected."""
     try:
         payload = jwt.decode(
             token,
@@ -76,6 +80,8 @@ def decode_access_token(token: str, *, secret_key: str) -> int:
         raise InvalidAccessTokenError("Access token non valido") from exception
 
     subject = payload.get("sub")
+    if not_before is not None and payload["iat"] < not_before.timestamp():
+        raise InvalidAccessTokenError("Access token non valido")
     if payload.get("type") != "access" or not isinstance(subject, str):
         raise InvalidAccessTokenError("Access token non valido")
     try:
