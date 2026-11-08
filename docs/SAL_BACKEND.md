@@ -50,23 +50,25 @@ _Aggiornato: 8 novembre 2026_
 - [x] **6l. Cablaggio frontend** — moduli di corsi, iscrizioni e lezioni con
   selettori al posto degli ID, archivio collegato alla cartella configurata,
   stato reale del database nella shell.
+- [x] **6m. Calendario e dashboard** — calendario mensile delle attività su
+  intervallo di date, date locali con fuso nelle attività, riepilogo
+  `/dashboard/summary` per Home e panoramica della Scuola; rimossi tutti i
+  dati mock del frontend.
 
 ## Da completare
 
-- [ ] **6m. Ultimi mock** — calendario delle attività, dashboard della home e
-  panoramica della scuola.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
 ## Stato rapido
 
-- Backend: API complete per autenticazione, persone, attività, corsi,
-  iscrizioni, lezioni, presenze, configurazioni generali e contabilità; Ruff e mypy puliti,
-  test backend verdi all'ultimo controllo.
-- Frontend: login, Persone, Attività, Corsi, Iscrizioni, Lezioni, Presenze e
-  Contabilità consumano le API locali; le sezioni rimanenti usano ancora mock.
+- Backend: API complete per autenticazione, persone, attività con convocati e
+  presenze, corsi, iscrizioni, lezioni, presenze, configurazioni generali,
+  contabilità e dashboard; Ruff e mypy puliti, test backend verdi all'ultimo
+  controllo.
+- Frontend: tutte le aree consumano le API locali; non restano dati mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: calendario attività e dashboard della home.
+- Prossimo avanzamento: rilascio (punto 7).
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.

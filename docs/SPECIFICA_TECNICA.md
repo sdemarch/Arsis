@@ -752,7 +752,7 @@ POST   /api/v1/sections/{sectionId}/archive
 #### Attività
 
 ```text
-GET    /api/v1/activities
+GET    /api/v1/activities?q=&starts_from=&starts_to=
 POST   /api/v1/activities
 GET    /api/v1/activities/{activityId}
 PATCH  /api/v1/activities/{activityId}
@@ -766,6 +766,8 @@ POST   /api/v1/activities/{activityId}/participants/musicians
 PUT    /api/v1/activities/{activityId}/attendances             {rows: [{person_id, attendance}]}
 GET    /api/v1/activities/participations?person_id=
 ```
+
+`starts_at` è salvato con l’ora locale e il suo fuso (`2026-11-08T20:45:00+01:00`), così i primi dieci caratteri sono la data locale: su di essi lavorano il filtro `starts_from`/`starts_to` (date `YYYY-MM-DD` incluse, usato dal calendario mensile) e la convocazione dei musicanti attivi in quel giorno.
 
 Le risposte di attività includono `participant_count`, `present_count` e `absent_count`. `participants/musicians` aggiunge i musicanti attivi alla data dell’attività non ancora presenti, senza riaggiungere chi è stato rimosso a mano. `participations` restituisce lo storico di una persona per la sua scheda.
 
@@ -827,13 +829,15 @@ GET    /api/v1/accounting/summary/{fiscalYear}
 #### Dashboard, archivio e configurazione
 
 ```text
-GET    /api/v1/dashboard/summary
-GET    /api/v1/settings/archive
-PUT    /api/v1/settings/archive
-GET    /api/v1/settings/course-colors
+GET    /api/v1/dashboard/summary?on=
+GET    /api/v1/settings/general
+PUT    /api/v1/settings/general
+GET    /api/v1/settings/responsible-users
 ```
 
-Il frontend può aprire direttamente l’URL Drive restituito. Il backend non deve effettuare proxy dei contenuti Google Drive nell’MVP.
+`dashboard/summary` è di sola lettura e alimenta la Home e la panoramica della Scuola: persone attive per ruolo e sezioni attive; corsi attivi, iscrizioni valide, allievi iscritti, lezioni del mese e percentuale di presenza del mese (nulla se non ci sono presenze registrate); le prossime cinque attività non annullate con il numero di convocati; le lezioni del giorno con allievi iscritti e presenze registrate; gli allievi per corso. Il giorno di riferimento è la data locale del server, sostituibile con `on=YYYY-MM-DD`. Non espone indicatori contabili (RF 7.1).
+
+La palette dei corsi è un dato dell’applicazione Angular (`course-colors.ts`), non un endpoint. L’URL della cartella Drive fa parte delle configurazioni generali: il frontend lo apre direttamente. Il backend non deve effettuare proxy dei contenuti Google Drive nell’MVP.
 
 ### 7.6 Aggiornamenti e concorrenza
 
