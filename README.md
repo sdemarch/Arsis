@@ -7,7 +7,7 @@ Monorepo dell'MVP gestionale Arsis, organizzato come applicazione on-premise mon
 - `frontend/`: SPA Angular standalone, suddivisa per aree funzionali.
 - `backend/`: API FastAPI modulare sotto `/api/v1`.
 - `database/`: changelog Liquibase e dipendenze dichiarate del driver SQLite.
-- `docs/`: ADR, contratto API e procedure operative.
+- `docs/`: stato, TODO, specifica, architettura e procedure operative ([indice](docs/README.md)).
 - `scripts/`: comandi di supporto allo sviluppo.
 
 ## Stile dell'interfaccia
@@ -72,20 +72,18 @@ modelli e DTO.
 ## Rilascio e controlli
 
 - Eseguibile e installer Windows: `.\scripts\build-windows.ps1`, dettagli in
-  [Rilascio Windows](docs/operations/release-windows.md).
+  [Rilascio Windows](docs/operations/rilascio.md).
 - Ogni pull request esegue `.github/workflows/ci.yml`: Ruff, mypy, pytest,
   database creato dal changelog e confrontato con i modelli generati, build
   Angular.
 
 ## Documenti di riferimento
 
+- [Indice della documentazione](docs/README.md)
+- [Stato](docs/STATO.md) e [TODO](docs/TODO.md)
 - [Specifica funzionale](docs/SPECIFICA_FUNZIONALE.md)
-- [Specifica tecnica](docs/SPECIFICA_TECNICA.md)
-- [Design tokens v1.1](docs/arsis-design-tokens.md)
-- [ADR stack iniziale](docs/adr/0001-stack-iniziale.md)
-- [ADR distribuzione on-premise e SQLite](docs/adr/0002-on-premise-sqlite.md)
-- [Sviluppo locale](docs/operations/local-development.md)
-- [Runtime locale](docs/operations/local-runtime.md)
-- [Rilascio Windows](docs/operations/release-windows.md) e [guida rapida al rilascio](docs/operations/RELEASE.md)
-- [Salvataggi portabili](docs/operations/portable-saves.md)
-- [Promemoria distribuzione locale](docs/DISTRIBUZIONE_LOCALE.md)
+- [Architettura](docs/ARCHITETTURA.md)
+- [Sviluppo locale](docs/operations/sviluppo.md)
+- [Rilascio Windows](docs/operations/rilascio.md)
+- [Salvataggi e backup](docs/operations/salvataggi.md)
+- [Design tokens v1.1](docs/riferimenti/design-tokens.md)
