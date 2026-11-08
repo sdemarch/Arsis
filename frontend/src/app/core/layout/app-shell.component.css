@@ -124,6 +124,8 @@
 .sidebar__footer strong { font-size: var(--text-sm); font-weight: var(--weight-medium); }
 .sidebar__footer small { color: var(--text-tertiary); font-size: var(--text-xs); }
 .status-dot { background: var(--color-success); border-radius: var(--radius-full); height: 8px; width: 8px; }
+.status-dot--pending { background: var(--color-warn); }
+.status-dot--down { background: var(--color-danger); }
 
 .sidebar a {
   border-radius: var(--radius-md);
