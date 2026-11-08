@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { catchError, of } from 'rxjs';
 
-import schoolData from '../../../assets/mock/school.json';
+import { DashboardService, DashboardSummary } from '../home/dashboard.service';
 import { PeopleService } from '../people/people.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { Course, CoursesService } from './courses.service';
@@ -15,23 +17,24 @@ import { Course, CoursesService } from './courses.service';
     </arsis-page-header>
 
     <section class="school-summary">
-      <div><strong>{{ courses().length }}</strong><span>Corsi attivi</span></div><div><strong>{{ summary.students }}</strong><span>Allievi iscritti</span></div><div><strong>{{ summary.lessonsThisMonth }}</strong><span>Lezioni questo mese</span></div><div><strong>{{ summary.attendanceRate }}</strong><span>Presenza media</span></div>
+      <div><strong>{{ school()?.active_courses ?? '—' }}</strong><span>Corsi attivi</span></div><div><strong>{{ school()?.enrolled_students ?? '—' }}</strong><span>Allievi iscritti</span></div><div><strong>{{ school()?.lessons_this_month ?? '—' }}</strong><span>Lezioni questo mese</span></div><div><strong>{{ attendanceRate() }}</strong><span>Presenza media del mese</span></div>
     </section>
 
-    <div class="section-heading"><div><p class="eyebrow">Offerta formativa</p><h2>Corsi attivi</h2></div><button class="button button--secondary">Tutti i corsi →</button></div>
+    <div class="section-heading"><div><p class="eyebrow">Offerta formativa</p><h2>Corsi</h2></div><a class="button button--secondary" routerLink="/school/enrollments">Iscrizioni →</a></div>
     <section class="course-grid">
       @for (course of courses(); track course.id) {
         <a class="course-card card" [routerLink]="['/school/courses', course.id]" [style.--course-color]="course.color" [style.--course-background]="course.color + '20'" aria-label="Apri il corso {{ course.name }}">
           <div class="course-card__accent"></div>
-          <div class="course-card__body"><header><span>{{ course.mode === 'individual' ? 'Individuale' : 'Gruppo' }}</span><i aria-hidden="true">•••</i></header><h3>{{ course.name }}</h3><p>{{ teacherName(course.teacher_person_id) }}</p><dl><div><dt>Allievi</dt><dd>—</dd></div><div><dt>Orario</dt><dd>{{ schedule(course) }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.annual_fee }} €</dd></div></dl></div>
+          <div class="course-card__body"><header><span>{{ course.mode === 'individual' ? 'Individuale' : 'Gruppo' }}</span><i aria-hidden="true">•••</i></header><h3>{{ course.name }}</h3><p>{{ teacherName(course.teacher_person_id) }}</p><dl><div><dt>Allievi</dt><dd>{{ studentsIn(course.id) }}</dd></div><div><dt>Orario</dt><dd>{{ schedule(course) }}</dd></div><div><dt>Tariffa annua</dt><dd>{{ course.annual_fee }} €</dd></div></dl></div>
         </a>
       }
     </section>
 
-    <div class="section-heading lesson-heading"><div><p class="eyebrow">Agenda</p><h2>Lezioni di oggi</h2></div><button class="button button--secondary">＋ Nuova lezione</button></div>
+    <div class="section-heading lesson-heading"><div><p class="eyebrow">Agenda</p><h2>Lezioni di oggi</h2></div><a class="button button--secondary" routerLink="/school/lessons/new">＋ Nuova lezione</a></div>
     <div class="table-shell">
-      <table><thead><tr><th>Data e ora</th><th>Corso</th><th>Insegnante</th><th>Registro presenze</th><th></th></tr></thead><tbody>
-        @for (lesson of lessons; track lesson.time) { <tr><td><div class="date-time"><strong>{{ lesson.time }}</strong><span>{{ lesson.date }}</span></div></td><td><strong>{{ lesson.course }}</strong></td><td>{{ lesson.teacher }}</td><td><span class="status-badge" [class.status-badge--success]="lesson.attendance === 'Completa'">{{ lesson.attendance }}</span></td><td><button class="row-menu">•••</button></td></tr> }
+      <table><thead><tr><th>Ora</th><th>Corso</th><th>Insegnante</th><th>Registro presenze</th><th></th></tr></thead><tbody>
+        @for (lesson of lessons(); track lesson.id) { <tr><td><div class="date-time"><strong>{{ lesson.time }}</strong>@if (lesson.status === 'cancelled') { <span>Annullata</span> }</div></td><td><strong>{{ lesson.course_name }}</strong></td><td>{{ lesson.teacher_name }}</td><td><span class="status-badge" [class.status-badge--success]="lesson.complete" [class.status-badge--warn]="!lesson.complete">{{ lesson.complete ? 'Completo' : lesson.recorded + '/' + lesson.students + ' registrate' }}</span></td><td><a [routerLink]="['/school/lessons', lesson.id, 'attendance']">Registro →</a></td></tr> }
+        @empty { <tr><td colspan="5" class="empty">Nessuna lezione oggi.</td></tr> }
       </tbody></table>
     </div>
   `,
@@ -61,15 +64,28 @@ import { Course, CoursesService } from './courses.service';
     .lesson-heading { margin-top: var(--sp-8); }
     .date-time { display: grid; }
     .date-time span { color: var(--text-tertiary); font-size: var(--text-xs); }
+    .empty { color: var(--text-tertiary); text-align: center; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SchoolPageComponent {
   private readonly coursesService = inject(CoursesService);
   private readonly peopleService = inject(PeopleService);
-  protected readonly summary = schoolData.summary;
+  private readonly dashboard = toSignal(inject(DashboardService).summary().pipe(catchError(() => of<DashboardSummary | null>(null))), { initialValue: null });
+  protected readonly school = computed(() => this.dashboard()?.school ?? null);
+  protected readonly attendanceRate = computed(() => {
+    const rate = this.school()?.attendance_rate;
+    return rate === null || rate === undefined ? '—' : `${Math.round(rate * 100)}%`;
+  });
+  protected readonly lessons = computed(() =>
+    (this.dashboard()?.today_lessons ?? []).map((lesson) => ({
+      ...lesson,
+      time: new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(new Date(lesson.starts_at)),
+      complete: lesson.students > 0 && lesson.recorded >= lesson.students,
+    })),
+  );
+  private readonly studentsByCourse = computed(() => new Map((this.dashboard()?.course_students ?? []).map((row) => [row.course_id, row.students])));
   protected readonly courses = signal<Course[]>([]);
-  protected readonly lessons = schoolData.lessons;
   private readonly teacherNames = signal(new Map<number, string>());
 
   constructor() {
@@ -77,6 +93,10 @@ export class SchoolPageComponent {
     this.peopleService.listPeople('').subscribe({
       next: (page) => this.teacherNames.set(new Map(page.items.map((person) => [person.id, `${person.first_name} ${person.last_name}`]))),
     });
+  }
+
+  protected studentsIn(courseId: number): number {
+    return this.studentsByCourse().get(courseId) ?? 0;
   }
 
   protected teacherName(teacherId: number): string {
