@@ -24,12 +24,13 @@ interface MovementDraft {
   course_id: number | null;
   description: string;
   document_reference: string;
+  is_highlighted: boolean;
 }
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
 function emptyDraft(): MovementDraft {
-  return { occurred_on: today(), direction: 'income', account: 'bank', category_id: null, amount: null, subject: '', person_id: null, course_id: null, description: '', document_reference: '' };
+  return { occurred_on: today(), direction: 'income', account: 'bank', category_id: null, amount: null, subject: '', person_id: null, course_id: null, description: '', document_reference: '', is_highlighted: false };
 }
 
 /** Create or edit a first-note movement, asking for person and course when the category needs them. */
@@ -76,6 +77,9 @@ function emptyDraft(): MovementDraft {
       <label>Importo (€)<input type="number" name="amount" min="0.01" step="0.01" [(ngModel)]="draft.amount" required /></label>
       <label>Riferimento documento<input name="document_reference" [(ngModel)]="draft.document_reference" maxlength="200" placeholder="Facoltativo" /></label>
       <div class="actions">
+        <label class="flag" [class.on]="draft.is_highlighted" title="Segnala il movimento come da verificare">
+          <input type="checkbox" name="is_highlighted" [(ngModel)]="draft.is_highlighted" /><span aria-hidden="true">⚑</span>Evidenziato
+        </label>
         @if (movement()) { <button type="button" class="button button--secondary" (click)="cancelled.emit()">Annulla</button> }
         <button class="button button--primary" [disabled]="saving()">{{ movement() ? 'Salva modifiche' : 'Registra' }}</button>
       </div>
@@ -86,7 +90,11 @@ function emptyDraft(): MovementDraft {
     form { display: grid; gap: var(--sp-4); grid-template-columns: repeat(3, minmax(0, 1fr)); }
     label { display: grid; gap: var(--sp-2); }
     input, select { min-height: 38px; min-width: 0; }
-    .actions { align-items: end; display: flex; gap: var(--sp-2); grid-column: 1 / -1; justify-content: flex-end; }
+    .actions { align-items: center; display: flex; gap: var(--sp-2); grid-column: 1 / -1; justify-content: flex-end; }
+    .flag { align-items: center; border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-full); color: var(--text-secondary); cursor: pointer; display: inline-flex; font-size: var(--text-sm); gap: var(--sp-1); margin-right: auto; padding: var(--sp-1) var(--sp-3); }
+    .flag input { accent-color: var(--color-warn); margin: 0; min-height: 0; }
+    .flag span { color: var(--color-warn); }
+    .flag.on { background: var(--color-warn-soft); border-color: var(--color-warn); color: var(--text-primary); }
     .error { color: var(--color-danger); grid-column: 1 / -1; margin: 0; }
     @media (max-width: 800px) { form { grid-template-columns: 1fr; } }
   `,
@@ -176,6 +184,7 @@ export class MovementFormComponent {
       course_id: d.course_id,
       description: d.description.trim(),
       document_reference: d.document_reference.trim() || null,
+      is_highlighted: d.is_highlighted,
     };
     const existing = this.movement();
     const request = existing ? this.api.update(existing.id, { ...payload, version: existing.version }) : this.api.create(payload);

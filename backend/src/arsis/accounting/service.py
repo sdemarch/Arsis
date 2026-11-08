@@ -117,6 +117,7 @@ class AccountingService:
         person_id: int | None,
         course_id: int | None,
         search: str | None,
+        highlighted: bool | None = None,
     ) -> Sequence[AccountingMovement]:
         return self._repository.list_movements(
             session,
@@ -128,6 +129,7 @@ class AccountingService:
             person_id=person_id,
             course_id=course_id,
             search=search,
+            highlighted=highlighted,
         )
 
     def create_movement(
@@ -174,7 +176,9 @@ class AccountingService:
                 )
             }
             merged.update(values)
-            self._validate_movement(session, merged)
+            # Flagging alone must work even if the category was archived in the meantime.
+            if set(values) - {"is_highlighted"}:
+                self._validate_movement(session, merged)
             if values:
                 values["updated_by"] = actor_id
                 update_versioned(

@@ -42,7 +42,7 @@ export class AccountingPageComponent {
 
   protected readonly tab = toSignal(this.route.queryParamMap.pipe(map((params) => (params.get('tab') === 'balance' ? 'balance' : 'register'))), { initialValue: 'register' });
   protected readonly year = signal(new Date().getFullYear());
-  protected readonly filters = signal<MovementFilters>({ month: null, account: null, category_id: null, q: '', page: 1 });
+  protected readonly filters = signal<MovementFilters>({ month: null, account: null, category_id: null, q: '', highlighted: false, page: 1 });
   protected readonly editing = signal<AccountingMovement | null>(null);
   protected readonly error = signal('');
   private readonly reload = signal(0);
@@ -117,6 +117,16 @@ export class AccountingPageComponent {
     this.editing.set(null);
     this.error.set('');
     this.refresh();
+  }
+
+  protected toggleHighlight(movement: AccountingMovement): void {
+    this.api.update(movement.id, { version: movement.version, is_highlighted: !movement.is_highlighted }).subscribe({
+      next: (updated) => {
+        if (this.editing()?.id === updated.id) this.editing.set(updated);
+        this.refresh();
+      },
+      error: (err: unknown) => this.error.set(apiErrorMessage(err, 'Aggiornamento non riuscito.')),
+    });
   }
 
   protected remove(movement: AccountingMovement): void {

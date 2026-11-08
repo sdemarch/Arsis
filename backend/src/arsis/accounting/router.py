@@ -109,6 +109,7 @@ def list_movements(
     person_id: Annotated[int | None, Query(ge=1)] = None,
     course_id: Annotated[int | None, Query(ge=1)] = None,
     q: Annotated[str | None, Query(max_length=200)] = None,
+    is_highlighted: bool | None = None,
 ) -> Page[MovementResponse]:
     movements = list(
         _service.list_movements(
@@ -121,6 +122,7 @@ def list_movements(
             person_id=person_id,
             course_id=course_id,
             search=q,
+            highlighted=is_highlighted,
         )
     )
     return build_page(

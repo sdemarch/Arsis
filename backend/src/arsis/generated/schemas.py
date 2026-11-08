@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-SCHEMA_FINGERPRINT = "5bbdef9b7d2f8968"
+SCHEMA_FINGERPRINT = "c8661565e8cef503"
 
 
 class GeneratedDTO(BaseModel):
@@ -63,6 +63,7 @@ class AccountingMovementCreateDTO(GeneratedDTO):
     course_id: int | None = None
     description: str
     document_reference: str | None = None
+    is_highlighted: bool | None = None
 
 
 class AccountingMovementUpdateDTO(GeneratedDTO):
@@ -76,6 +77,7 @@ class AccountingMovementUpdateDTO(GeneratedDTO):
     course_id: int | None = None
     description: str | None = None
     document_reference: str | None = None
+    is_highlighted: bool | None = None
 
 
 class AccountingMovementReadDTO(GeneratedDTO):
@@ -95,6 +97,7 @@ class AccountingMovementReadDTO(GeneratedDTO):
     updated_at: str
     updated_by: int | None
     version: int
+    is_highlighted: bool
 
 
 class AccountingOpeningBalanceCreateDTO(GeneratedDTO):

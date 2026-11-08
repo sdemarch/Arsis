@@ -51,6 +51,7 @@ class MovementCreateRequest(ApiModel):
     course_id: int | None = Field(default=None, ge=1)
     description: str = Field(min_length=1, max_length=500)
     document_reference: str | None = Field(default=None, max_length=200)
+    is_highlighted: bool = False
 
 
 class MovementUpdateRequest(ApiModel):
@@ -65,6 +66,7 @@ class MovementUpdateRequest(ApiModel):
     course_id: int | None = Field(default=None, ge=1)
     description: str | None = Field(default=None, min_length=1, max_length=500)
     document_reference: str | None = Field(default=None, max_length=200)
+    is_highlighted: bool | None = None
 
 
 class MovementResponse(MovementCreateRequest):

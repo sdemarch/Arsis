@@ -40,7 +40,7 @@ _Aggiornato: 8 novembre 2026_
 
 - [x] **6j. Contabilità: prima nota** — categorie configurabili con verso,
   ruolo della persona e corso obbligatori; movimenti Banca/Cassa con filtri per
-  anno, mese, conto, categoria e ricerca; saldi iniziali per esercizio e
+  anno, mese, conto, categoria, ricerca ed evidenziazione; saldi iniziali per esercizio e
   bilancio annuale per conto e categoria; audit, concorrenza ottimistica, test
   API e schermate Angular (registro, bilancio, gestione categorie).
 

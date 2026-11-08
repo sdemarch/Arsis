@@ -49,6 +49,7 @@ export interface AccountingMovement {
   readonly course_id: number | null;
   readonly description: string;
   readonly document_reference: string | null;
+  readonly is_highlighted: boolean;
   readonly version: number;
 }
 
@@ -64,6 +65,7 @@ export interface AccountingMovementWrite {
   readonly course_id?: number | null;
   readonly description?: string;
   readonly document_reference?: string | null;
+  readonly is_highlighted?: boolean;
 }
 
 export interface MovementFilters {
@@ -71,6 +73,7 @@ export interface MovementFilters {
   readonly account: AccountingAccount | null;
   readonly category_id: number | null;
   readonly q: string;
+  readonly highlighted: boolean;
   readonly page: number;
 }
 
@@ -127,6 +130,7 @@ export class AccountingService {
     if (filters.account) params = params.set('account', filters.account);
     if (filters.category_id) params = params.set('category_id', filters.category_id);
     if (filters.q.trim()) params = params.set('q', filters.q.trim());
+    if (filters.highlighted) params = params.set('is_highlighted', true);
     return this.http.get<Page<AccountingMovement>>(`${API_URL}/movements`, { params });
   }
 

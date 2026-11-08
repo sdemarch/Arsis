@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "5bbdef9b7d2f8968"
+SCHEMA_FINGERPRINT = "c8661565e8cef503"
 
 
 class Base(DeclarativeBase):
@@ -54,6 +54,7 @@ class AccountingMovement(Base):
     updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
     updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+    is_highlighted: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('0'))
 
 
 class AccountingOpeningBalance(Base):

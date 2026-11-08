@@ -546,6 +546,8 @@ Un movimento contiene: data, verso, conto, categoria, importo positivo, soggetto
 
 Quando la categoria richiede una persona, il modulo propone solo le persone con quel ruolo e compila il soggetto con il loro nome. Quando richiede un corso, il corso è obbligatorio; per un insegnante sono proposti solo i suoi corsi.
 
+Un movimento può essere **evidenziato** (⚑) per segnalarlo come da verificare: la riga viene messa in risalto e il filtro “Solo evidenziati” mostra solo quei movimenti. L’evidenziazione si attiva o rimuove con un clic dalla riga o dal modulo, anche se la categoria del movimento è stata nel frattempo archiviata.
+
 I movimenti si possono modificare ed eliminare. L’eliminazione chiede conferma ed è tracciata nell’audit.
 
 ### RF-CO-03 — Saldi iniziali e bilancio

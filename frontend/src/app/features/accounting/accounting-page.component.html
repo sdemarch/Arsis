@@ -52,6 +52,7 @@
       <option [ngValue]="null">Tutte le categorie</option>
       @for (c of categories(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
     </select>
+    <label class="only-flagged"><input type="checkbox" [ngModel]="filters().highlighted" (ngModelChange)="setFilter({ highlighted: $event })" /><span aria-hidden="true">⚑</span>Solo evidenziati</label>
     <input type="search" aria-label="Cerca" placeholder="Cerca soggetto, descrizione, documento" [ngModel]="filters().q" (ngModelChange)="setFilter({ q: $event })" />
   </section>
 
@@ -60,11 +61,14 @@
   <div class="table-shell">
     <table>
       <thead>
-        <tr><th>Data</th><th>Soggetto</th><th>Categoria</th><th>Conto</th><th>Descrizione</th><th class="num">Importo</th><th></th></tr>
+        <tr><th><span class="visually-hidden">Evidenziato</span></th><th>Data</th><th>Soggetto</th><th>Categoria</th><th>Conto</th><th>Descrizione</th><th class="num">Importo</th><th></th></tr>
       </thead>
       <tbody>
         @for (m of movements(); track m.id) {
-          <tr [class.editing]="editing()?.id === m.id">
+          <tr [class.editing]="editing()?.id === m.id" [class.highlighted]="m.is_highlighted">
+            <td class="flag-cell">
+              <button type="button" class="flag" [class.on]="m.is_highlighted" [attr.aria-pressed]="m.is_highlighted" [attr.aria-label]="m.is_highlighted ? 'Rimuovi evidenziazione' : 'Evidenzia movimento'" [attr.title]="m.is_highlighted ? 'Rimuovi evidenziazione' : 'Evidenzia movimento'" (click)="toggleHighlight(m)">⚑</button>
+            </td>
             <td>{{ m.occurred_on | date: 'dd/MM/yyyy' }}</td>
             <td>{{ m.subject }}</td>
             <td><span class="category"><i [style.background]="categoryColor(m.category_id) ?? 'var(--border-strong)'"></i>{{ categoryName(m.category_id) }}</span></td>
@@ -79,7 +83,7 @@
             </td>
           </tr>
         } @empty {
-          <tr><td colspan="7" class="empty">Nessun movimento.</td></tr>
+          <tr><td colspan="8" class="empty">Nessun movimento.</td></tr>
         }
       </tbody>
     </table>

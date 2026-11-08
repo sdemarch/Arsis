@@ -220,6 +220,28 @@ def test_movements_crud_filters_and_validation(accounting_app: FastAPI) -> None:
         assert updated.json()["amount"] == "175.00"
         assert updated.json()["version"] == 2
 
+        assert updated.json()["is_highlighted"] is False
+        flagged = client.patch(
+            f"/api/v1/accounting/movements/{movement['id']}",
+            headers=headers,
+            json={"version": 2, "is_highlighted": True},
+        )
+        assert flagged.json()["is_highlighted"] is True
+        highlighted = client.get(
+            "/api/v1/accounting/movements?is_highlighted=true", headers=headers
+        ).json()
+        assert [item["id"] for item in highlighted["items"]] == [movement["id"]]
+
+        # The flag can still be toggled after the movement's category is archived.
+        client.delete(f"/api/v1/accounting/categories/{income['id']}?version=1", headers=headers)
+        unflagged = client.patch(
+            f"/api/v1/accounting/movements/{movement['id']}",
+            headers=headers,
+            json={"version": 3, "is_highlighted": False},
+        )
+        assert unflagged.status_code == 200
+        assert unflagged.json()["is_highlighted"] is False
+
         deleted = client.delete(f"/api/v1/accounting/movements/{movement['id']}", headers=headers)
         assert deleted.status_code == 204
         missing = client.delete(f"/api/v1/accounting/movements/{movement['id']}", headers=headers)

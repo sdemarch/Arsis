@@ -61,6 +61,7 @@ class AccountingRepository:
         person_id: int | None,
         course_id: int | None,
         search: str | None,
+        highlighted: bool | None = None,
     ) -> Sequence[AccountingMovement]:
         statement: Select[tuple[AccountingMovement]] = select(AccountingMovement)
         if fiscal_year is not None:
@@ -77,6 +78,7 @@ class AccountingRepository:
             (AccountingMovement.category_id, category_id),
             (AccountingMovement.person_id, person_id),
             (AccountingMovement.course_id, course_id),
+            (AccountingMovement.is_highlighted, highlighted),
         ):
             if value is not None:
                 statement = statement.where(column == value)

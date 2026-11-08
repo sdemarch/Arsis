@@ -541,6 +541,7 @@ Le categorie si archiviano, non si cancellano. La migrazione crea un insieme ini
 - `subject`, `description`;
 - `person_id` FK nullable, `course_id` FK nullable;
 - `document_reference` nullable;
+- `is_highlighted` booleano, predefinito falso: segnalazione manuale “da verificare”;
 - colonne comuni, senza archiviazione.
 
 Regole verificate dal servizio:
@@ -550,6 +551,8 @@ Regole verificate dal servizio:
 - se la categoria richiede un corso, corso indicato e non archiviato;
 - per il ruolo allievo, iscrizione attiva o conclusa al corso alla data del movimento;
 - per il ruolo insegnante, insegnante assegnato al corso.
+
+Una modifica che cambia solo `is_highlighted` non ripete queste verifiche.
 
 I movimenti sono cancellabili definitivamente perché correggono una registrazione manuale; ogni cancellazione è registrata in `audit_events`.
 
@@ -803,7 +806,7 @@ POST   /api/v1/accounting/categories
 PATCH  /api/v1/accounting/categories/{categoryId}
 DELETE /api/v1/accounting/categories/{categoryId}?version=   (archiviazione)
 
-GET    /api/v1/accounting/movements?fiscal_year=&month=&account=&direction=&category_id=&person_id=&course_id=&q=
+GET    /api/v1/accounting/movements?fiscal_year=&month=&account=&direction=&category_id=&person_id=&course_id=&q=&is_highlighted=
 POST   /api/v1/accounting/movements
 PATCH  /api/v1/accounting/movements/{movementId}
 DELETE /api/v1/accounting/movements/{movementId}
