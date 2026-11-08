@@ -65,6 +65,16 @@ class InvalidSortError(DomainError):
         )
 
 
+class ImportValidationError(DomainError):
+    def __init__(self, message: str, *, details: Mapping[str, Any] | None = None) -> None:
+        super().__init__(
+            code="IMPORT_VALIDATION_ERROR",
+            message=message,
+            status_code=422,
+            details=details,
+        )
+
+
 class UnauthorizedError(DomainError):
     def __init__(
         self,
@@ -78,4 +88,3 @@ class UnauthorizedError(DomainError):
             status_code=401,
             headers={"WWW-Authenticate": "Bearer"},
         )
-

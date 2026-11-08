@@ -15,6 +15,7 @@ coverage/
 data/*.db
 data/*.db-shm
 data/*.db-wal
+data/backups/
 database/.lpm/
 database/lib/packages.json
 database/liquibase_libs/

@@ -1,79 +1,147 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { PageHeaderComponent } from '../../shared/ui/page-header.component';
-import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, debounceTime, map, of, switchMap } from 'rxjs';
 
-type Tab = 'register' | 'balance' | 'school';
-type Type = 'Rata' | 'Rimborso insegnanti' | 'Altro';
-interface Movement { id: number; date: string; subject: string; amount: number; account: 'Cassa' | 'Banca'; type: Type; description: string; reference: string; course: string; highlighted: boolean; }
-const rates = ['I rata', 'II rata', 'III rata', 'Rata parziale'];
-const students = ['Elena Martinelli', 'Luca Bianchi', 'Sofia Rossi'];
-const teachers = ['Marco Rinaldi', 'Giulia Ferri'];
-const courses = ['Pianoforte', 'Chitarra', 'Canto'];
+import { Page } from '../../core/api/api.types';
+import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { PeopleService, PersonListItem } from '../people/people.service';
+import { Course, CoursesService } from '../school/courses.service';
+import { AccountingBalanceComponent } from './accounting-balance.component';
+import {
+  ACCOUNT_LABELS,
+  AccountingCategory,
+  AccountingMovement,
+  AccountingService,
+  AccountingSummary,
+  DIRECTION_LABELS,
+  MovementFilters,
+  apiErrorMessage,
+} from './accounting.service';
+import { MovementFormComponent } from './movement-form.component';
+
+const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
 
 @Component({
-  selector: 'arsis-accounting-page', imports: [FormsModule, PageHeaderComponent, FilterDropdownComponent, DatePipe, DecimalPipe],
-  template: `
-    <arsis-page-header eyebrow="Amministrazione" title="Contabilità" description="Movimenti, risultato economico e andamento della Scuola in un unico spazio." />
-    <section class="financial-strip" aria-label="Riepilogo contabile"><div class="financial-strip__label">Banca</div><article><span>Entrate</span><strong class="positive">{{income() | number:'1.0-0'}} €</strong><small>Accrediti e bonifici</small></article><article><span>Uscite</span><strong class="negative">{{expenses() | number:'1.0-0'}} €</strong><small>Addebiti e rimborsi</small></article><article><span>Saldo banca</span><strong>{{balance() | number:'1.0-0'}} €</strong><small>Netto periodo</small></article><div class="financial-strip__label financial-strip__label--cash">Cassa</div><article><span>Entrate</span><strong class="positive">0 €</strong><small>Contanti ricevuti</small></article><article><span>Saldo cassa</span><strong>0 €</strong><small>Netto contanti</small></article><article><span>Bilancio</span><strong>{{balance() | number:'1.0-0'}} €</strong><small>Totale periodo</small></article></section>
-    <nav class="tabs" aria-label="Sezioni contabilità"><button [class.active]="tab() === 'register'" (click)="tab.set('register')">Registro contabile</button><button [class.active]="tab() === 'balance'" (click)="tab.set('balance')">Bilancio</button><button [class.active]="tab() === 'school'" (click)="tab.set('school')">Monitor scuola</button></nav>
-    @if (tab() === 'register') {
-      <section class="intro"><div><h2>Registro contabile</h2><p>Il soggetto identifica chi effettua o riceve il movimento.</p></div><span>{{ movements().length }} movimenti</span></section>
-      <div class="toolbar register-toolbar"><div class="toolbar__group"><input class="search-input" placeholder="⌕  Cerca soggetto, descrizione…"/><button class="filter active-filter">Tutti</button><button class="filter">Allievi</button><button class="filter">Insegnanti</button><button class="filter">Altro</button></div><arsis-filter-dropdown label="Seleziona mese" [options]="monthOptions" [selected]="selectedMonth()" (selectionChange)="selectedMonth.set($event)" /></div>
-      <section class="table-shell"><div class="table-caption"><span>{{ movements().length }} movimenti</span><small>Clicca una riga per modificarla</small></div><div class="scroll"><table><thead><tr><th><span class="visually-hidden">Evidenziato</span></th><th>Soggetto</th><th>Descrizione</th><th>Tipo</th><th>Conto</th><th>Data</th><th>Riferimento</th><th>Corso</th><th>Importo</th><th></th></tr></thead><tbody>
-        <tr class="new"><td class="highlight-cell"><input class="highlight-checkbox" type="checkbox" [(ngModel)]="draft.highlighted" aria-label="Evidenzia movimento" title="Evidenzia movimento" /></td><td><input placeholder="Soggetto" [(ngModel)]="draft.subject" /></td><td>@if(draft.type === 'Rata'){<select [(ngModel)]="draft.description">@for(rate of rates;track rate){<option>{{rate}}</option>}</select>} @else {<input placeholder="Descrizione" [(ngModel)]="draft.description"/>}</td><td><select [(ngModel)]="draft.type" (ngModelChange)="resetDraft()">@for (type of types; track type) {<option>{{type}}</option>}</select></td><td><select [(ngModel)]="draft.account"><option>Cassa</option><option>Banca</option></select></td><td><input type="date" [(ngModel)]="draft.date" /></td><td>@if(linked(draft.type)){<select [(ngModel)]="draft.reference"><option value="">Seleziona…</option>@for(person of references(draft.type);track person){<option>{{person}}</option>}</select>} @else {<em>—</em>}</td><td>@if(linked(draft.type)){<select [(ngModel)]="draft.course"><option value="">Seleziona…</option>@for(course of courses;track course){<option>{{course}}</option>}</select>} @else {<em>—</em>}</td><td><input class="money" type="number" min="0" step=".01" placeholder="0,00" [(ngModel)]="draft.amount" /></td><td><button class="add" [disabled]="!valid(draft)" (click)="add()">Aggiungi</button></td></tr>
-        @for (movement of movements(); track movement.id) {<tr class="movement" [class.highlighted]="movement.highlighted" tabindex="0" (click)="open(movement)" (keydown.enter)="open(movement)"><td class="highlight-cell">@if(movement.highlighted){<span class="highlight-icon" role="img" aria-label="Movimento evidenziato" title="Movimento evidenziato">⚑</span>}</td><td><strong>{{movement.subject}}</strong><small>{{movement.course}}</small></td><td>{{movement.description}}</td><td><mark [class.refund]="movement.type === 'Rimborso insegnanti'">{{direction(movement)}}</mark></td><td><b>{{movement.account}}</b></td><td class="data-value">{{movement.date | date:'dd MMM yyyy'}}</td><td>{{movement.reference || '—'}}</td><td>{{movement.course || '—'}}</td><td class="data-value amount" [class.out]="movement.type === 'Rimborso insegnanti'">{{movement.type === 'Rimborso insegnanti' ? '−' : '+'}} {{movement.amount | number:'1.2-2'}} €</td><td><button class="arrow" (click)="$event.stopPropagation();open(movement)">›</button></td></tr>}
-      </tbody></table></div></section><p class="note">I tipi movimento sono configurabili. Le rate vengono collegate a allievo e corso; i rimborsi a insegnante e corso.</p>
-    } @else if (tab() === 'balance') {
-      <section class="summary"><article class="card income"><span>Entrate</span><strong>{{income() | number:'1.2-2'}} €</strong><small>Rate e altri incassi registrati</small></article><article class="card expenses"><span>Uscite</span><strong>{{expenses() | number:'1.2-2'}} €</strong><small>Rimborsi insegnanti registrati</small></article><article class="card"><span>Saldo corrente</span><strong>{{balance() | number:'1.2-2'}} €</strong><small>Entrate meno uscite</small></article></section>
-      <section class="card balance"><header><div><p class="kicker">ANNO CORRENTE</p><h2>Risultato economico</h2></div><span class="status-badge status-badge--success">In attivo</span></header><div class="bar"><i [style.width.%]="incomeShare()"></i></div><p><b>● Entrate</b> {{income() | number:'1.0-0'}} € <span>● Uscite {{expenses() | number:'1.0-0'}} €</span></p></section>
-    } @else {
-      <section class="summary"><article class="card"><span>Quote annuali attese</span><strong>6.480,00 €</strong><small>12 iscrizioni attive</small></article><article class="card income"><span>Quote già incassate</span><strong>{{income() | number:'1.2-2'}} €</strong><small>{{rateCount()}} rate registrate</small></article><article class="card expenses"><span>Rimborsi docenti</span><strong>{{expenses() | number:'1.2-2'}} €</strong><small>Da verificare a fine mese</small></article></section>
-      <section class="card monitor"><header><p class="kicker">MONITOR SCUOLA</p><h2>Andamento iscrizioni e rimborsi</h2></header><table><thead><tr><th>Corso</th><th>Allievi</th><th>Quote incassate</th><th>Rimborsi docenti</th><th>Stato</th></tr></thead><tbody>@for(course of monitor;track course.name){<tr><td><strong>{{course.name}}</strong></td><td>{{course.students}}</td><td class="data-value">{{course.receipts | number:'1.2-2'}} €</td><td class="data-value">{{course.refunds | number:'1.2-2'}} €</td><td><span class="status-badge status-badge--success">In corso</span></td></tr>}</tbody></table></section>
-    }
-    @if(selected();as item){<div class="overlay" (click)="close()"><article class="editor card" role="dialog" aria-modal="true" aria-labelledby="movement-title" (click)="$event.stopPropagation()"><header><div class="editor__identity"><span class="movement-visual" aria-hidden="true">€</span><div><p class="kicker">MOVIMENTO CONTABILE</p><h2 id="movement-title">{{item.type}}</h2><p>Modifica i dati e salva per aggiornare il registro.</p></div></div><div class="editor__actions"><label class="highlight-toggle" [class.is-highlighted]="item.highlighted" title="Evidenzia movimento"><input type="checkbox" [(ngModel)]="item.highlighted"/><span aria-hidden="true">⚑</span><span>Evidenziato</span></label><button class="close" aria-label="Chiudi scheda" (click)="close()">×</button></div></header><div class="form"><label>Data<input type="date" [(ngModel)]="item.date"/></label><label>Importo<input type="number" min="0" step=".01" [(ngModel)]="item.amount"/></label><label class="wide">Soggetto<input [(ngModel)]="item.subject"/></label><label>Conto<select [(ngModel)]="item.account"><option>Cassa</option><option>Banca</option></select></label><label>Tipo<select [(ngModel)]="item.type"><option>Rata</option><option>Rimborso insegnanti</option><option>Altro</option></select></label><label class="wide">Descrizione<input [(ngModel)]="item.description"/></label>@if(linked(item.type)){<label>Riferimento<select [(ngModel)]="item.reference">@for(person of references(item.type);track person){<option>{{person}}</option>}</select></label><label>Corso<select [(ngModel)]="item.course">@for(course of courses;track course){<option>{{course}}</option>}</select></label>}</div><footer><button class="button button--secondary" (click)="close()">Annulla</button><button class="button button--primary" (click)="save()">Salva modifiche</button></footer></article></div>}
-  `,
-  styles: `
-    :host { display:block; }
-    .tabs { border-bottom:var(--border-thin) solid var(--border-default); display:flex; gap:var(--sp-5); margin-bottom:var(--sp-6); }
-    .tabs button { background:none; border:0; border-bottom:2px solid transparent; color:var(--text-secondary); cursor:pointer; font:var(--weight-semi) var(--text-sm) var(--font-sans); padding:0 0 var(--sp-3); }
-    .tabs .active { border-color:var(--color-accent); color:var(--color-accent-hover); }
-    .intro { align-items:end; display:flex; justify-content:space-between; margin-bottom:var(--sp-4); } h2 { font-family:var(--font-sans); font-size:var(--text-lg); margin:0; }
-    .intro p,.editor header p { color:var(--text-secondary); margin:var(--sp-1) 0 0; } .intro>span,.note { color:var(--text-secondary); font-size:var(--text-sm); }
-    .financial-strip { background:var(--bg-surface); border:var(--border-thin) solid var(--border-subtle); border-radius:var(--radius-lg); display:flex; margin-bottom:var(--sp-6); overflow:hidden; } .financial-strip article { border-left:var(--border-thin) solid var(--border-subtle); display:grid; gap:var(--sp-1); min-width:145px; padding:var(--sp-3) var(--sp-4); } .financial-strip span,.financial-strip small { color:var(--text-tertiary); font-size:var(--text-xs); } .financial-strip strong { color:var(--text-primary); font-family:var(--font-display); font-size:var(--text-xl); font-weight:var(--weight-regular); } .financial-strip strong.positive { color:var(--color-success); } .financial-strip strong.negative { color:var(--color-danger); } .financial-strip__label { align-items:center; background:var(--color-accent-soft); color:var(--color-accent-hover); display:flex; font-size:var(--text-xs); font-weight:var(--weight-semi); justify-content:center; text-transform:uppercase; writing-mode:vertical-rl; } .financial-strip__label--cash { background:var(--color-warn-soft); color:var(--color-warn); }
-    .register-toolbar { margin-bottom:var(--sp-4); } .filter { background:var(--bg-surface); border:var(--border-thin) solid var(--border-default); border-radius:var(--radius-full); color:var(--text-secondary); cursor:pointer; font-size:var(--text-sm); padding:var(--sp-1) var(--sp-3); } .filter.active-filter { background:var(--color-accent); border-color:var(--color-accent); color:var(--text-inverse); }
-    .table-caption { background:var(--bg-raised); border-bottom:var(--border-thin) solid var(--border-subtle); color:var(--text-secondary); display:flex; font-size:var(--text-xs); justify-content:space-between; padding:var(--sp-2) var(--sp-4); } .table-caption small { color:var(--text-tertiary); } .scroll { overflow:auto; } .table-shell table { min-width:1180px; } .table-shell td { padding:var(--sp-2) var(--sp-3); } .movement td:first-child small { color:var(--text-tertiary); display:block; font-size:var(--text-xs); }
-    .new { background:var(--color-accent-soft); } input,select { background:var(--bg-surface); border:var(--border-thin) solid var(--border-default); border-radius:var(--radius-sm); box-sizing:border-box; color:var(--text-primary); height:34px; padding:0 var(--sp-2); width:100%; }
-    select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m4 6 4 4 4-4' stroke='%235f6b66' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E"); background-position:right var(--sp-2) center; background-repeat:no-repeat; background-size:16px; padding-right:calc(var(--sp-2) + 20px); }
-    .new td { min-width:112px; } .new td:nth-child(2),.new td:nth-child(3),.new td:nth-child(7) { min-width:150px; } .new em { color:var(--text-tertiary); display:block; text-align:center; }
-    .add { background:var(--color-accent); border:0; border-radius:var(--radius-sm); color:var(--text-inverse); cursor:pointer; font-size:var(--text-xs); font-weight:var(--weight-semi); height:34px; padding:0 var(--sp-3); } .add:disabled { cursor:not-allowed; opacity:.45; }
-    .highlight-cell { padding-left:var(--sp-3); padding-right:var(--sp-1); text-align:center; width:34px; } .highlight-checkbox { accent-color:var(--color-warn); cursor:pointer; height:18px; margin:0; padding:0; width:18px; } .highlight-icon { color:var(--color-warn); display:inline-block; font-size:20px; line-height:1; text-shadow:0 1px 0 var(--bg-surface); } .visually-hidden { height:1px; margin:-1px; overflow:hidden; padding:0; position:absolute; width:1px; clip:rect(0,0,0,0); white-space:nowrap; }
-    .movement { cursor:pointer; } .movement:hover { background:var(--bg-raised); } .movement.highlighted,.movement.highlighted:hover { background:var(--color-warn-soft); } .amount { color:var(--color-success); font-weight:var(--weight-semi); white-space:nowrap; } .amount.out { color:var(--color-danger); }
-    mark,.table-shell b { background:var(--bg-raised); border-radius:var(--radius-full); color:var(--text-secondary); font-size:var(--text-xs); font-weight:var(--weight-medium); padding:var(--sp-1) var(--sp-2); white-space:nowrap; } .refund { background:var(--color-danger-soft); color:var(--color-danger); }
-    .arrow,.close { background:none; border:0; color:var(--text-tertiary); cursor:pointer; font-size:26px; } .arrow:hover,.close:hover { color:var(--color-accent-hover); }
-    .summary { display:grid; gap:var(--sp-4); grid-template-columns:repeat(3,1fr); margin-bottom:var(--sp-6); } .summary article { display:grid; gap:var(--sp-2); padding:var(--sp-5); } .summary span,.summary small { color:var(--text-secondary); } .summary strong { color:var(--color-accent-hover); font-family:var(--font-display); font-size:var(--text-2xl); } .expenses strong { color:var(--color-danger); }
-    .balance,.monitor { padding:var(--sp-6); } .balance header { align-items:start; display:flex; justify-content:space-between; } .kicker { color:var(--color-accent-hover); font-size:var(--text-xs); font-weight:var(--weight-semi); letter-spacing:.08em; margin:0 0 var(--sp-1); }
-    .bar { background:var(--color-danger-soft); border-radius:var(--radius-full); height:10px; margin-top:var(--sp-6); overflow:hidden; } .bar i { background:var(--color-success); display:block; height:100%; } .balance p { color:var(--text-secondary); font-size:var(--text-sm); } .balance p b { color:var(--color-success); } .balance p span { color:var(--color-danger); margin-left:var(--sp-5); }
-    .monitor { overflow:auto; } .monitor table { min-width:640px; } .overlay { align-items:center; background:rgb(16 24 40 / .42); display:flex; inset:0; justify-content:center; padding:var(--sp-5); position:fixed; z-index:10; }
-    .editor { max-height:calc(100vh - 48px); max-width:880px; overflow:auto; width:100%; } .editor header { align-items:center; background:var(--bg-raised); border-bottom:var(--border-thin) solid var(--border-subtle); display:flex; justify-content:space-between; padding:var(--sp-6) var(--sp-8); } .editor__identity,.editor__actions { align-items:center; display:flex; gap:var(--sp-4); min-width:0; } .editor__actions { flex:0 0 auto; gap:var(--sp-2); } .movement-visual { align-items:center; background:var(--color-accent-soft); border-radius:var(--radius-lg); color:var(--color-accent-hover); display:inline-flex; flex:0 0 52px; font-family:var(--font-display); font-size:var(--text-xl); height:52px; justify-content:center; width:52px; } .editor h2 { font-size:var(--text-2xl); } .editor .kicker { margin-bottom:var(--sp-1); }
-    .highlight-toggle { align-items:center; border:var(--border-thin) solid var(--border-default); border-radius:var(--radius-full); color:var(--text-secondary); cursor:pointer; display:inline-flex; font-size:var(--text-xs); font-weight:var(--weight-semi); gap:var(--sp-1); padding:var(--sp-1) var(--sp-2); } .highlight-toggle input { accent-color:var(--color-warn); height:14px; margin:0 var(--sp-1) 0 0; width:14px; } .highlight-toggle span:first-of-type { color:var(--color-warn); font-size:15px; line-height:1; } .highlight-toggle.is-highlighted { background:var(--color-warn-soft); border-color:var(--color-warn); color:var(--text-primary); }
-    .form { display:grid; gap:var(--sp-5) var(--sp-8); grid-template-columns:1fr 1fr; padding:var(--sp-8); } .form label { color:var(--text-tertiary); display:grid; font-size:var(--text-xs); font-weight:var(--weight-semi); gap:var(--sp-2); letter-spacing:.04em; text-transform:uppercase; } .form input,.form select { border-radius:var(--radius-md); font:var(--weight-regular) var(--text-base) var(--font-sans); min-height:42px; text-transform:none; } .wide { grid-column:1/-1; } .editor footer { background:var(--bg-raised); border-top:var(--border-thin) solid var(--border-subtle); display:flex; gap:var(--sp-3); justify-content:end; padding:var(--sp-4) var(--sp-8); }
-    @media(max-width:760px) { .financial-strip { overflow-x:auto; } .financial-strip article { min-width:130px; } .summary { grid-template-columns:1fr; } .form { grid-template-columns:1fr; } .wide { grid-column:auto; } .intro { align-items:start; flex-direction:column; } .tabs { overflow:auto; } .tabs button { white-space:nowrap; } }
-  `,
+  selector: 'arsis-accounting-page',
+  imports: [AccountingBalanceComponent, DatePipe, DecimalPipe, FormsModule, MovementFormComponent, PageHeaderComponent, RouterLink],
+  templateUrl: './accounting-page.component.html',
+  styleUrl: './accounting-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountingPageComponent {
+  private readonly api = inject(AccountingService);
   private readonly route = inject(ActivatedRoute);
-  protected readonly tab = signal<Tab>('register'); protected readonly types: readonly Type[] = ['Rata','Rimborso insegnanti','Altro']; protected readonly rates = rates; protected readonly courses = courses;
-  protected readonly selectedMonth = signal<readonly string[]>(['2026-09']);
-  protected readonly monthOptions: readonly FilterOption[] = [
-    { label: 'Luglio 2026', value: '2026-07' }, { label: 'Agosto 2026', value: '2026-08' },
-    { label: 'Settembre 2026', value: '2026-09' }, { label: 'Ottobre 2026', value: '2026-10' },
-  ];
-  protected readonly movements = signal<Movement[]>([{id:3,date:'2026-09-01',subject:'Elena Martinelli',amount:180,account:'Banca',type:'Rata',description:'I rata',reference:'Elena Martinelli',course:'Pianoforte',highlighted:false},{id:2,date:'2026-08-30',subject:'Marco Rinaldi',amount:420,account:'Banca',type:'Rimborso insegnanti',description:'Rimborso agosto',reference:'Marco Rinaldi',course:'Chitarra',highlighted:true},{id:1,date:'2026-08-28',subject:'Luca Bianchi',amount:150,account:'Cassa',type:'Rata',description:'Rata parziale',reference:'Luca Bianchi',course:'Canto',highlighted:false}]);
-  protected readonly selected=signal<Movement|null>(null); protected draft=this.empty(); protected readonly income=computed(()=>this.movements().filter(x=>x.type!=='Rimborso insegnanti').reduce((s,x)=>s+x.amount,0)); protected readonly expenses=computed(()=>this.movements().filter(x=>x.type==='Rimborso insegnanti').reduce((s,x)=>s+x.amount,0)); protected readonly balance=computed(()=>this.income()-this.expenses()); protected readonly incomeShare=computed(()=>this.income()/(this.income()+this.expenses())*100); protected readonly rateCount=computed(()=>this.movements().filter(x=>x.type==='Rata').length); protected readonly monitor=[{name:'Pianoforte',students:5,receipts:180,refunds:0},{name:'Chitarra',students:4,receipts:0,refunds:420},{name:'Canto',students:3,receipts:150,refunds:0}];
-  protected linked(type:Type){return type!=='Altro'} protected direction(movement:Movement){return movement.type==='Rimborso insegnanti'?'Uscita':'Entrata'} protected references(type:Type){return type==='Rimborso insegnanti'?teachers:students} protected valid(x:Omit<Movement,'id'>){return !!(x.date&&x.subject&&x.amount>0&&x.description)} protected resetDraft(){this.draft.reference='';this.draft.course='';this.draft.description=this.draft.type==='Rata'?'I rata':''} protected add(){if(!this.valid(this.draft))return;this.movements.update(xs=>[{...this.draft,id:Date.now()},...xs]);this.draft=this.empty()} protected open(x:Movement){this.selected.set({...x})} protected close(){this.selected.set(null)} protected save(){const x=this.selected();if(!x)return;this.movements.update(xs=>xs.map(y=>y.id===x.id?x:y));this.close()} private empty():Omit<Movement,'id'>{return{date:new Date().toISOString().slice(0,10),subject:'',amount:0,account:'Banca',type:'Rata',description:'I rata',reference:'',course:'',highlighted:false}}
-  constructor() { this.route.queryParamMap.subscribe((params) => { const value = params.get('tab'); this.tab.set(value === 'balance' || value === 'school' ? value : 'register'); }); }
+  private readonly router = inject(Router);
+
+  protected readonly months = MONTHS;
+  protected readonly accountLabels = ACCOUNT_LABELS;
+  protected readonly directionLabels = DIRECTION_LABELS;
+
+  protected readonly tab = toSignal(this.route.queryParamMap.pipe(map((params) => (params.get('tab') === 'balance' ? 'balance' : 'register'))), { initialValue: 'register' });
+  protected readonly year = signal(new Date().getFullYear());
+  protected readonly filters = signal<MovementFilters>({ month: null, account: null, category_id: null, q: '', highlighted: false, page: 1 });
+  protected readonly editing = signal<AccountingMovement | null>(null);
+  protected readonly error = signal('');
+  private readonly reload = signal(0);
+
+  protected readonly categories = signal<AccountingCategory[]>([]);
+  protected readonly people = toSignal(inject(PeopleService).listPeople('').pipe(map((page) => page.items), catchError(() => of<PersonListItem[]>([]))), { initialValue: [] });
+  protected readonly courses = toSignal(inject(CoursesService).list().pipe(map((page) => page.items), catchError(() => of<Course[]>([]))), { initialValue: [] });
+
+  private readonly page = toSignal(
+    toObservable(computed(() => ({ year: this.year(), filters: this.filters(), reload: this.reload() }))).pipe(
+      debounceTime(150),
+      switchMap(({ year, filters }) =>
+        this.api.movements(year, filters).pipe(
+          catchError(() => {
+            this.error.set('Impossibile caricare il registro.');
+            return of<Page<AccountingMovement> | null>(null);
+          }),
+        ),
+      ),
+    ),
+    { initialValue: null },
+  );
+  protected readonly movements = computed(() => this.page()?.items ?? []);
+  protected readonly meta = computed(() => this.page()?.meta ?? null);
+
+  protected readonly summary = toSignal(
+    toObservable(computed(() => ({ year: this.year(), reload: this.reload() }))).pipe(
+      switchMap(({ year }) => this.api.summary(year).pipe(catchError(() => of<AccountingSummary | null>(null)))),
+    ),
+    { initialValue: null },
+  );
+  protected readonly accountCards = computed(() => {
+    const accounts = this.summary()?.accounts ?? [];
+    return [
+      ...accounts.map((a) => ({ label: this.accountLabels[a.account], value: Number(a.closing) })),
+      { label: 'Totale disponibile', value: accounts.reduce((sum, a) => sum + Number(a.closing), 0) },
+    ];
+  });
+
+  constructor() {
+    this.api.categories(true).subscribe({ next: (items) => this.categories.set(items) });
+  }
+
+  protected setTab(tab: 'register' | 'balance'): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  protected shiftYear(delta: number): void {
+    this.year.update((year) => year + delta);
+    this.editing.set(null);
+    this.filters.update((f) => ({ ...f, page: 1 }));
+  }
+
+  protected setFilter(patch: Partial<MovementFilters>): void {
+    this.filters.update((f) => ({ ...f, ...patch, page: patch.page ?? 1 }));
+  }
+
+  protected categoryName(id: number): string {
+    return this.categories().find((c) => c.id === id)?.name ?? `Categoria #${id}`;
+  }
+
+  protected categoryColor(id: number): string | null {
+    return this.categories().find((c) => c.id === id)?.color ?? null;
+  }
+
+  protected edit(movement: AccountingMovement): void {
+    this.editing.set(movement);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  protected onSaved(): void {
+    this.editing.set(null);
+    this.error.set('');
+    this.refresh();
+  }
+
+  protected toggleHighlight(movement: AccountingMovement): void {
+    this.api.update(movement.id, { version: movement.version, is_highlighted: !movement.is_highlighted }).subscribe({
+      next: (updated) => {
+        if (this.editing()?.id === updated.id) this.editing.set(updated);
+        this.refresh();
+      },
+      error: (err: unknown) => this.error.set(apiErrorMessage(err, 'Aggiornamento non riuscito.')),
+    });
+  }
+
+  protected remove(movement: AccountingMovement): void {
+    if (!window.confirm(`Eliminare il movimento “${movement.description}”?`)) return;
+    this.api.delete(movement.id).subscribe({
+      next: () => {
+        if (this.editing()?.id === movement.id) this.editing.set(null);
+        this.refresh();
+      },
+      error: (err: unknown) => this.error.set(apiErrorMessage(err, 'Eliminazione non riuscita.')),
+    });
+  }
+
+  protected refresh(): void {
+    this.error.set('');
+    this.reload.update((n) => n + 1);
+  }
 }

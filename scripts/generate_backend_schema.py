@@ -135,7 +135,8 @@ def column_annotation(column: Column, *, force_optional: bool = False) -> str:
 def render_model_column(table: TableDefinition, column: Column) -> str:
     python_type, sqlalchemy_type = python_and_sqlalchemy_types(column)
     annotation = f"{python_type} | None" if column.nullable else python_type
-    arguments = [sqlalchemy_type]
+    # SQLite keeps NUMERIC as a float: read it back in cents, not with ten decimal places.
+    arguments = ["Numeric(scale=2)" if sqlalchemy_type == "Numeric" else sqlalchemy_type]
     foreign_key = table.foreign_keys.get(column.name)
     if foreign_key:
         options = ""

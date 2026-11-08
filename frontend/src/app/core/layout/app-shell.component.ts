@@ -4,8 +4,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { filter, map, startWith } from 'rxjs';
 
 import { NAVIGATION } from './navigation';
-import applicationData from '../../../assets/mock/application.json';
 import { AuthService } from '../auth/auth.service';
+import { SettingsService } from '../../features/settings/settings.service';
 
 @Component({
   selector: 'arsis-app-shell',
@@ -54,7 +54,7 @@ import { AuthService } from '../auth/auth.service';
       <div class="page-column">
         <main class="content" id="main-content"><router-outlet /></main>
         <footer class="app-footer">
-          <span>{{ application.organization.name }}</span>
+          <span>{{ settings.general()?.organization_name ?? 'Arsis' }}</span>
         </footer>
       </div>
     </div>
@@ -64,9 +64,9 @@ import { AuthService } from '../auth/auth.service';
 })
 export class AppShellComponent {
   protected readonly navigation = NAVIGATION;
-  protected readonly application = applicationData;
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
+  protected readonly settings = inject(SettingsService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -80,6 +80,10 @@ export class AppShellComponent {
     () =>
       this.navigation.find((area) => this.currentUrl().startsWith(area.path)) ?? this.navigation[0],
   );
+
+  constructor() {
+    this.settings.loadGeneral().subscribe({ error: () => undefined });
+  }
 
   protected userInitials(): string {
     return (this.auth.user()?.display_name ?? 'U')

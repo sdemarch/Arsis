@@ -7,11 +7,121 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-SCHEMA_FINGERPRINT = "3f9476bdd9d7adcc"
+SCHEMA_FINGERPRINT = "c8661565e8cef503"
 
 
 class GeneratedDTO(BaseModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class AccountingCategoryCreateDTO(GeneratedDTO):
+    name: str
+    direction: str
+    required_person_role: str | None = None
+    course_required: int | None = None
+    color: str | None = None
+    is_active: bool | None = None
+    display_order: int | None = None
+
+
+class AccountingCategoryUpdateDTO(GeneratedDTO):
+    name: str | None = None
+    direction: str | None = None
+    required_person_role: str | None = None
+    course_required: int | None = None
+    color: str | None = None
+    is_active: bool | None = None
+    display_order: int | None = None
+
+
+class AccountingCategoryReadDTO(GeneratedDTO):
+    id: int
+    name: str
+    direction: str
+    required_person_role: str | None
+    course_required: int
+    color: str | None
+    is_active: bool
+    display_order: int
+    created_at: str
+    created_by: int | None
+    updated_at: str
+    updated_by: int | None
+    archived_at: str | None
+    archived_by: int | None
+    version: int
+
+
+class AccountingMovementCreateDTO(GeneratedDTO):
+    occurred_on: str
+    direction: str
+    account: str
+    category_id: int
+    amount: Decimal
+    subject: str
+    person_id: int | None = None
+    course_id: int | None = None
+    description: str
+    document_reference: str | None = None
+    is_highlighted: bool | None = None
+
+
+class AccountingMovementUpdateDTO(GeneratedDTO):
+    occurred_on: str | None = None
+    direction: str | None = None
+    account: str | None = None
+    category_id: int | None = None
+    amount: Decimal | None = None
+    subject: str | None = None
+    person_id: int | None = None
+    course_id: int | None = None
+    description: str | None = None
+    document_reference: str | None = None
+    is_highlighted: bool | None = None
+
+
+class AccountingMovementReadDTO(GeneratedDTO):
+    id: int
+    occurred_on: str
+    direction: str
+    account: str
+    category_id: int
+    amount: Decimal
+    subject: str
+    person_id: int | None
+    course_id: int | None
+    description: str
+    document_reference: str | None
+    created_at: str
+    created_by: int | None
+    updated_at: str
+    updated_by: int | None
+    version: int
+    is_highlighted: bool
+
+
+class AccountingOpeningBalanceCreateDTO(GeneratedDTO):
+    fiscal_year: int
+    account: str
+    amount: Decimal
+
+
+class AccountingOpeningBalanceUpdateDTO(GeneratedDTO):
+    fiscal_year: int | None = None
+    account: str | None = None
+    amount: Decimal | None = None
+
+
+class AccountingOpeningBalanceReadDTO(GeneratedDTO):
+    id: int
+    fiscal_year: int
+    account: str
+    amount: Decimal
+    created_at: str
+    created_by: int | None
+    updated_at: str
+    updated_by: int | None
+    version: int
 
 
 class ActivityCreateDTO(GeneratedDTO):
@@ -355,12 +465,14 @@ class EnrollmentReadDTO(GeneratedDTO):
 
 class InstrumentCreateDTO(GeneratedDTO):
     name: str
+    section_id: int
     is_active: bool | None = None
     display_order: int | None = None
 
 
 class InstrumentUpdateDTO(GeneratedDTO):
     name: str | None = None
+    section_id: int | None = None
     is_active: bool | None = None
     display_order: int | None = None
 
@@ -368,6 +480,7 @@ class InstrumentUpdateDTO(GeneratedDTO):
 class InstrumentReadDTO(GeneratedDTO):
     id: int
     name: str
+    section_id: int
     is_active: bool
     display_order: int
     created_at: str
@@ -501,24 +614,6 @@ class MusicianInstrumentReadDTO(GeneratedDTO):
     musician_id: int
     instrument_id: int
     is_primary: bool
-    created_at: str
-    created_by: int | None
-
-
-class MusicianSectionCreateDTO(GeneratedDTO):
-    musician_id: int
-    section_id: int
-
-
-class MusicianSectionUpdateDTO(GeneratedDTO):
-    musician_id: int | None = None
-    section_id: int | None = None
-
-
-class MusicianSectionReadDTO(GeneratedDTO):
-    id: int
-    musician_id: int
-    section_id: int
     created_at: str
     created_by: int | None
 
@@ -764,4 +859,4 @@ class UserReadDTO(GeneratedDTO):
     version: int
 
 
-__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianSectionCreateDTO', 'MusicianSectionUpdateDTO', 'MusicianSectionReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']
+__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'AccountingCategoryCreateDTO', 'AccountingCategoryUpdateDTO', 'AccountingCategoryReadDTO', 'AccountingMovementCreateDTO', 'AccountingMovementUpdateDTO', 'AccountingMovementReadDTO', 'AccountingOpeningBalanceCreateDTO', 'AccountingOpeningBalanceUpdateDTO', 'AccountingOpeningBalanceReadDTO', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']

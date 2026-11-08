@@ -5,9 +5,11 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
+from arsis.accounting.router import router as accounting_router
 from arsis.activities.router import router as activities_router
 from arsis.auth.dependencies import get_current_user
 from arsis.auth.router import router as auth_router
+from arsis.catalogues.router import instruments_router, sections_router
 from arsis.core.api_models import ApiInfo
 from arsis.core.config import Settings, get_settings
 from arsis.core.database import dispose_database_engine, get_database_engine
@@ -17,7 +19,9 @@ from arsis.core.request_context import RequestIdMiddleware
 from arsis.core.spa_static import SpaStaticFiles
 from arsis.health.router import router as health_router
 from arsis.people.router import router as people_router
+from arsis.school.router import enrollments_router, lessons_router
 from arsis.school.router import router as school_router
+from arsis.settings.router import router as settings_router
 
 
 @asynccontextmanager
@@ -69,9 +73,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_exception_handlers(application)
     application.include_router(health_router)
     application.include_router(auth_router)
+    application.include_router(sections_router)
+    application.include_router(instruments_router)
     application.include_router(activities_router)
     application.include_router(people_router)
     application.include_router(school_router)
+    application.include_router(enrollments_router)
+    application.include_router(lessons_router)
+    application.include_router(settings_router)
+    application.include_router(accounting_router)
     application.include_router(api_v1)
     if runtime_settings.serve_frontend:
         frontend_dir = runtime_settings.frontend_dir

@@ -8,6 +8,9 @@ from arsis.generated.schemas import (
 from arsis.generated.schemas import AppSettingUpdateDTO, PersonCreateDTO, PersonUpdateDTO
 
 EXPECTED_TABLES = {
+    "accounting_categories",
+    "accounting_movements",
+    "accounting_opening_balances",
     "activities",
     "activity_participants",
     "app_settings",
@@ -22,7 +25,6 @@ EXPECTED_TABLES = {
     "lessons",
     "members",
     "musician_instruments",
-    "musician_sections",
     "musicians",
     "people",
     "person_roles",
@@ -56,7 +58,5 @@ def test_generated_create_and_update_dtos_have_expected_semantics() -> None:
     }
 
     update_dto = PersonUpdateDTO(email="mario.rossi@example.it")
-    assert update_dto.model_dump(exclude_unset=True) == {
-        "email": "mario.rossi@example.it"
-    }
+    assert update_dto.model_dump(exclude_unset=True) == {"email": "mario.rossi@example.it"}
     assert "key" not in AppSettingUpdateDTO.model_fields

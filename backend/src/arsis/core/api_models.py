@@ -1,13 +1,19 @@
 """Public API models and list-query conventions."""
 
 from collections.abc import Sequence
+from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Any
 
 from fastapi import Query
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
 from arsis.core.errors import InvalidSortError
+
+# Monetary amounts are always answered in cents, e.g. "180.50", whatever the input precision.
+Money = Annotated[
+    Decimal, PlainSerializer(lambda value: str(value.quantize(Decimal("0.01"))), return_type=str)
+]
 
 
 class ApiModel(BaseModel):

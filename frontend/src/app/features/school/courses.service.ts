@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { Page } from '../../core/api/api.types';
 
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = '/api/v1';
 
 export interface Course {
   readonly id: number;

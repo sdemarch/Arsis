@@ -26,18 +26,46 @@ def test_development_seed_is_idempotent(tmp_path: Path) -> None:
 
     assert first == second
     assert first.people == 6
-    assert first.courses == 4
+    assert first.courses == 0
     assert first.activities == 4
-    assert first.lessons == 3
+    assert first.lessons == 0
 
     with closing(sqlite3.connect(database_path)) as connection:
         assert connection.execute("SELECT count(*) FROM people").fetchone() == (6,)
-        assert connection.execute("SELECT count(*) FROM courses").fetchone() == (4,)
+        assert connection.execute("SELECT count(*) FROM courses").fetchone() == (0,)
         assert connection.execute("SELECT count(*) FROM activities").fetchone() == (4,)
-        assert connection.execute("SELECT count(*) FROM lessons").fetchone() == (3,)
+        assert connection.execute("SELECT count(*) FROM lessons").fetchone() == (0,)
+        assert connection.execute("SELECT count(*) FROM instruments").fetchone() == (28,)
+        assert connection.execute("SELECT count(*) FROM sections").fetchone() == (8,)
         assert connection.execute(
-            "SELECT count(*) FROM associated_contacts"
-        ).fetchone() == (1,)
+            "SELECT instruments.name, sections.name FROM instruments "
+            "JOIN sections ON sections.id = instruments.section_id "
+            "WHERE instruments.name IN ('Clarinetto', 'Sax Tenore', 'Xilofono') "
+            "ORDER BY instruments.name"
+        ).fetchall() == [
+            ("Clarinetto", "Clarinetti"),
+            ("Sax Tenore", "Sax"),
+            ("Xilofono", "Percussioni"),
+        ]
+        musician_id = connection.execute("SELECT id FROM musicians ORDER BY id LIMIT 1").fetchone()[
+            0
+        ]
+        instrument_id = connection.execute(
+            "SELECT id FROM instruments WHERE name = 'Sax Tenore'"
+        ).fetchone()[0]
+        connection.execute(
+            "INSERT INTO musician_instruments (musician_id, instrument_id, is_primary, created_by) "
+            "VALUES (?, ?, 1, 1)",
+            (musician_id, instrument_id),
+        )
+        assert connection.execute(
+            "SELECT sections.name FROM musician_instruments "
+            "JOIN instruments ON instruments.id = musician_instruments.instrument_id "
+            "JOIN sections ON sections.id = instruments.section_id "
+            "WHERE musician_instruments.musician_id = ?",
+            (musician_id,),
+        ).fetchall() == [("Sax",)]
+        assert connection.execute("SELECT count(*) FROM associated_contacts").fetchone() == (1,)
         assert connection.execute("SELECT id FROM users").fetchone() == (1,)
         assert connection.execute("SELECT id FROM people ORDER BY id").fetchall() == [
             (1,),

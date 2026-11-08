@@ -11,3 +11,15 @@ databaseChangeLog:
   - include:
       file: changes/0004-settings-and-audit.sql
       relativeToChangelogFile: true
+  - include:
+      file: changes/0005-band-instruments.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0006-general-settings.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0007-accounting-ledger.sql
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0008-accounting-highlight.sql
+      relativeToChangelogFile: true

@@ -47,6 +47,18 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'settings/catalogues',
+        loadComponent: () =>
+          import('./features/settings/catalogues-page.component').then((module) => module.CataloguesPageComponent),
+      },
+      {
+        path: 'settings/accounting-categories',
+        loadComponent: () =>
+          import('./features/settings/accounting-categories-page.component').then(
+            (module) => module.AccountingCategoriesPageComponent,
+          ),
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./features/settings/settings-page.component').then((module) => module.SettingsPageComponent),
