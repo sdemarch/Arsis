@@ -86,6 +86,6 @@ modelli e DTO.
 - [ADR distribuzione on-premise e SQLite](docs/adr/0002-on-premise-sqlite.md)
 - [Sviluppo locale](docs/operations/local-development.md)
 - [Runtime locale](docs/operations/local-runtime.md)
-- [Rilascio Windows](docs/operations/release-windows.md)
+- [Rilascio Windows](docs/operations/release-windows.md) e [guida rapida al rilascio](docs/operations/RELEASE.md)
 - [Salvataggi portabili](docs/operations/portable-saves.md)
 - [Promemoria distribuzione locale](docs/DISTRIBUZIONE_LOCALE.md)
