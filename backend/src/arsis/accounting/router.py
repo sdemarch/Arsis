@@ -12,6 +12,7 @@ from arsis.accounting.schemas import (
     MovementUpdateRequest,
     OpeningBalancesRequest,
     OpeningBalancesResponse,
+    SummaryResponse,
 )
 from arsis.accounting.service import AccountingService
 from arsis.auth.dependencies import CurrentUser
@@ -101,6 +102,7 @@ def list_movements(
     _current_user: CurrentUser,
     pagination: Annotated[PaginationParams, Depends()],
     fiscal_year: Annotated[int | None, Query(ge=2000, le=2100)] = None,
+    month: Annotated[int | None, Query(ge=1, le=12)] = None,
     account: str | None = None,
     direction: str | None = None,
     category_id: Annotated[int | None, Query(ge=1)] = None,
@@ -112,6 +114,7 @@ def list_movements(
         _service.list_movements(
             session,
             fiscal_year=fiscal_year,
+            month=month if fiscal_year is not None else None,
             account=account,
             direction=direction,
             category_id=category_id,
@@ -214,3 +217,12 @@ def save_opening_balances(
             actor_id=current_user.id,
         ),
     )
+
+
+@router.get("/summary/{fiscal_year}", response_model=SummaryResponse, responses=ERROR_RESPONSES)
+def get_summary(
+    fiscal_year: Annotated[int, Path(ge=2000, le=2100)],
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> SummaryResponse:
+    return SummaryResponse.model_validate(_service.summarize(session, fiscal_year))

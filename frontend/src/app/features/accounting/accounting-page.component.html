@@ -1,0 +1,97 @@
+<arsis-page-header eyebrow="Amministrazione" title="Contabilità" description="Registro di prima nota per Banca e Cassa.">
+  <div class="header-actions">
+    <div class="year" aria-label="Esercizio">
+      <button type="button" class="button button--secondary" (click)="shiftYear(-1)" aria-label="Anno precedente">‹</button>
+      <strong>{{ year() }}</strong>
+      <button type="button" class="button button--secondary" (click)="shiftYear(1)" aria-label="Anno successivo">›</button>
+    </div>
+    <a class="button button--secondary" routerLink="/settings/accounting-categories">Categorie</a>
+  </div>
+</arsis-page-header>
+
+<section class="summary">
+  @for (card of accountCards(); track card.label) {
+    <article class="card">
+      <span>{{ card.label }}</span>
+      <strong [class.out]="card.value < 0">{{ card.value | number: '1.2-2' }} €</strong>
+    </article>
+  }
+</section>
+
+<nav class="tabs" role="tablist">
+  <button type="button" role="tab" [class.active]="tab() === 'register'" [attr.aria-selected]="tab() === 'register'" (click)="setTab('register')">Registro</button>
+  <button type="button" role="tab" [class.active]="tab() === 'balance'" [attr.aria-selected]="tab() === 'balance'" (click)="setTab('balance')">Bilancio</button>
+</nav>
+
+@if (tab() === 'balance') {
+  <arsis-accounting-balance [year]="year()" [summary]="summary()" [categories]="categories()" (openingSaved)="refresh()" />
+} @else {
+  <section class="card">
+    <h2>{{ editing() ? 'Modifica movimento' : 'Nuovo movimento' }}</h2>
+    <arsis-movement-form
+      [categories]="categories()"
+      [people]="people()"
+      [courses]="courses()"
+      [movement]="editing()"
+      (saved)="onSaved()"
+      (cancelled)="editing.set(null)"
+    />
+  </section>
+
+  <section class="filters">
+    <select aria-label="Mese" [ngModel]="filters().month" (ngModelChange)="setFilter({ month: $event })">
+      <option [ngValue]="null">Tutto l'anno</option>
+      @for (month of months; track month; let i = $index) { <option [ngValue]="i + 1">{{ month }}</option> }
+    </select>
+    <select aria-label="Conto" [ngModel]="filters().account" (ngModelChange)="setFilter({ account: $event })">
+      <option [ngValue]="null">Tutti i conti</option>
+      <option value="bank">Banca</option>
+      <option value="cash">Cassa</option>
+    </select>
+    <select aria-label="Categoria" [ngModel]="filters().category_id" (ngModelChange)="setFilter({ category_id: $event })">
+      <option [ngValue]="null">Tutte le categorie</option>
+      @for (c of categories(); track c.id) { <option [ngValue]="c.id">{{ c.name }}</option> }
+    </select>
+    <input type="search" aria-label="Cerca" placeholder="Cerca soggetto, descrizione, documento" [ngModel]="filters().q" (ngModelChange)="setFilter({ q: $event })" />
+  </section>
+
+  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+
+  <div class="table-shell">
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Soggetto</th><th>Categoria</th><th>Conto</th><th>Descrizione</th><th class="num">Importo</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (m of movements(); track m.id) {
+          <tr [class.editing]="editing()?.id === m.id">
+            <td>{{ m.occurred_on | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ m.subject }}</td>
+            <td><span class="category"><i [style.background]="categoryColor(m.category_id) ?? 'var(--border-strong)'"></i>{{ categoryName(m.category_id) }}</span></td>
+            <td>{{ accountLabels[m.account] }}</td>
+            <td>{{ m.description }}@if (m.document_reference) { <small>{{ m.document_reference }}</small> }</td>
+            <td class="num" [class.out]="m.direction === 'expense'" [class.in]="m.direction === 'income'" [attr.title]="directionLabels[m.direction]">
+              {{ m.direction === 'expense' ? '−' : '+' }} {{ +m.amount | number: '1.2-2' }} €
+            </td>
+            <td class="row-actions">
+              <button type="button" (click)="edit(m)">Modifica</button>
+              <button type="button" class="danger" (click)="remove(m)">Elimina</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="empty">Nessun movimento.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (meta(); as meta) {
+    @if (meta.total_pages > 1) {
+      <nav class="pager" aria-label="Pagine">
+        <button type="button" class="button button--secondary" [disabled]="meta.page <= 1" (click)="setFilter({ page: meta.page - 1 })">‹ Precedenti</button>
+        <span>Pagina {{ meta.page }} di {{ meta.total_pages }} · {{ meta.total_items }} movimenti</span>
+        <button type="button" class="button button--secondary" [disabled]="meta.page >= meta.total_pages" (click)="setFilter({ page: meta.page + 1 })">Successivi ›</button>
+      </nav>
+    }
+  }
+}

@@ -1,33 +1,137 @@
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, debounceTime, map, of, switchMap } from 'rxjs';
+
+import { Page } from '../../core/api/api.types';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { PeopleService, PersonListItem } from '../people/people.service';
 import { Course, CoursesService } from '../school/courses.service';
-import { AccountingCategory, AccountingMovement, AccountingService } from './accounting.service';
+import { AccountingBalanceComponent } from './accounting-balance.component';
+import {
+  ACCOUNT_LABELS,
+  AccountingCategory,
+  AccountingMovement,
+  AccountingService,
+  AccountingSummary,
+  DIRECTION_LABELS,
+  MovementFilters,
+  apiErrorMessage,
+} from './accounting.service';
+import { MovementFormComponent } from './movement-form.component';
+
+const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
 
 @Component({
   selector: 'arsis-accounting-page',
-  imports: [DatePipe, DecimalPipe, FormsModule, PageHeaderComponent],
-  template: `<arsis-page-header eyebrow="Amministrazione" title="Contabilità" description="Registro di prima nota per Banca e Cassa." />
-  <section class="summary"><article class="card"><span>Entrate</span><strong>{{income()|number:'1.2-2'}} €</strong></article><article class="card"><span>Uscite</span><strong class="out">{{expenses()|number:'1.2-2'}} €</strong></article><article class="card"><span>Saldo</span><strong>{{income()-expenses()|number:'1.2-2'}} €</strong></article></section>
-  @if(error()){<p class="error">{{error()}}</p>}<section class="card"><h2>Prima nota {{year}}</h2><form (ngSubmit)="add()"><label>Data<input type="date" name="date" [(ngModel)]="draft.occurred_on" required></label><label>Categoria<select name="category" [(ngModel)]="draft.category_id" (ngModelChange)="categoryChanged()" required><option [ngValue]="null">Seleziona…</option>@for(c of categories();track c.id){<option [ngValue]="c.id">{{c.name}}</option>}</select></label><label>Verso<select name="direction" [(ngModel)]="draft.direction"><option value="income">Entrata</option><option value="expense">Uscita</option></select></label><label>Conto<select name="account" [(ngModel)]="draft.account"><option value="bank">Banca</option><option value="cash">Cassa</option></select></label><label>Soggetto<input name="subject" [(ngModel)]="draft.subject" required></label><label>Descrizione<input name="description" [(ngModel)]="draft.description" required></label><label>Importo<input type="number" name="amount" min="0.01" step="0.01" [(ngModel)]="draft.amount" required></label><button class="button button--primary">Registra</button></form></section>
-  <section class="card table"><table><thead><tr><th>Data</th><th>Verso</th><th>Soggetto</th><th>Categoria</th><th>Conto</th><th>Descrizione</th><th>Importo</th><th></th></tr></thead><tbody>@for(m of movements();track m.id){<tr><td>{{m.occurred_on|date:'dd/MM/yyyy'}}</td><td>{{m.direction==='income'?'Entrata':'Uscita'}}</td><td>{{m.subject}}</td><td>{{categoryName(m.category_id)}}</td><td>{{m.account==='bank'?'Banca':'Cassa'}}</td><td>{{m.description}}</td><td [class.out]="m.direction==='expense'">{{m.direction==='expense'?'−':'+'}} {{m.amount|number:'1.2-2'}} €</td><td><button type="button" (click)="remove(m)">Elimina</button></td></tr>}@empty{<tr><td colspan="8">Nessun movimento.</td></tr>}</tbody></table></section>`,
-  styles:`.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4);margin-bottom:var(--sp-6)}.card{padding:var(--sp-5)}strong{font-size:var(--text-xl);color:var(--color-success)}.out,.error{color:var(--color-danger)}form{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-4)}label{display:grid;gap:var(--sp-2)}input,select{min-height:38px}table{width:100%;margin-top:var(--sp-6)}th,td{padding:var(--sp-3);text-align:left;border-bottom:var(--border-thin) solid var(--border-subtle)}button:not(.button){background:none;border:0;color:var(--color-danger);cursor:pointer}@media(max-width:800px){.summary,form{grid-template-columns:1fr}}`,
+  imports: [AccountingBalanceComponent, DatePipe, DecimalPipe, FormsModule, MovementFormComponent, PageHeaderComponent, RouterLink],
+  templateUrl: './accounting-page.component.html',
+  styleUrl: './accounting-page.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountingPageComponent {
-  private readonly api=inject(AccountingService); private readonly peopleApi=inject(PeopleService); private readonly coursesApi=inject(CoursesService); protected readonly year=new Date().getFullYear(); protected readonly categories=signal<AccountingCategory[]>([]); protected readonly movements=signal<AccountingMovement[]>([]); protected readonly people=signal<PersonListItem[]>([]); protected readonly courses=signal<Course[]>([]); protected readonly error=signal('');
-  protected draft={occurred_on:new Date().toISOString().slice(0,10),direction:'income' as 'income'|'expense',account:'bank' as 'bank'|'cash',category_id:null as number|null,amount:'',subject:'',person_id:null as number|null,course_id:null as number|null,description:''};
-  protected readonly income=computed(()=>this.movements().filter(x=>x.direction==='income').reduce((s,x)=>s+Number(x.amount),0)); protected readonly expenses=computed(()=>this.movements().filter(x=>x.direction==='expense').reduce((s,x)=>s+Number(x.amount),0));
-  constructor(){this.api.categories().subscribe({next:x=>this.categories.set(x.filter(c=>c.is_active))});this.api.movements(this.year).subscribe({next:x=>this.movements.set(x.items),error:()=>this.error.set('Impossibile caricare il registro.')});this.peopleApi.listPeople('').subscribe({next:x=>this.people.set(x.items)});this.coursesApi.list().subscribe({next:x=>this.courses.set(x.items)})}
-  protected categoryChanged(){const c=this.selectedCategory();if(c&&c.direction!=='both')this.draft.direction=c.direction;this.draft.person_id=null;this.draft.course_id=null}
-  protected categoryName(id:number){return this.categories().find(x=>x.id===id)?.name??'Categoria archiviata'}
-  protected requiresPerson(){return !!this.selectedCategory()?.required_person_role}
-  protected requiresCourse(){return this.selectedCategory()?.course_required===true}
-  protected eligiblePeople(){const role=this.selectedCategory()?.required_person_role;return role?this.people().filter(p=>p.roles.includes(role)):this.people()}
-  protected personChanged(){const p=this.people().find(x=>x.id===this.draft.person_id);if(p)this.draft.subject=`${p.first_name} ${p.last_name}`}
-  protected add(){if(!this.draft.category_id||!this.draft.subject||!this.draft.description||Number(this.draft.amount)<=0||(this.requiresPerson()&&!this.draft.person_id)||(this.requiresCourse()&&!this.draft.course_id)){this.error.set('Compila i campi obbligatori.');return}this.api.create({...this.draft,category_id:this.draft.category_id}).subscribe({next:x=>{this.movements.update(xs=>[x,...xs]);this.draft={...this.draft,category_id:null,amount:'',subject:'',person_id:null,course_id:null,description:''};this.error.set('')},error:()=>this.error.set('Salvataggio non riuscito: controlla categoria e dati.')})}
-  protected remove(m:AccountingMovement){if(!window.confirm('Eliminare il movimento?'))return;this.api.delete(m.id).subscribe({next:()=>this.movements.update(xs=>xs.filter(x=>x.id!==m.id)),error:()=>this.error.set('Eliminazione non riuscita.')})}
-  private selectedCategory(){return this.categories().find(x=>x.id===this.draft.category_id)}
+  private readonly api = inject(AccountingService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  protected readonly months = MONTHS;
+  protected readonly accountLabels = ACCOUNT_LABELS;
+  protected readonly directionLabels = DIRECTION_LABELS;
+
+  protected readonly tab = toSignal(this.route.queryParamMap.pipe(map((params) => (params.get('tab') === 'balance' ? 'balance' : 'register'))), { initialValue: 'register' });
+  protected readonly year = signal(new Date().getFullYear());
+  protected readonly filters = signal<MovementFilters>({ month: null, account: null, category_id: null, q: '', page: 1 });
+  protected readonly editing = signal<AccountingMovement | null>(null);
+  protected readonly error = signal('');
+  private readonly reload = signal(0);
+
+  protected readonly categories = signal<AccountingCategory[]>([]);
+  protected readonly people = toSignal(inject(PeopleService).listPeople('').pipe(map((page) => page.items), catchError(() => of<PersonListItem[]>([]))), { initialValue: [] });
+  protected readonly courses = toSignal(inject(CoursesService).list().pipe(map((page) => page.items), catchError(() => of<Course[]>([]))), { initialValue: [] });
+
+  private readonly page = toSignal(
+    toObservable(computed(() => ({ year: this.year(), filters: this.filters(), reload: this.reload() }))).pipe(
+      debounceTime(150),
+      switchMap(({ year, filters }) =>
+        this.api.movements(year, filters).pipe(
+          catchError(() => {
+            this.error.set('Impossibile caricare il registro.');
+            return of<Page<AccountingMovement> | null>(null);
+          }),
+        ),
+      ),
+    ),
+    { initialValue: null },
+  );
+  protected readonly movements = computed(() => this.page()?.items ?? []);
+  protected readonly meta = computed(() => this.page()?.meta ?? null);
+
+  protected readonly summary = toSignal(
+    toObservable(computed(() => ({ year: this.year(), reload: this.reload() }))).pipe(
+      switchMap(({ year }) => this.api.summary(year).pipe(catchError(() => of<AccountingSummary | null>(null)))),
+    ),
+    { initialValue: null },
+  );
+  protected readonly accountCards = computed(() => {
+    const accounts = this.summary()?.accounts ?? [];
+    return [
+      ...accounts.map((a) => ({ label: this.accountLabels[a.account], value: Number(a.closing) })),
+      { label: 'Totale disponibile', value: accounts.reduce((sum, a) => sum + Number(a.closing), 0) },
+    ];
+  });
+
+  constructor() {
+    this.api.categories(true).subscribe({ next: (items) => this.categories.set(items) });
+  }
+
+  protected setTab(tab: 'register' | 'balance'): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { tab }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  protected shiftYear(delta: number): void {
+    this.year.update((year) => year + delta);
+    this.editing.set(null);
+    this.filters.update((f) => ({ ...f, page: 1 }));
+  }
+
+  protected setFilter(patch: Partial<MovementFilters>): void {
+    this.filters.update((f) => ({ ...f, ...patch, page: patch.page ?? 1 }));
+  }
+
+  protected categoryName(id: number): string {
+    return this.categories().find((c) => c.id === id)?.name ?? `Categoria #${id}`;
+  }
+
+  protected categoryColor(id: number): string | null {
+    return this.categories().find((c) => c.id === id)?.color ?? null;
+  }
+
+  protected edit(movement: AccountingMovement): void {
+    this.editing.set(movement);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  protected onSaved(): void {
+    this.editing.set(null);
+    this.error.set('');
+    this.refresh();
+  }
+
+  protected remove(movement: AccountingMovement): void {
+    if (!window.confirm(`Eliminare il movimento “${movement.description}”?`)) return;
+    this.api.delete(movement.id).subscribe({
+      next: () => {
+        if (this.editing()?.id === movement.id) this.editing.set(null);
+        this.refresh();
+      },
+      error: (err: unknown) => this.error.set(apiErrorMessage(err, 'Eliminazione non riuscita.')),
+    });
+  }
+
+  protected refresh(): void {
+    this.error.set('');
+    this.reload.update((n) => n + 1);
+  }
 }

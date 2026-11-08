@@ -12,6 +12,8 @@ from arsis.core.time import utc_now_iso
 from arsis.core.versioning import update_versioned
 from arsis.generated.models import AccountingCategory, AccountingMovement, AccountingOpeningBalance
 
+ZERO = Decimal("0")
+
 
 class AccountingService:
     def __init__(self, repository: AccountingRepository | None = None) -> None:
@@ -26,6 +28,7 @@ class AccountingService:
         self, session: Session, *, values: dict[str, Any], actor_id: int
     ) -> AccountingCategory:
         with transaction(session):
+            self._ensure_unique_category_name(session, values["name"])
             category = AccountingCategory(**values, created_by=actor_id, updated_by=actor_id)
             session.add(category)
             session.flush()
@@ -49,6 +52,8 @@ class AccountingService:
     ) -> AccountingCategory:
         with transaction(session):
             self._get_category(session, category_id)
+            if "name" in values:
+                self._ensure_unique_category_name(session, values["name"], exclude_id=category_id)
             if values:
                 values["updated_by"] = actor_id
                 update_versioned(
@@ -105,6 +110,7 @@ class AccountingService:
         session: Session,
         *,
         fiscal_year: int | None,
+        month: int | None = None,
         account: str | None,
         direction: str | None,
         category_id: int | None,
@@ -115,6 +121,7 @@ class AccountingService:
         return self._repository.list_movements(
             session,
             fiscal_year=fiscal_year,
+            month=month,
             account=account,
             direction=direction,
             category_id=category_id,
@@ -244,7 +251,41 @@ class AccountingService:
                 entity_id=fiscal_year,
                 user_id=actor_id,
             )
+        session.expire_all()
         return self.get_opening_balances(session, fiscal_year)
+
+    def summarize(self, session: Session, fiscal_year: int) -> dict[str, Any]:
+        """Year totals per account and per category, starting from the opening balances."""
+        opening = self.get_opening_balances(session, fiscal_year)
+        accounts: dict[str, dict[str, Any]] = {
+            account: {"account": account, "opening": amount, "income": ZERO, "expense": ZERO}
+            for account, amount in opening.items()
+        }
+        categories: dict[tuple[int, str], Decimal] = {}
+        for movement in self._repository.list_movements(
+            session,
+            fiscal_year=fiscal_year,
+            account=None,
+            direction=None,
+            category_id=None,
+            person_id=None,
+            course_id=None,
+            search=None,
+        ):
+            amount = Decimal(movement.amount)
+            accounts[movement.account][movement.direction] += amount
+            key = (movement.category_id, movement.direction)
+            categories[key] = categories.get(key, ZERO) + amount
+        for totals in accounts.values():
+            totals["closing"] = totals["opening"] + totals["income"] - totals["expense"]
+        return {
+            "fiscal_year": fiscal_year,
+            "accounts": list(accounts.values()),
+            "categories": [
+                {"category_id": category_id, "direction": direction, "amount": amount}
+                for (category_id, direction), amount in sorted(categories.items())
+            ],
+        }
 
     def _get_category(
         self, session: Session, category_id: int, *, include_archived: bool = False
@@ -255,6 +296,15 @@ class AccountingService:
         if category is None:
             raise ResourceNotFoundError("Categoria contabile", category_id)
         return category
+
+    def _ensure_unique_category_name(
+        self, session: Session, name: str, *, exclude_id: int | None = None
+    ) -> None:
+        existing = self._repository.find_category_by_name(session, name)
+        if existing is not None and existing.id != exclude_id:
+            raise ConflictError(
+                "Esiste già una categoria con questo nome", code="ACCOUNTING_CATEGORY_EXISTS"
+            )
 
     def _get_movement(self, session: Session, movement_id: int) -> AccountingMovement:
         movement = self._repository.get_movement(session, movement_id)

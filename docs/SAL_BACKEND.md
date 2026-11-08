@@ -1,6 +1,6 @@
 # SAL sviluppo — Arsis
 
-_Aggiornato: 3 novembre 2026_
+_Aggiornato: 8 novembre 2026_
 
 ## Completato
 
@@ -38,22 +38,28 @@ _Aggiornato: 3 novembre 2026_
   collegamento Google Drive, tema predefinito e gestione dei responsabili,
   con persistenza, audit e concorrenza ottimistica.
 
+- [x] **6j. Contabilità: prima nota** — categorie configurabili con verso,
+  ruolo della persona e corso obbligatori; movimenti Banca/Cassa con filtri per
+  anno, mese, conto, categoria e ricerca; saldi iniziali per esercizio e
+  bilancio annuale per conto e categoria; audit, concorrenza ottimistica, test
+  API e schermate Angular (registro, bilancio, gestione categorie).
+
 ## Da completare
 
-- [ ] **6j. Moduli di dominio rimanenti** — contabilità e archivio,
-  procedendo per fette verticali.
+- [ ] **6k. Moduli di dominio rimanenti** — archivio, dashboard della home e
+  rimozione degli ultimi mock.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
 ## Stato rapido
 
 - Backend: API complete per autenticazione, persone, attività, corsi,
-  iscrizioni, lezioni, presenze e configurazioni generali; Ruff e mypy puliti,
+  iscrizioni, lezioni, presenze, configurazioni generali e contabilità; Ruff e mypy puliti,
   test backend verdi all'ultimo controllo.
-- Frontend: login, Persone, Attività, Corsi, Iscrizioni, Lezioni e Presenze consumano le
-  API locali; le sezioni rimanenti usano ancora mock.
+- Frontend: login, Persone, Attività, Corsi, Iscrizioni, Lezioni, Presenze e
+  Contabilità consumano le API locali; le sezioni rimanenti usano ancora mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: contabilità, poi archivio.
+- Prossimo avanzamento funzionale: archivio e dashboard della home.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.

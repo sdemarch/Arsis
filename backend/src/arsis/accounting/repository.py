@@ -37,6 +37,13 @@ class AccountingRepository:
             )
         ).all()
 
+    def find_category_by_name(self, session: Session, name: str) -> AccountingCategory | None:
+        return session.scalar(
+            select(AccountingCategory).where(
+                func.lower(AccountingCategory.name) == name.strip().casefold()
+            )
+        )
+
     def get_movement(self, session: Session, movement_id: int) -> AccountingMovement | None:
         return session.scalar(
             select(AccountingMovement).where(AccountingMovement.id == movement_id)
@@ -47,6 +54,7 @@ class AccountingRepository:
         session: Session,
         *,
         fiscal_year: int | None,
+        month: int | None = None,
         account: str | None,
         direction: str | None,
         category_id: int | None,
@@ -56,9 +64,11 @@ class AccountingRepository:
     ) -> Sequence[AccountingMovement]:
         statement: Select[tuple[AccountingMovement]] = select(AccountingMovement)
         if fiscal_year is not None:
+            first_month, last_month = (month, month) if month is not None else (1, 12)
             statement = statement.where(
                 AccountingMovement.occurred_on.between(
-                    f"{fiscal_year:04d}-01-01", f"{fiscal_year:04d}-12-31"
+                    f"{fiscal_year:04d}-{first_month:02d}-01",
+                    f"{fiscal_year:04d}-{last_month:02d}-31",
                 )
             )
         for column, value in (

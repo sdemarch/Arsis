@@ -13,6 +13,7 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
     <arsis-page-header eyebrow="Profilo" title="Configurazioni" description="Gestisci i dati generali e i cataloghi dell’applicazione." />
     <section class="settings-grid">
       <article class="settings-card card"><div class="settings-icon">ST</div><div><h2>Strumenti e sezioni</h2><p>Organizza il catalogo musicale utilizzato nelle anagrafiche.</p></div><a class="button button--secondary" routerLink="/settings/catalogues">Gestisci</a></article>
+      <article class="settings-card card"><div class="settings-icon">CC</div><div><h2>Categorie contabili</h2><p>Definisci le voci di entrata e uscita della prima nota.</p></div><a class="button button--secondary" routerLink="/settings/accounting-categories">Gestisci</a></article>
       <article class="settings-card card"><div class="settings-icon">DB</div><div><h2>Database locale</h2><p>I dati sono conservati nel salvataggio SQLite dell’installazione.</p></div><span class="status-badge status-badge--success">Connesso</span></article>
     </section>
     <form class="config-section card" (ngSubmit)="save()">

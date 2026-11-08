@@ -1,7 +1,7 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, PlainSerializer
 
 from arsis.core.api_models import ApiModel
 
@@ -9,6 +9,10 @@ Direction = Literal["income", "expense", "both"]
 MovementDirection = Literal["income", "expense"]
 Account = Literal["bank", "cash"]
 PersonRole = Literal["student", "teacher", "member"]
+# SQLite hands NUMERIC values back with ten decimal places: answer with cents.
+Money = Annotated[
+    Decimal, PlainSerializer(lambda value: str(value.quantize(Decimal("0.01"))), return_type=str)
+]
 
 
 class CategoryCreateRequest(ApiModel):
@@ -68,6 +72,7 @@ class MovementUpdateRequest(ApiModel):
 
 
 class MovementResponse(MovementCreateRequest):
+    amount: Money
     id: int
     created_at: str
     updated_at: str
@@ -79,5 +84,27 @@ class OpeningBalancesRequest(ApiModel):
     cash: Decimal = Field(max_digits=12, decimal_places=2)
 
 
-class OpeningBalancesResponse(OpeningBalancesRequest):
+class OpeningBalancesResponse(ApiModel):
     fiscal_year: int
+    bank: Money
+    cash: Money
+
+
+class AccountSummary(ApiModel):
+    account: Account
+    opening: Money
+    income: Money
+    expense: Money
+    closing: Money
+
+
+class CategorySummary(ApiModel):
+    category_id: int
+    direction: MovementDirection
+    amount: Money
+
+
+class SummaryResponse(ApiModel):
+    fiscal_year: int
+    accounts: list[AccountSummary]
+    categories: list[CategorySummary]
