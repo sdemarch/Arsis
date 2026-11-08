@@ -7,5 +7,5 @@ export const ACTIVITIES_ROUTES: Routes = [
   { path: 'attendance', component: ActivitiesPageComponent },
   { path: 'new', loadComponent: () => import('./activity-create.component').then((module) => module.ActivityCreateComponent) },
   { path: ':activityId', loadComponent: () => import('./activity-detail.component').then((module) => module.ActivityDetailComponent) },
-  { path: ':activityId/attendance', component: ActivitiesPageComponent },
+  { path: ':activityId/attendance', loadComponent: () => import('./activity-attendance.component').then((module) => module.ActivityAttendanceComponent) },
 ];

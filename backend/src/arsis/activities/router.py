@@ -5,7 +5,16 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from arsis.activities.schemas import ActivityCreateRequest, ActivityResponse, ActivityUpdateRequest
+from arsis.activities.participants_service import ParticipantsService
+from arsis.activities.schemas import (
+    ActivityCreateRequest,
+    ActivityResponse,
+    ActivityUpdateRequest,
+    ParticipantAddRequest,
+    ParticipantAttendanceRequest,
+    ParticipantResponse,
+    ParticipationResponse,
+)
 from arsis.activities.service import ActivitiesService
 from arsis.auth.dependencies import CurrentUser
 from arsis.core.api_models import (
@@ -21,11 +30,24 @@ from arsis.generated.schemas import ActivityCreateDTO, ActivityUpdateDTO
 
 router = APIRouter(prefix="/api/v1/activities", tags=["activities"])
 _service = ActivitiesService()
+_participants = ParticipantsService()
 _SORT_FIELDS = {"title", "starts_at", "status", "created_at", "updated_at"}
 
 
-def _response(activity: Any) -> ActivityResponse:
-    return ActivityResponse.model_validate(activity)
+def _response(activity: Any, counts: tuple[int, int, int] = (0, 0, 0)) -> ActivityResponse:
+    participant_count, present_count, absent_count = counts
+    return ActivityResponse.model_validate(activity).model_copy(
+        update={
+            "participant_count": participant_count,
+            "present_count": present_count,
+            "absent_count": absent_count,
+        }
+    )
+
+
+def _with_counts(session: Session, activities: list[Any]) -> list[ActivityResponse]:
+    counts = _participants.counts(session, activity_ids=[activity.id for activity in activities])
+    return [_response(activity, counts.get(activity.id, (0, 0, 0))) for activity in activities]
 
 
 @router.get("", response_model=Page[ActivityResponse], responses=ERROR_RESPONSES)
@@ -55,10 +77,9 @@ def list_activities(
         reverse=sort_spec.direction == "desc",
     )
     return build_page(
-        [
-            _response(activity)
-            for activity in activities[pagination.offset : pagination.offset + pagination.page_size]
-        ],
+        _with_counts(
+            session, activities[pagination.offset : pagination.offset + pagination.page_size]
+        ),
         total_items=len(activities),
         params=pagination,
     )
@@ -75,11 +96,25 @@ def create_activity(
     session: Annotated[Session, Depends(get_database_session)],
     current_user: CurrentUser,
 ) -> ActivityResponse:
-    return _response(
-        _service.create_activity(
-            session, data=ActivityCreateDTO(**payload.model_dump()), actor_id=current_user.id
-        )
+    activity = _service.create_activity(
+        session, data=ActivityCreateDTO(**payload.model_dump()), actor_id=current_user.id
     )
+    return _with_counts(session, [activity])[0]
+
+
+# Declared before /{activity_id} so the literal path is not read as an id.
+@router.get(
+    "/participations", response_model=list[ParticipationResponse], responses=ERROR_RESPONSES
+)
+def list_participations(
+    person_id: Annotated[int, Query(ge=1)],
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> list[ParticipationResponse]:
+    return [
+        ParticipationResponse.model_validate(row)
+        for row in _participants.participations(session, person_id=person_id)
+    ]
 
 
 @router.get("/{activity_id}", response_model=ActivityResponse, responses=ERROR_RESPONSES)
@@ -88,7 +123,7 @@ def get_activity(
     session: Annotated[Session, Depends(get_database_session)],
     _current_user: CurrentUser,
 ) -> ActivityResponse:
-    return _response(_service.get_activity(session, activity_id))
+    return _with_counts(session, [_service.get_activity(session, activity_id)])[0]
 
 
 @router.patch("/{activity_id}", response_model=ActivityResponse, responses=ERROR_RESPONSES)
@@ -122,3 +157,95 @@ def archive_activity(
             session, activity_id=activity_id, expected_version=version, actor_id=current_user.id
         )
     )
+
+
+@router.get(
+    "/{activity_id}/participants",
+    response_model=list[ParticipantResponse],
+    responses=ERROR_RESPONSES,
+)
+def list_participants(
+    activity_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> list[ParticipantResponse]:
+    return [
+        ParticipantResponse.model_validate(row)
+        for row in _participants.list_participants(session, activity_id=activity_id)
+    ]
+
+
+@router.post(
+    "/{activity_id}/participants",
+    response_model=ParticipantResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=ERROR_RESPONSES,
+)
+def add_participant(
+    activity_id: int,
+    payload: ParticipantAddRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> ParticipantResponse:
+    return ParticipantResponse.model_validate(
+        _participants.add_participant(
+            session, activity_id=activity_id, person_id=payload.person_id, actor_id=current_user.id
+        )
+    )
+
+
+@router.post(
+    "/{activity_id}/participants/musicians",
+    response_model=list[ParticipantResponse],
+    responses=ERROR_RESPONSES,
+)
+def convoke_musicians(
+    activity_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> list[ParticipantResponse]:
+    """Add the musicians active on the activity date who are missing (not those removed)."""
+    _participants.refresh_musicians(session, activity_id=activity_id, actor_id=current_user.id)
+    return [
+        ParticipantResponse.model_validate(row)
+        for row in _participants.list_participants(session, activity_id=activity_id)
+    ]
+
+
+@router.delete(
+    "/{activity_id}/participants/{person_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=ERROR_RESPONSES,
+)
+def remove_participant(
+    activity_id: int,
+    person_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> None:
+    _participants.remove_participant(
+        session, activity_id=activity_id, person_id=person_id, actor_id=current_user.id
+    )
+
+
+@router.put(
+    "/{activity_id}/attendances",
+    response_model=list[ParticipantResponse],
+    responses=ERROR_RESPONSES,
+)
+def save_attendances(
+    activity_id: int,
+    payload: ParticipantAttendanceRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> list[ParticipantResponse]:
+    _participants.save_attendance(
+        session,
+        activity_id=activity_id,
+        rows=[(row.person_id, row.attendance) for row in payload.rows],
+        actor_id=current_user.id,
+    )
+    return [
+        ParticipantResponse.model_validate(row)
+        for row in _participants.list_participants(session, activity_id=activity_id)
+    ]

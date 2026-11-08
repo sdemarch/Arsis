@@ -389,6 +389,8 @@ Vincolo univoco sulla coppia attività-persona.
 
 La tabella materializza i convocati. Le successive modifiche ai ruoli dei musicanti non devono cambiare retroattivamente i partecipanti già salvati.
 
+Alla creazione dell’attività il servizio inserisce, con `source = automatic`, le persone non archiviate con ruolo musicante attivo alla data di `starts_at`. Le persone aggiunte a mano hanno `source = manual`. La rimozione archivia la riga (`archived_at`), così una successiva convocazione automatica non la riaggiunge; una nuova aggiunta manuale la riattiva. Le presenze si registrano solo per partecipanti non archiviati; il valore vuoto azzera anche `attendance_recorded_at`.
+
 #### Scuola
 
 ##### `courses`
@@ -758,10 +760,14 @@ POST   /api/v1/activities/{activityId}/archive
 POST   /api/v1/activities/{activityId}/restore
 
 GET    /api/v1/activities/{activityId}/participants
-POST   /api/v1/activities/{activityId}/participants/sync-active-musicians
-PUT    /api/v1/activities/{activityId}/participants
-PUT    /api/v1/activities/{activityId}/attendance
+POST   /api/v1/activities/{activityId}/participants            {person_id}
+DELETE /api/v1/activities/{activityId}/participants/{personId}
+POST   /api/v1/activities/{activityId}/participants/musicians
+PUT    /api/v1/activities/{activityId}/attendances             {rows: [{person_id, attendance}]}
+GET    /api/v1/activities/participations?person_id=
 ```
+
+Le risposte di attività includono `participant_count`, `present_count` e `absent_count`. `participants/musicians` aggiunge i musicanti attivi alla data dell’attività non ancora presenti, senza riaggiungere chi è stato rimosso a mano. `participations` restituisce lo storico di una persona per la sua scheda.
 
 La sincronizzazione dei musicanti attivi deve essere un’azione esplicita. La creazione dell’attività effettua una prima materializzazione automatica; successive sincronizzazioni non devono sovrascrivere presenze già registrate senza conferma.
 

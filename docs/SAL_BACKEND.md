@@ -44,10 +44,17 @@ _Aggiornato: 8 novembre 2026_
   bilancio annuale per conto e categoria; audit, concorrenza ottimistica, test
   API e schermate Angular (registro, bilancio, gestione categorie).
 
+- [x] **6k. Attività: convocazione e presenze** — musicanti attivi convocati
+  alla creazione, aggiunta e rimozione dei partecipanti, registro presenze con
+  compilazione rapida, conteggi nelle liste e storico nella scheda persona.
+- [x] **6l. Cablaggio frontend** — moduli di corsi, iscrizioni e lezioni con
+  selettori al posto degli ID, archivio collegato alla cartella configurata,
+  stato reale del database nella shell.
+
 ## Da completare
 
-- [ ] **6k. Moduli di dominio rimanenti** — archivio, dashboard della home e
-  rimozione degli ultimi mock.
+- [ ] **6m. Ultimi mock** — calendario delle attività, dashboard della home e
+  panoramica della scuola.
 - [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
   installazione e aggiornamento on-premise.
 
@@ -60,6 +67,6 @@ _Aggiornato: 8 novembre 2026_
   Contabilità consumano le API locali; le sezioni rimanenti usano ancora mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: archivio e dashboard della home.
+- Prossimo avanzamento funzionale: calendario attività e dashboard della home.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.

@@ -12,7 +12,7 @@ import { ActivitiesService } from './activities.service';
   selector: 'arsis-activities-page',
   imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
-    <arsis-page-header eyebrow="Attività" title="Calendario e attività" description="Organizza prove, concerti, eventi e presenze.">
+    <arsis-page-header eyebrow="Attività" [title]="attendanceMode ? 'Presenze alle attività' : 'Calendario e attività'" [description]="attendanceMode ? 'Scegli un’attività per gestire convocati e presenze.' : 'Organizza prove, concerti, eventi e presenze.'">
       <a class="button button--primary" routerLink="/activities/new">＋ Nuova attività</a>
     </arsis-page-header>
 
@@ -25,9 +25,9 @@ import { ActivitiesService } from './activities.service';
     <section class="activity-layout">
       <div class="activity-feed">
         @for (activity of filteredActivities(); track activity.id) {
-          <a class="activity-card card" [routerLink]="['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
+          <a class="activity-card card" [routerLink]="attendanceMode ? ['/activities', activity.id, 'attendance'] : ['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
             <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
-            <div class="activity-main"><div class="activity-title"><span>{{ activity.type }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }} · {{ activity.location }}</p><div class="participants"><span class="avatar av-green">{{ activity.participants }}</span><small>partecipanti convocati</small></div></div>
+            <div class="activity-main"><div class="activity-title"><span>{{ activity.type }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }} · {{ activity.location }}</p><div class="participants"><span class="avatar av-green">{{ activity.participant_count }}</span><small>convocati@if (activity.present_count || activity.absent_count) { · {{ activity.present_count }} presenti · {{ activity.absent_count }} assenti }</small></div></div>
             <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.status }}</span><span class="row-menu" aria-hidden="true">•••</span></div>
           </a>
         }
@@ -91,9 +91,11 @@ export class ActivitiesPageComponent {
   private readonly router = inject(Router);
   private readonly queryParams = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
   private readonly activitiesService = inject(ActivitiesService);
+  /** Opened from the "Presenze" entry: each card leads to the attendance register. */
+  protected readonly attendanceMode = this.route.snapshot.routeConfig?.path === 'attendance';
 
   private readonly response = toSignal(toObservable(computed(() => this.queryParams().get('q')?.trim() ?? '')).pipe(debounceTime(200), distinctUntilChanged(), switchMap((query) => this.activitiesService.list(query))), { initialValue: null });
-  protected readonly activities = computed(() => (this.response()?.items ?? []).map((activity) => { const date = new Date(activity.starts_at); return { ...activity, date: new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(date).toUpperCase(), year: date.getFullYear(), weekday: new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(date), time: new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(date), participants: 0, tone: activity.status === 'confirmed' ? 'success' : 'warn', type: ({ rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' } as const)[activity.type] }; }));
+  protected readonly activities = computed(() => (this.response()?.items ?? []).map((activity) => { const date = new Date(activity.starts_at); return { ...activity, date: new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(date).toUpperCase(), year: date.getFullYear(), weekday: new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(date), time: new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(date), tone: activity.status === 'confirmed' ? 'success' : 'warn', type: ({ rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' } as const)[activity.type] }; }));
   protected readonly calendar: { day: number; events: string[] }[] = [];
   protected readonly weekdays = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
   protected readonly typeOptions: readonly FilterOption[] = [
