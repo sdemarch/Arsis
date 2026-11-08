@@ -19,13 +19,13 @@ function firstSegment(url: string): string {
   template: `
     <header class="topbar">
       <nav class="topnav" aria-label="Aree principali">
-        @for (area of navigation; track area.path) {
+        @for (area of topbarAreas; track area.path) {
           <a [routerLink]="area.path" [class.is-active]="area === matchedArea()" [attr.aria-current]="area === matchedArea() ? 'page' : null">{{ area.label }}</a>
         }
       </nav>
       <div class="topbar-actions">
         <button class="icon-button" type="button" aria-label="Notifiche">●</button>
-        <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo">
+        <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo" [attr.aria-current]="matchedArea()?.path === '/settings' ? 'page' : null">
           <span>{{ userInitials() }}</span>
           <small>{{ auth.user()?.display_name }}</small>
         </a>
@@ -70,6 +70,7 @@ function firstSegment(url: string): string {
 })
 export class AppShellComponent {
   protected readonly navigation = NAVIGATION;
+  protected readonly topbarAreas = NAVIGATION.filter((area) => area.inTopbar !== false);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
   protected readonly settings = inject(SettingsService);
@@ -88,7 +89,7 @@ export class AppShellComponent {
     const section = firstSegment(this.currentUrl());
     return this.navigation.find((area) => firstSegment(area.path) === section) ?? null;
   });
-  // Pages outside the areas (e.g. Configurazioni) keep the Home sidebar.
+  // A URL outside every area (only possible for unknown routes) falls back to Home.
   protected readonly activeArea = computed(() => this.matchedArea() ?? this.navigation[0]);
 
   constructor() {

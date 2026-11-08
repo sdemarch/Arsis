@@ -1,6 +1,8 @@
 export interface NavigationArea {
   readonly label: string;
   readonly path: string;
+  /** False for areas with a sidebar but no top bar tab. */
+  readonly inTopbar?: boolean;
   readonly children: readonly {
     label: string;
     path: string;
@@ -50,6 +52,17 @@ export const NAVIGATION: readonly NavigationArea[] = [
     children: [
       { label: 'Registro contabile', path: '/accounting', queryParams: { tab: 'register' } },
       { label: 'Bilancio', path: '/accounting', queryParams: { tab: 'balance' } },
+    ],
+  },
+  {
+    // Reached from the user menu, not the top bar (functional spec §13).
+    label: 'Configurazioni',
+    path: '/settings',
+    inTopbar: false,
+    children: [
+      { label: 'Generali e responsabili', path: '/settings' },
+      { label: 'Strumenti e sezioni', path: '/settings/catalogues' },
+      { label: 'Categorie contabili', path: '/settings/accounting-categories' },
     ],
   },
 ];
