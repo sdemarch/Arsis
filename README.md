@@ -59,10 +59,23 @@ Angular e usare il runtime integrato:
 ARSIS_MODE=runtime ./run-local.sh
 ```
 
-Il runtime serve API e SPA dallo stesso processo su `127.0.0.1:8765`. In un exe
-i dati non vengono inclusi nel bundle: senza `ARSIS_DATA_DIR` usano
-`%LOCALAPPDATA%\Arsis`. Il database resta sul disco locale ed è aperto
-esclusivamente dal backend.
+Il runtime serve API e SPA dallo stesso processo su `127.0.0.1:8765`, applica da
+solo le migrazioni mancanti (con backup preventivo) e, su un database vuoto, fa
+creare il primo responsabile dalla pagina di accesso. In un exe i dati non
+vengono inclusi nel bundle: senza `ARSIS_DATA_DIR` usano `%LOCALAPPDATA%\Arsis`.
+Il database resta sul disco locale ed è aperto esclusivamente dal backend.
+
+`arsis-migrate` applica le stesse migrazioni senza Java né Liquibase; in
+sviluppo `init-db.ps1` resta il comando di riferimento perché rigenera anche
+modelli e DTO.
+
+## Rilascio e controlli
+
+- Eseguibile e installer Windows: `.\scripts\build-windows.ps1`, dettagli in
+  [Rilascio Windows](docs/operations/release-windows.md).
+- Ogni pull request esegue `.github/workflows/ci.yml`: Ruff, mypy, pytest,
+  database creato dal changelog e confrontato con i modelli generati, build
+  Angular.
 
 ## Documenti di riferimento
 
@@ -73,5 +86,6 @@ esclusivamente dal backend.
 - [ADR distribuzione on-premise e SQLite](docs/adr/0002-on-premise-sqlite.md)
 - [Sviluppo locale](docs/operations/local-development.md)
 - [Runtime locale](docs/operations/local-runtime.md)
+- [Rilascio Windows](docs/operations/release-windows.md)
 - [Salvataggi portabili](docs/operations/portable-saves.md)
 - [Promemoria distribuzione locale](docs/DISTRIBUZIONE_LOCALE.md)

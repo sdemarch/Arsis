@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend e schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Dipendenze
+        run: python -m pip install -e "backend[dev]"
+
+      - name: Ruff
+        working-directory: backend
+        run: ruff check .
+
+      - name: Mypy
+        working-directory: backend
+        run: mypy src
+
+      - name: Test
+        working-directory: backend
+        run: pytest -q
+
+      # Same migrator the installed app runs: a fresh database must match the
+      # generated models and the expected tables and changesets.
+      - name: Database da changelog
+        run: arsis-migrate --database data/arsis.db
+
+      - name: Modelli generati allineati
+        run: python scripts/generate_backend_schema.py --check
+
+      - name: Schema atteso
+        run: python database/tests/verify_schema.py data/arsis.db
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Dipendenze
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ApiError } from '../../core/api/api.types';
 import { DetailCardComponent } from '../../shared/ui/detail-card.component';
+import { ActivitiesService, Participation } from '../activities/activities.service';
 import { PeopleService, PersonDetail, PersonRole, PersonUpdate } from './people.service';
 
 const ROLE_OPTIONS = [
@@ -16,7 +18,7 @@ const ROLE_OPTIONS = [
 
 @Component({
   selector: 'arsis-person-detail',
-  imports: [DetailCardComponent, FormsModule],
+  imports: [DetailCardComponent, FormsModule, RouterLink],
   template: `
     @if (person(); as item) {
       <arsis-detail-card
@@ -76,6 +78,21 @@ const ROLE_OPTIONS = [
             @if (editing()) { <textarea name="notes" [(ngModel)]="draft.notes" rows="4"></textarea> } @else { <p class="empty-value">{{ item.notes || 'Nessuna nota inserita.' }}</p> }
           </section>
 
+          @if (participations().length) {
+            <section>
+              <header><div><p class="section-kicker">Storico</p><h2>Attività</h2></div><span class="history-summary">{{ attended() }} presenze su {{ recorded() }} registrate</span></header>
+              <ul class="history">
+                @for (p of participations(); track p.activity_id) {
+                  <li>
+                    <a [routerLink]="['/activities', p.activity_id, 'attendance']">{{ p.title }}</a>
+                    <small>{{ formatDate(p.starts_at) }}</small>
+                    <span class="status-badge" [class.status-badge--success]="p.attendance === 'present'" [class.status-badge--danger]="p.attendance === 'absent'">{{ p.attendance === 'present' ? 'Presente' : p.attendance === 'absent' ? 'Assente' : 'Non registrata' }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
           @if (!item.archived_at) {
             <section class="danger-zone"><header><div><p class="section-kicker">Archiviazione</p><h2>Rimuovi dalla vista attiva</h2></div></header><p>La persona resta nello storico e può essere consultata.</p><button type="button" class="button button--secondary" (click)="archivePerson()">Archivia persona</button></section>
           }
@@ -89,6 +106,7 @@ const ROLE_OPTIONS = [
     .role-list { display: grid; gap: var(--sp-2); } .role-list > div { align-items: center; background: var(--bg-raised); border-radius: var(--radius-md); display: flex; gap: var(--sp-3); padding: var(--sp-3); }
     .role-list small { color: var(--text-secondary); flex: 1; } .text-button { background: transparent; border: 0; color: var(--color-danger); cursor: pointer; }
     .role-add { display: grid; gap: var(--sp-3); grid-template-columns: 1fr 160px auto; margin-top: var(--sp-4); } .role-add .button { white-space: nowrap; }
+    .history { display: grid; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; } .history li { align-items: center; display: grid; gap: var(--sp-3); grid-template-columns: 1fr auto auto; } .history small, .history-summary { color: var(--text-secondary); font-size: var(--text-sm); }
     .danger-zone { border: var(--border-thin) solid color-mix(in srgb, var(--color-danger) 35%, var(--border-default)); border-radius: var(--radius-md); padding: var(--sp-5); } .danger-zone p { color: var(--text-secondary); }
     @media (max-width: 640px) { .role-add { grid-template-columns: 1fr; } .role-list > div { align-items: flex-start; flex-direction: column; } }
   `,
@@ -101,6 +119,9 @@ export class PersonDetailComponent {
   private readonly personId = Number(this.route.snapshot.paramMap.get('personId'));
   protected readonly person = signal<PersonDetail | null>(null);
   protected readonly roles = signal<PersonRole[]>([]);
+  protected readonly participations = toSignal(inject(ActivitiesService).participations(this.personId).pipe(catchError(() => of<Participation[]>([]))), { initialValue: [] });
+  protected readonly attended = computed(() => this.participations().filter((p) => p.attendance === 'present').length);
+  protected readonly recorded = computed(() => this.participations().filter((p) => p.attendance !== null).length);
   protected readonly editing = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -115,6 +136,10 @@ export class PersonDetailComponent {
   protected roleStartDate = new Date().toISOString().slice(0, 10);
 
   constructor() { this.load(); }
+
+  protected formatDate(value: string): string {
+    return new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' }).format(new Date(value));
+  }
 
   protected beginEditing(): void {
     const person = this.person();

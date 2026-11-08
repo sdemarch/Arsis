@@ -59,3 +59,41 @@ class ActivityResponse(ApiModel):
     archived_at: str | None
     archived_by: int | None
     version: int
+    participant_count: int = 0
+    present_count: int = 0
+    absent_count: int = 0
+
+
+AttendanceStatus = Literal["present", "absent"]
+
+
+class ParticipantAddRequest(ApiModel):
+    person_id: int = Field(ge=1)
+
+
+class ParticipantResponse(ApiModel):
+    person_id: int
+    person_name: str
+    source: Literal["automatic", "manual"]
+    attendance: AttendanceStatus | None
+    attendance_recorded_at: str | None
+    version: int
+
+
+class ParticipantAttendanceWrite(ApiModel):
+    person_id: int = Field(ge=1)
+    attendance: AttendanceStatus | None = None
+
+
+class ParticipantAttendanceRequest(ApiModel):
+    rows: list[ParticipantAttendanceWrite] = Field(min_length=1, max_length=500)
+
+
+class ParticipationResponse(ApiModel):
+    activity_id: int
+    title: str
+    type: ActivityType
+    starts_at: str
+    status: ActivityStatus
+    source: Literal["automatic", "manual"]
+    attendance: AttendanceStatus | None

@@ -44,22 +44,35 @@ _Aggiornato: 8 novembre 2026_
   bilancio annuale per conto e categoria; audit, concorrenza ottimistica, test
   API e schermate Angular (registro, bilancio, gestione categorie).
 
+- [x] **6k. Attività: convocazione e presenze** — musicanti attivi convocati
+  alla creazione, aggiunta e rimozione dei partecipanti, registro presenze con
+  compilazione rapida, conteggi nelle liste e storico nella scheda persona.
+- [x] **6l. Cablaggio frontend** — moduli di corsi, iscrizioni e lezioni con
+  selettori al posto degli ID, archivio collegato alla cartella configurata,
+  stato reale del database nella shell.
+- [x] **6m. Calendario e dashboard** — calendario mensile delle attività su
+  intervallo di date, date locali con fuso nelle attività, riepilogo
+  `/dashboard/summary` per Home e panoramica della Scuola; rimossi tutti i
+  dati mock del frontend.
+
 ## Da completare
 
-- [ ] **6k. Moduli di dominio rimanenti** — archivio, dashboard della home e
-  rimozione degli ultimi mock.
-- [ ] **7. Rilascio** — test end-to-end, CI, rate limiting, HTTPS, procedure di
-  installazione e aggiornamento on-premise.
+- [x] **7a. Preparazione al rilascio** — CI su ogni PR, migrazioni automatiche
+  senza Java con backup, primo responsabile dal primo avvio, chiave di firma per
+  installazione, limite agli accessi falliti, launcher con singola istanza e
+  messaggi d'errore, exe PyInstaller e installer Inno Setup.
+- [ ] **7b. Rilascio** — interfaccia export/import `.arsis-save`, test
+  end-to-end, verifica su PC pulito. HTTPS solo per un'eventuale versione online.
 
 ## Stato rapido
 
-- Backend: API complete per autenticazione, persone, attività, corsi,
-  iscrizioni, lezioni, presenze, configurazioni generali e contabilità; Ruff e mypy puliti,
-  test backend verdi all'ultimo controllo.
-- Frontend: login, Persone, Attività, Corsi, Iscrizioni, Lezioni, Presenze e
-  Contabilità consumano le API locali; le sezioni rimanenti usano ancora mock.
+- Backend: API complete per autenticazione, persone, attività con convocati e
+  presenze, corsi, iscrizioni, lezioni, presenze, configurazioni generali,
+  contabilità e dashboard; Ruff e mypy puliti, test backend verdi all'ultimo
+  controllo.
+- Frontend: tutte le aree consumano le API locali; non restano dati mock.
 - Runtime: `arsis-local` serve API e Angular compilato dallo stesso processo;
   salvataggi `.arsis-save` pronti per database e allegati.
-- Prossimo avanzamento funzionale: archivio e dashboard della home.
+- Prossimo avanzamento: punto 7b.
 - Dopo l'MVP funzionale: migrazioni automatiche, interfaccia export/import,
   launcher e installer Windows.
