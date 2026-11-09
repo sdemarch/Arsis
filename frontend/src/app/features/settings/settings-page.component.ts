@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { DatabaseStatusService } from '../../core/health/database-status.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.service';
 
@@ -14,7 +15,7 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
     <section class="settings-grid">
       <article class="settings-card card"><div class="settings-icon">ST</div><div><h2>Strumenti e sezioni</h2><p>Organizza il catalogo musicale utilizzato nelle anagrafiche.</p></div><a class="button button--secondary" routerLink="/settings/catalogues">Gestisci</a></article>
       <article class="settings-card card"><div class="settings-icon">CC</div><div><h2>Categorie contabili</h2><p>Definisci le voci di entrata e uscita della prima nota.</p></div><a class="button button--secondary" routerLink="/settings/accounting-categories">Gestisci</a></article>
-      <article class="settings-card card"><div class="settings-icon">DB</div><div><h2>Database locale</h2><p>I dati sono conservati nel salvataggio SQLite dell’installazione.</p></div><span class="status-badge status-badge--success">Connesso</span></article>
+      <article class="settings-card card"><div class="settings-icon">DB</div><div><h2>Salvataggi</h2><p>Esporta tutti i dati in un file o ripristinali da un salvataggio.</p><span class="status-badge" [class.status-badge--success]="database.status() === 'ready'" [class.status-badge--warn]="database.status() === 'checking'" [class.status-badge--danger]="database.status() === 'unavailable'">{{ database.label(database.status()) }}</span></div><a class="button button--secondary" routerLink="/settings/saves">Gestisci</a></article>
     </section>
     <form class="config-section card" (ngSubmit)="save()">
       <header><div><p class="eyebrow">Organizzazione</p><h2>Identità dell’applicazione</h2><p class="section-description">Questo nome viene mostrato nel piè di pagina dell’interfaccia.</p></div></header>
@@ -68,6 +69,7 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
 export class SettingsPageComponent implements OnInit {
   private readonly settings = inject(SettingsService);
   private readonly auth = inject(AuthService);
+  protected readonly database = inject(DatabaseStatusService);
   protected organizationName = '';
   protected archiveGoogleDriveUrl = '';
   protected defaultTheme: GeneralSettings['default_theme'] = 'light';

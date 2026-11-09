@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, isDevMode, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -24,24 +24,52 @@ import { AuthService } from '../../core/auth/auth.service';
       </section>
 
       <section class="login-panel">
-        <form class="login-card" (ngSubmit)="submit()">
-          <div>
-            <p class="eyebrow">Bentornato</p>
-            <h2>Accedi ad Arsis</h2>
-            <p class="intro">Inserisci username e password.</p>
-          </div>
-          <label>
-            <span>Email</span>
-            <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
-          </label>
-          <label>
-            <span>Password</span>
-            <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
-          </label>
-          @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-          <button class="button button--primary button--large" type="submit" [disabled]="submitting()">{{ submitting() ? 'Accesso in corso…' : 'Accedi' }}</button>
-          <p class="help">Problemi di accesso? Contatta l’amministratore.</p>
-        </form>
+        @if (mode() === 'setup') {
+          <form class="login-card" (ngSubmit)="submitSetup()">
+            <div>
+              <p class="eyebrow">Primo avvio</p>
+              <h2>Crea il primo responsabile</h2>
+              <p class="intro">Arsis non ha ancora utenti. Questo account potrà poi aggiungere gli altri responsabili da Configurazioni.</p>
+            </div>
+            <label>
+              <span>Nome visualizzato</span>
+              <input name="displayName" [(ngModel)]="displayName" autocomplete="name" maxlength="200" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+            </label>
+            <label>
+              <span>Password (almeno 12 caratteri)</span>
+              <input type="password" name="password" [(ngModel)]="password" autocomplete="new-password" minlength="12" required />
+            </label>
+            <label>
+              <span>Conferma password</span>
+              <input type="password" name="confirmation" [(ngModel)]="confirmation" autocomplete="new-password" required />
+            </label>
+            @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+            <button class="button button--primary button--large" type="submit" [disabled]="submitting()">{{ submitting() ? 'Creazione in corso…' : 'Crea e accedi' }}</button>
+          </form>
+        } @else {
+          <form class="login-card" (ngSubmit)="submit()">
+            <div>
+              <p class="eyebrow">Bentornato</p>
+              <h2>Accedi ad Arsis</h2>
+              <p class="intro">Inserisci email e password.</p>
+            </div>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" [(ngModel)]="email" autocomplete="email" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" name="password" [(ngModel)]="password" autocomplete="current-password" required />
+            </label>
+            @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+            <button class="button button--primary button--large" type="submit" [disabled]="submitting() || mode() === 'checking'">{{ submitting() ? 'Accesso in corso…' : 'Accedi' }}</button>
+            <p class="help">Problemi di accesso? Contatta l’amministratore.</p>
+          </form>
+        }
       </section>
     </main>
   `,
@@ -75,24 +103,57 @@ export class LoginPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  protected email = 'responsabile@arsis.it';
-  protected password = 'arsis-demo-password';
+  // The seeded demo account is prefilled only in development builds.
+  protected email = isDevMode() ? 'responsabile@arsis.it' : '';
+  protected password = isDevMode() ? 'arsis-demo-password' : '';
+  protected displayName = '';
+  protected confirmation = '';
+  protected readonly mode = signal<'checking' | 'login' | 'setup'>('checking');
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  constructor() {
+    this.auth.setupRequired().subscribe({
+      next: (required) => {
+        this.mode.set(required ? 'setup' : 'login');
+        if (required) this.email = this.password = '';
+      },
+      error: () => this.mode.set('login'),
+    });
+  }
+
   protected submit(): void {
     if (this.submitting()) return;
+    this.start();
+    this.auth.login(this.email, this.password).subscribe({ next: () => this.enter(), error: (response: { error?: ApiError }) => this.fail(response, 'Accesso non riuscito. Riprova.') });
+  }
+
+  protected submitSetup(): void {
+    if (this.submitting()) return;
+    if (this.password.length < 12) {
+      this.error.set('La password deve contenere almeno 12 caratteri.');
+      return;
+    }
+    if (this.password !== this.confirmation) {
+      this.error.set('Le password non coincidono.');
+      return;
+    }
+    this.start();
+    this.auth.completeSetup(this.email, this.displayName, this.password).subscribe({ next: () => this.enter(), error: (response: { error?: ApiError }) => this.fail(response, 'Configurazione non riuscita. Controlla i dati.') });
+  }
+
+  private start(): void {
     this.submitting.set(true);
     this.error.set(null);
-    this.auth.login(this.email, this.password).subscribe({
-      next: () => {
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-        void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/home');
-      },
-      error: (response: { error?: ApiError }) => {
-        this.error.set(response.error?.error.message ?? 'Accesso non riuscito. Riprova.');
-        this.submitting.set(false);
-      },
-    });
+  }
+
+  private enter(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    void this.router.navigateByUrl(returnUrl?.startsWith('/') ? returnUrl : '/home');
+  }
+
+  private fail(response: { error?: ApiError }, fallback: string): void {
+    this.error.set(response.error?.error?.message ?? fallback);
+    this.submitting.set(false);
   }
 }

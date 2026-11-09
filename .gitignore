@@ -22,3 +22,4 @@ database/liquibase_libs/
 .DS_Store
 Thumbs.db
 */uv.lock
+/build/

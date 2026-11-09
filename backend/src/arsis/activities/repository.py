@@ -18,11 +18,23 @@ class ActivitiesRepository:
         return session.scalar(statement)
 
     def list_activities(
-        self, session: Session, *, search: str | None = None, include_archived: bool = False
+        self,
+        session: Session,
+        *,
+        search: str | None = None,
+        include_archived: bool = False,
+        starts_from: str | None = None,
+        starts_to: str | None = None,
     ) -> Sequence[Activity]:
         statement: Select[tuple[Activity]] = select(Activity)
         if not include_archived:
             statement = statement.where(Activity.archived_at.is_(None))
+        # starts_at keeps the local date in its first ten characters, whatever the offset.
+        local_date = func.substr(Activity.starts_at, 1, 10)
+        if starts_from:
+            statement = statement.where(local_date >= starts_from)
+        if starts_to:
+            statement = statement.where(local_date <= starts_to)
         if search and (query := search.strip()):
             pattern = f"%{query.casefold()}%"
             statement = statement.where(

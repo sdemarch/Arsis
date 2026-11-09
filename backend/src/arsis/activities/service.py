@@ -4,6 +4,7 @@ from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
+from arsis.activities.participants_service import ParticipantsService
 from arsis.activities.repository import ActivitiesRepository
 from arsis.audit.service import record_audit_event
 from arsis.core.database import transaction
@@ -15,14 +16,29 @@ from arsis.generated.schemas import ActivityCreateDTO, ActivityUpdateDTO
 
 
 class ActivitiesService:
-    def __init__(self, repository: ActivitiesRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: ActivitiesRepository | None = None,
+        participants: ParticipantsService | None = None,
+    ) -> None:
         self._repository = repository or ActivitiesRepository()
+        self._participants = participants or ParticipantsService()
 
     def list_activities(
-        self, session: Session, *, search: str | None = None, include_archived: bool = False
+        self,
+        session: Session,
+        *,
+        search: str | None = None,
+        include_archived: bool = False,
+        starts_from: str | None = None,
+        starts_to: str | None = None,
     ) -> Sequence[Activity]:
         return self._repository.list_activities(
-            session, search=search, include_archived=include_archived
+            session,
+            search=search,
+            include_archived=include_archived,
+            starts_from=starts_from,
+            starts_to=starts_to,
         )
 
     def get_activity(
@@ -45,12 +61,17 @@ class ActivitiesService:
                 session, Activity(**values, created_by=actor_id, updated_by=actor_id)
             )
             session.flush()
+            # RB-04: a new activity starts with every musician active on its date.
+            convoked = self._participants.convoke_musicians(
+                session, activity=activity, actor_id=actor_id
+            )
             record_audit_event(
                 session,
                 action="activity.created",
                 entity_type="activity",
                 entity_id=activity.id,
                 user_id=actor_id,
+                details={"convoked": convoked},
             )
         return activity
 

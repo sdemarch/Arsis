@@ -15,9 +15,12 @@ from arsis.core.config import Settings, get_settings
 from arsis.core.database import dispose_database_engine, get_database_engine
 from arsis.core.exception_handlers import install_exception_handlers
 from arsis.core.logging import configure_logging
+from arsis.core.maintenance import MaintenanceMiddleware
 from arsis.core.request_context import RequestIdMiddleware
 from arsis.core.spa_static import SpaStaticFiles
+from arsis.dashboard.router import router as dashboard_router
 from arsis.health.router import router as health_router
+from arsis.maintenance.router import router as maintenance_router
 from arsis.people.router import router as people_router
 from arsis.school.router import enrollments_router, lessons_router
 from arsis.school.router import router as school_router
@@ -69,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
         expose_headers=["X-Request-ID"],
     )
+    application.add_middleware(MaintenanceMiddleware)
     application.add_middleware(RequestIdMiddleware)
     install_exception_handlers(application)
     application.include_router(health_router)
@@ -82,6 +86,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(lessons_router)
     application.include_router(settings_router)
     application.include_router(accounting_router)
+    application.include_router(dashboard_router)
+    application.include_router(maintenance_router)
     application.include_router(api_v1)
     if runtime_settings.serve_frontend:
         frontend_dir = runtime_settings.frontend_dir

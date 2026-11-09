@@ -1,9 +1,11 @@
 # Arsis — Specifica funzionale della webapp gestionale
 
-**Versione:** 0.3  
+**Versione:** 0.4  
 **Stato:** bozza consolidata per MVP  
 **Data:** 8 novembre 2026  
 **Destinatari:** responsabili dell’associazione, progettisti e sviluppatori
+
+Cosa è già implementato: [Stato](STATO.md). Cosa manca: [TODO](TODO.md). Come è costruita: [Architettura](ARCHITETTURA.md).
 
 ---
 
@@ -26,7 +28,7 @@ La **Contabilità** dell’MVP è limitata a una prima nota di Banca e Cassa (se
 ### 1.1 Documenti di riferimento
 
 - Logo e favicon ufficiali Arsis forniti con il brief iniziale.
-- **Arsis — Design Tokens**, versione 1.1, giugno 2026 (`arsis-design-tokens.md`).
+- **Arsis — Design Tokens**, versione 1.1, giugno 2026 ([riferimenti/design-tokens.md](riferimenti/design-tokens.md)).
 
 Il documento dei design token è la fonte di riferimento per colori, tipografia, spaziatura, raggi, ombre e transizioni dell’interfaccia. In caso di divergenza, i requisiti funzionali di questa specifica definiscono il comportamento, mentre i design token definiscono la presentazione.
 
@@ -567,7 +569,9 @@ Configurazioni minime:
 - catalogo strumenti;
 - catalogo sezioni;
 - URL della cartella Google Drive;
+- categorie contabili (sezione 12);
 - gestione degli utenti responsabili;
+- salvataggi: esportazione di tutti i dati in un file `.arsis-save` e ripristino da un salvataggio;
 - eventuali valori predefiniti dell’applicazione.
 
 Gli strumenti o le sezioni già utilizzati non devono essere cancellati definitivamente, ma disattivati.
@@ -577,14 +581,14 @@ Gli strumenti o le sezioni già utilizzati non devono essere cancellati definiti
 ```mermaid
 erDiagram
     UTENTE {
-        uuid id PK
+        int id PK
         string email
         string password_hash
         boolean attivo
     }
 
     PERSONA {
-        uuid id PK
+        int id PK
         string nome
         string cognome
         date data_nascita
@@ -595,8 +599,8 @@ erDiagram
     }
 
     RUOLO_PERSONA {
-        uuid id PK
-        uuid persona_id FK
+        int id PK
+        int persona_id FK
         string tipo_ruolo
         date data_inizio
         date data_fine
@@ -604,35 +608,35 @@ erDiagram
     }
 
     CONTATTO_ASSOCIATO {
-        uuid id PK
-        uuid persona_id FK
-        uuid contatto_id FK
+        int id PK
+        int persona_id FK
+        int contatto_id FK
         string tipo_relazione
         boolean principale
         boolean responsabile_pagamenti
     }
 
     STRUMENTO {
-        uuid id PK
+        int id PK
         string nome
-        uuid sezione_id FK
+        int sezione_id FK
         boolean attivo
     }
 
     SEZIONE {
-        uuid id PK
+        int id PK
         string nome
         boolean attivo
     }
 
     MUSICANTE_STRUMENTO {
-        uuid musicante_ruolo_id FK
-        uuid strumento_id FK
+        int musicante_ruolo_id FK
+        int strumento_id FK
         boolean principale
     }
 
     ATTIVITA {
-        uuid id PK
+        int id PK
         string tipo
         string titolo
         datetime inizio
@@ -642,61 +646,61 @@ erDiagram
     }
 
     PARTECIPAZIONE_ATTIVITA {
-        uuid id PK
-        uuid attivita_id FK
-        uuid persona_id FK
+        int id PK
+        int attivita_id FK
+        int persona_id FK
         string presenza
     }
 
     CORSO {
-        uuid id PK
+        int id PK
         string nome
         string modalita
         string categoria
-        uuid insegnante_id FK
+        int insegnante_id FK
         decimal tariffa_annuale
         string colore
         string stato
     }
 
     RATA_PROPOSTA {
-        uuid id PK
-        uuid corso_id FK
+        int id PK
+        int corso_id FK
         int numero
         decimal importo
         date scadenza
     }
 
     ISCRIZIONE {
-        uuid id PK
-        uuid corso_id FK
-        uuid allievo_id FK
+        int id PK
+        int corso_id FK
+        int allievo_id FK
         date data_inizio
         date data_fine
         string stato
     }
 
     AGEVOLAZIONE {
-        uuid id PK
-        uuid iscrizione_id FK
+        int id PK
+        int iscrizione_id FK
         string tipo
         decimal valore
         string motivazione
     }
 
     LEZIONE {
-        uuid id PK
-        uuid corso_id FK
-        uuid insegnante_id FK
+        int id PK
+        int corso_id FK
+        int insegnante_id FK
         datetime inizio
         datetime fine
         string stato
     }
 
     PRESENZA_LEZIONE {
-        uuid id PK
-        uuid lezione_id FK
-        uuid allievo_id FK
+        int id PK
+        int lezione_id FK
+        int allievo_id FK
         string presenza
     }
 
@@ -828,7 +832,7 @@ In assenza di foto, la persona è rappresentata da un avatar con iniziali. Il co
 
 - Accesso consentito solo a utenti autenticati e attivi.
 - Password memorizzate tramite hashing sicuro.
-- Connessione HTTPS in produzione.
+- Accesso solo dal PC dell’installazione; connessione HTTPS se l’applicazione viene pubblicata in rete.
 - Protezione dei dati personali secondo i principi di minimizzazione e necessità.
 - Nessuna esposizione pubblica delle anagrafiche.
 - Validazione degli input lato client e lato server.
@@ -837,7 +841,7 @@ In assenza di foto, la persona è rappresentata da un avatar con iniziali. Il co
 
 - Le modifiche devono essere persistite in modo atomico.
 - Gli errori non devono lasciare record parziali o incoerenti.
-- Devono essere previsti backup periodici del database.
+- Devono essere previsti salvataggi completi esportabili e una copia automatica dei dati prima di aggiornamenti e ripristini.
 - Le relazioni storiche devono sopravvivere all’archiviazione dei record collegati.
 
 ## 17. Criteri di accettazione dell’MVP

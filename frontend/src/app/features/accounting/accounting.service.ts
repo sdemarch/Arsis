@@ -1,8 +1,10 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ApiError, Page } from '../../core/api/api.types';
+import { Page } from '../../core/api/api.types';
+
+export { apiErrorMessage } from '../../core/api/api-error';
 
 const API_URL = '/api/v1/accounting';
 
@@ -95,11 +97,6 @@ export interface AccountingSummary {
   readonly fiscal_year: number;
   readonly accounts: AccountSummary[];
   readonly categories: { readonly category_id: number; readonly direction: AccountingDirection; readonly amount: string }[];
-}
-
-/** Message to show for a failed request: the API's own text when available. */
-export function apiErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof HttpErrorResponse ? ((error.error as ApiError | null)?.error?.message ?? fallback) : fallback;
 }
 
 @Injectable({ providedIn: 'root' })

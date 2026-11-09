@@ -14,7 +14,7 @@ dependencies = [
   "python-multipart>=0.0.20,<1",
   "pyjwt>=2.10,<3",
   "pydantic-settings>=2.10,<3",
-  "sqlalchemy>=2.0,<3",
+  "sqlalchemy>=2.0,<2.1",
   "uvicorn[standard]>=0.35,<1",
 ]
 
@@ -30,6 +30,7 @@ dev = [
 arsis-bootstrap-admin = "arsis.auth.bootstrap:main"
 arsis-seed = "arsis.dev.seed:main"
 arsis-local = "arsis.local_runtime:main"
+arsis-migrate = "arsis.migrate:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arsis"]
