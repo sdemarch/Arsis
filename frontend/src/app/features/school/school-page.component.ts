@@ -39,11 +39,11 @@ import { Course, CoursesService } from './courses.service';
     </div>
   `,
   styles: `
-    .school-summary { background: var(--sidebar-bg); border-radius: var(--radius-lg); color: var(--sidebar-active); display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: var(--sp-8); padding: var(--sp-5); }
-    .school-summary div { border-right: var(--border-thin) solid var(--sidebar-border); display: grid; gap: var(--sp-1); padding: 0 var(--sp-5); }
+    .school-summary { background: var(--bg-surface); border: var(--border-thin) solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-xs); display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: var(--sp-8); overflow: hidden; padding: var(--sp-3) 0; }
+    .school-summary div { border-right: var(--border-thin) solid var(--border-subtle); display: grid; gap: var(--sp-1); padding: var(--sp-3) var(--sp-5); }
     .school-summary div:last-child { border: 0; }
-    .school-summary strong { font-family: var(--font-display); font-size: var(--text-2xl); }
-    .school-summary span { color: var(--sidebar-text); font-size: var(--text-sm); }
+    .school-summary strong { color: var(--color-accent-hover); font-family: var(--font-display); font-size: var(--text-2xl); }
+    .school-summary span { color: var(--text-secondary); font-size: var(--text-sm); }
     .section-heading { align-items: end; display: flex; justify-content: space-between; margin-bottom: var(--sp-4); }
     .section-heading h2 { font-family: var(--font-sans); font-size: var(--text-lg); margin: 0; }
     .eyebrow { color: var(--color-accent-hover); font-size: var(--text-xs); font-weight: var(--weight-semi); letter-spacing: .08em; margin: 0 0 var(--sp-1); text-transform: uppercase; }
@@ -65,6 +65,8 @@ import { Course, CoursesService } from './courses.service';
     .date-time { display: grid; }
     .date-time span { color: var(--text-tertiary); font-size: var(--text-xs); }
     .empty { color: var(--text-tertiary); text-align: center; }
+    @media (max-width: 800px) { .school-summary { grid-template-columns: repeat(2, 1fr); } .school-summary div:nth-child(2) { border-right: 0; } .school-summary div:nth-child(-n + 2) { border-bottom: var(--border-thin) solid var(--border-subtle); } .course-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .school-summary, .course-grid { grid-template-columns: 1fr; } .school-summary div { border-bottom: var(--border-thin) solid var(--border-subtle); border-right: 0; } .school-summary div:last-child { border-bottom: 0; } .section-heading { align-items: start; gap: var(--sp-3); } }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

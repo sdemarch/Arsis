@@ -5,7 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 
 import { NAVIGATION } from './navigation';
 import { AuthService } from '../auth/auth.service';
-import { DatabaseStatusService } from '../health/database-status.service';
+import { ThemeService } from '../theme/theme.service';
 import { SettingsService } from '../../features/settings/settings.service';
 
 /** `/school/lessons/3?tab=x` → `school`. */
@@ -24,11 +24,7 @@ function firstSegment(url: string): string {
         }
       </nav>
       <div class="topbar-actions">
-        <a class="user-menu" routerLink="/settings" aria-label="Apri le configurazioni dal profilo" [attr.aria-current]="matchedArea()?.path === '/settings' ? 'page' : null">
-          <span>{{ userInitials() }}</span>
-          <small>{{ auth.user()?.display_name }}</small>
-        </a>
-        <button class="icon-button" type="button" aria-label="Esci" title="Esci" (click)="logout()">↪</button>
+        <button class="logout-button" type="button" (click)="logout()">Esci</button>
       </div>
     </header>
 
@@ -52,8 +48,17 @@ function firstSegment(url: string): string {
           }
         </nav>
         <div class="sidebar__footer">
-          <span class="status-dot" [class.status-dot--down]="database.status() === 'unavailable'" [class.status-dot--pending]="database.status() === 'checking'"></span>
-          <div><strong>Database locale</strong><small>{{ database.label(database.status()) }}</small></div>
+          <a class="sidebar-profile" routerLink="/settings" aria-label="Apri le configurazioni dal profilo" [attr.aria-current]="matchedArea()?.path === '/settings' ? 'page' : null">
+            <span class="sidebar-profile__avatar">{{ userInitials() }}</span>
+            <span class="sidebar-profile__identity"><strong>{{ auth.user()?.display_name }}</strong><small>Configurazioni</small></span>
+          </a>
+          <button class="theme-toggle" type="button" (click)="theme.toggle()" [attr.aria-label]="theme.theme() === 'light' ? 'Attiva tema scuro' : 'Attiva tema chiaro'" [attr.aria-pressed]="theme.theme() === 'dark'" [attr.title]="theme.theme() === 'light' ? 'Tema chiaro: passa a scuro' : 'Tema scuro: passa a chiaro'">
+            @if (theme.theme() === 'light') {
+              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
+            } @else {
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.5 14.1A8.5 8.5 0 1 1 9.9 3.5 6.7 6.7 0 0 0 20.5 14.1Z" /></svg>
+            }
+          </button>
         </div>
       </aside>
       <div class="page-column">
@@ -73,7 +78,7 @@ export class AppShellComponent {
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
   protected readonly settings = inject(SettingsService);
-  protected readonly database = inject(DatabaseStatusService);
+  protected readonly theme = inject(ThemeService);
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -92,7 +97,10 @@ export class AppShellComponent {
   protected readonly activeArea = computed(() => this.matchedArea() ?? this.navigation[0]);
 
   constructor() {
-    this.settings.loadGeneral().subscribe({ error: () => undefined });
+    this.settings.loadGeneral().subscribe({
+      next: (settings) => this.theme.applyDefault(settings.default_theme),
+      error: () => undefined,
+    });
   }
 
   protected userInitials(): string {

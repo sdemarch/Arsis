@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 
 import { ApiError } from '../../core/api/api.types';
 import { PeopleService } from './people.service';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 
 @Component({
   selector: 'arsis-person-create',
-  imports: [FormsModule, RouterLink],
+  imports: [BackLinkComponent, FormsModule, RouterLink],
   template: `
-    <a class="back-link" routerLink="/people">← Tutte le persone</a>
+    <arsis-back-link link="/people" label="Tutte le persone" />
     <article class="card form-card">
       <p class="section-kicker">Persona</p><h1>Nuova persona</h1>
       <form (ngSubmit)="save()">
@@ -25,7 +26,6 @@ import { PeopleService } from './people.service';
   `,
   styles: `
     :host { display: block; margin: 0 auto; max-width: 760px; }
-    .back-link { color: var(--text-secondary); display: inline-block; margin-bottom: var(--sp-5); text-decoration: none; }
     .form-card { padding: var(--sp-8); } h1 { margin-top: 0; }
     form { display: grid; gap: var(--sp-5); grid-template-columns: 1fr 1fr; }
     label { display: grid; font-weight: var(--weight-medium); gap: var(--sp-2); } .wide, .actions, .error { grid-column: 1 / -1; }

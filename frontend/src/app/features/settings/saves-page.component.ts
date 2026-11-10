@@ -6,14 +6,15 @@ import { RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../core/api/api-error';
 import { AuthService } from '../../core/auth/auth.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 import { SaveImportResult, SaveSummary, SavesService, downloadName } from './saves.service';
 
 @Component({
   selector: 'arsis-saves-page',
-  imports: [DatePipe, FormsModule, PageHeaderComponent, RouterLink],
+  imports: [BackLinkComponent, DatePipe, FormsModule, PageHeaderComponent],
   template: `
     <arsis-page-header eyebrow="Configurazioni" title="Salvataggi" description="Copia tutti i dati in un file .arsis-save o ripristinali da un salvataggio.">
-      <a class="button button--secondary" routerLink="/settings">← Configurazioni</a>
+      <arsis-back-link class="back-link--compact" link="/settings" label="Configurazioni" />
     </arsis-page-header>
 
     <section class="card">
