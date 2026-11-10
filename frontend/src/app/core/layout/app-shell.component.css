@@ -81,7 +81,7 @@
   bottom: calc(var(--sp-5) - 15px);
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 64px;
+  font-size: 3.75rem;
   font-weight: var(--weight-semi);
   left: 50%;
   letter-spacing: -0.07em;

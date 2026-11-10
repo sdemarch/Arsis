@@ -31,7 +31,7 @@ th, td { border-bottom: var(--border-thin) solid var(--border-subtle); padding: 
 tr.highlighted td { background: var(--color-warn-soft); }
 tr.editing td { background: var(--bg-raised); }
 .flag-cell { padding-right: 0; width: 32px; }
-.flag { background: none; border: 0; color: var(--border-strong); cursor: pointer; font-size: 18px; line-height: 1; padding: 0; }
+.flag { background: none; border: 0; color: var(--border-strong); cursor: pointer; font-size: var(--text-lg); line-height: 1; padding: 0; }
 .flag:hover { color: var(--color-warn); }
 .flag.on { color: var(--color-warn); }
 .visually-hidden { clip: rect(0, 0, 0, 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }

@@ -794,11 +794,11 @@ Principi vincolanti:
 
 | Ruolo | Font | Utilizzo |
 |---|---|---|
-| UI | DM Sans | Corpo, navigazione, label, input e pulsanti |
-| Display | Fraunces | Titoli pagina, saluto Home e metriche principali |
-| Dati | DM Mono | Date, codici fiscali, percentuali e futuri valori monetari |
+| UI | Source Sans 3 | Corpo, navigazione, label, input e pulsanti |
+| Display | Newsreader | Titoli pagina, saluto Home e metriche principali |
+| Dati | IBM Plex Mono | Date, codici fiscali, percentuali e futuri valori monetari |
 
-La scala tipografica di riferimento va da 11 px a 38 px secondo i token `--text-xs` … `--text-3xl`. Il peso massimo ordinario è 600, per mantenere un’interfaccia nitida e non eccessivamente pesante.
+La scala tipografica di riferimento va da `.75rem` a `2.5rem` secondo i token `--text-xs` … `--text-3xl`, con una radice al 112,5% per aumentare la leggibilità in modo proporzionale. Il peso massimo ordinario è 600, per mantenere un’interfaccia nitida e non eccessivamente pesante.
 
 #### Tema chiaro e scuro
 
