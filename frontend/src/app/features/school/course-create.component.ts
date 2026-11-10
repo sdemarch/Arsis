@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { apiErrorMessage } from '../../core/api/api-error';
@@ -9,12 +9,13 @@ import { COURSE_COLORS } from '../../core/config/course-colors';
 import { PeopleService, PersonListItem } from '../people/people.service';
 import { CataloguesService, Instrument } from '../settings/catalogues.service';
 import { CoursesService } from './courses.service';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 
 @Component({
   selector: 'arsis-course-create',
-  imports: [FormsModule, RouterLink],
+  imports: [BackLinkComponent, FormsModule],
   template: `
-    <a routerLink="/school/courses">← Tutti i corsi</a>
+    <arsis-back-link link="/school/courses" label="Tutti i corsi" />
     <article class="card">
       <h1>Nuovo corso</h1>
       <form (ngSubmit)="save()">

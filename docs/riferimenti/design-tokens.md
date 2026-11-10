@@ -138,21 +138,23 @@ La sidebar usa una palette separata derivata dal logo: verde scuro profondo `#08
 
 | Token | Valore | Ruolo |
 |---|---|---|
-| `--font-sans` | `'DM Sans', sans-serif` | Corpo, UI, label, pulsanti |
-| `--font-display` | `'Fraunces', serif` | Titoli pagina, metriche numeriche, greeting |
-| `--font-mono` | `'DM Mono', monospace` | Valori monetari, date, codici fiscali, percentuali |
+| `--font-sans` | `'Source Sans 3', sans-serif` | Corpo, UI, label, pulsanti |
+| `--font-display` | `'Newsreader', serif` | Titoli pagina, metriche numeriche, greeting |
+| `--font-mono` | `'IBM Plex Mono', monospace` | Valori monetari, date, codici fiscali, percentuali |
 
 ### Scale dimensioni
 
 | Token | Valore | Uso tipico |
 |---|---|---|
-| `--text-xs` | `11px` | Label sezioni sidebar, badge, hint |
-| `--text-sm` | `13px` | Corpo UI, nav item, td, input |
-| `--text-base` | `15px` | Testo corpo principale |
-| `--text-lg` | `17px` | Titolo topbar |
-| `--text-xl` | `22px` | Brand name sidebar |
-| `--text-2xl` | `28px` | Titoli sezione |
-| `--text-3xl` | `38px` | Metriche dashboard (font-display) |
+| `--text-xs` | `.75rem` | Label sezioni sidebar, badge, hint |
+| `--text-sm` | `.875rem` | Corpo UI, nav item, td, input |
+| `--text-base` | `1rem` | Testo corpo principale |
+| `--text-lg` | `1.125rem` | Titolo topbar |
+| `--text-xl` | `1.375rem` | Brand name sidebar |
+| `--text-2xl` | `1.75rem` | Titoli sezione |
+| `--text-3xl` | `2.5rem` | Metriche dashboard (font-display) |
+
+La radice tipografica è al `112,5%`: la scala è quindi proporzionale alla preferenza del browser e rende il testo sensibilmente più leggibile senza usare maggiorazioni fisse in pixel.
 
 ### Pesi
 
@@ -247,13 +249,13 @@ Blocco pronto da copiare in `src/styles/tokens.css`:
 ```css
 :root {
   /* Font */
-  --font-sans:    'DM Sans', sans-serif;
-  --font-display: 'Fraunces', serif;
-  --font-mono:    'DM Mono', monospace;
+  --font-sans:    'Source Sans 3', sans-serif;
+  --font-display: 'Newsreader', serif;
+  --font-mono:    'IBM Plex Mono', monospace;
 
   /* Type scale */
-  --text-xs:   11px; --text-sm:   13px; --text-base: 15px; --text-lg: 17px;
-  --text-xl:   22px; --text-2xl:  28px; --text-3xl:  38px;
+  --text-xs:   .75rem; --text-sm: .875rem; --text-base: 1rem; --text-lg: 1.125rem;
+  --text-xl:   1.375rem; --text-2xl: 1.75rem; --text-3xl: 2.5rem;
 
   /* Weight */
   --weight-regular: 400; --weight-medium: 500; --weight-semi: 600;

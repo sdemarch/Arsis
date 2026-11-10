@@ -1,19 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { apiErrorMessage } from '../../core/api/api-error';
 import { PeopleService, PersonListItem } from '../people/people.service';
 import { Course, CoursesService } from './courses.service';
 import { EnrollmentsService } from './enrollments.service';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 
 @Component({
   selector: 'arsis-enrollment-create',
-  imports: [FormsModule, RouterLink],
+  imports: [BackLinkComponent, FormsModule],
   template: `
-    <a routerLink="/school/enrollments">← Tutte le iscrizioni</a>
+    <arsis-back-link link="/school/enrollments" label="Tutte le iscrizioni" />
     <article class="card">
       <h1>Nuova iscrizione</h1>
       <form (ngSubmit)="save()">

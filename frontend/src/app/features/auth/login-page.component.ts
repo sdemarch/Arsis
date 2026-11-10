@@ -82,7 +82,7 @@ import { AuthService } from '../../core/auth/auth.service';
     .brand-lockup img { display: block; height: var(--logo-login-size); width: var(--logo-login-size); }
     .brand-message { max-width: 560px; position: relative; z-index: 1; }
     .eyebrow { color: var(--color-accent); font-size: var(--text-xs); font-weight: var(--weight-semi); letter-spacing: .12em; margin: 0 0 var(--sp-3); text-transform: uppercase; }
-    .brand-message h1 { font-size: 48px; margin: 0 0 var(--sp-5); }
+    .brand-message h1 { font-size: var(--text-login); margin: 0 0 var(--sp-5); }
     .brand-message > p:last-child { color: var(--sidebar-text); font-size: var(--text-lg); max-width: 440px; }
     .brand-footnote { color: var(--sidebar-text); margin: 0; position: relative; z-index: 1; }
     .login-panel { align-items: center; background: var(--bg-canvas); display: flex; justify-content: center; padding: var(--sp-8); }

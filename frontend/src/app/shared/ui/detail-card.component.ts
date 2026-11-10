@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { BackLinkComponent } from './back-link.component';
 
 @Component({
   selector: 'arsis-detail-card',
-  imports: [RouterLink],
+  imports: [BackLinkComponent],
   template: `
-    <a class="back-link" [routerLink]="backLink()">← {{ backLabel() }}</a>
+    <arsis-back-link [link]="backLink()" [label]="backLabel()" />
 
     <article class="detail-card card">
       <header class="detail-card__header">
@@ -31,8 +31,6 @@ import { RouterLink } from '@angular/router';
   `,
   styles: `
     :host { display: block; margin: 0 auto; max-width: 1040px; }
-    .back-link { align-items: center; color: var(--text-secondary); display: inline-flex; font-size: var(--text-sm); gap: var(--sp-2); margin-bottom: var(--sp-5); text-decoration: none; }
-    .back-link:hover { color: var(--color-accent-hover); }
     .detail-card { overflow: hidden; }
     .detail-card__header { align-items: center; background: var(--bg-raised); border-bottom: var(--border-thin) solid var(--border-subtle); display: flex; gap: var(--sp-5); justify-content: space-between; padding: var(--sp-6) var(--sp-8); }
     .detail-card__identity { align-items: center; display: flex; gap: var(--sp-4); min-width: 0; }
