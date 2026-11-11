@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from arsis.auth.service import bootstrap_first_responsible
 from arsis.core.database import get_database_session
-from arsis.generated.models import Base
+from arsis.generated.models import AppSetting, Base
 from arsis.main import create_app
 
 
@@ -27,6 +27,13 @@ def activities_app(tmp_path) -> Iterator[FastAPI]:
             display_name="Responsabile",
             password="correct horse battery staple",
         )
+        session.add(
+            AppSetting(
+                key="activities.refund_rules",
+                value='{"rehearsal":"2.00","concert":"8.00","event":"5.00"}',
+            )
+        )
+        session.commit()
 
     def override_session() -> Iterator[Session]:
         with factory() as session:
@@ -219,7 +226,63 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
                 "status": "planned",
                 "source": "automatic",
                 "attendance": "absent",
+                "reimbursement_amount": "0.00",
             }
+        ]
+
+
+def test_refunds_are_calculated_from_present_attendance(activities_app: FastAPI) -> None:
+    with TestClient(activities_app) as client:
+        headers = _headers(client)
+        anna = _person(client, headers, "Anna Bianchi", "musician")
+        bruno = _person(client, headers, "Bruno Conti", "musician")
+        rehearsal = _activity(client, headers, "2026-05-10T20:45")
+        concert = client.post(
+            "/api/v1/activities",
+            headers=headers,
+            json={"type": "concert", "title": "Concerto", "starts_at": "2026-05-11T20:45"},
+        ).json()
+        for activity, rows in (
+            (rehearsal, [{"person_id": anna, "attendance": "present"}]),
+            (
+                concert,
+                [
+                    {"person_id": anna, "attendance": "present"},
+                    {"person_id": bruno, "attendance": "present"},
+                ],
+            ),
+        ):
+            response = client.put(
+                f"/api/v1/activities/{activity['id']}/attendances",
+                headers=headers,
+                json={"rows": rows},
+            )
+            assert response.status_code == 200
+
+        detail = client.get(f"/api/v1/activities/{concert['id']}", headers=headers)
+        assert detail.json()["reimbursement_total"] == "16.00"
+        anna_history = client.get(
+            f"/api/v1/activities/participations?person_id={anna}", headers=headers
+        )
+        assert [row["reimbursement_amount"] for row in anna_history.json()] == ["8.00", "2.00"]
+        summary = client.get("/api/v1/activities/refund-summary", headers=headers)
+        assert summary.json() == [
+            {
+                "person_id": anna,
+                "person_name": "Anna Bianchi",
+                "rehearsal": "2.00",
+                "concert": "8.00",
+                "event": "0.00",
+                "total": "10.00",
+            },
+            {
+                "person_id": bruno,
+                "person_name": "Bruno Conti",
+                "rehearsal": "0.00",
+                "concert": "8.00",
+                "event": "0.00",
+                "total": "8.00",
+            },
         ]
 
 

@@ -1,6 +1,7 @@
 """Convocation and attendance of activity participants."""
 
 from collections.abc import Iterable, Sequence
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -220,6 +221,27 @@ class ParticipantsService:
                 session, person_id=person_id
             )
         ]
+
+    def refund_summary(
+        self, session: Session, *, rules: dict[str, Decimal]
+    ) -> list[dict[str, object]]:
+        rows: dict[int, dict[str, object]] = {}
+        for _participant, activity, person in self._repository.present_participations(session):
+            row = rows.setdefault(
+                person.id,
+                {
+                    "person_id": person.id,
+                    "person_name": f"{person.first_name} {person.last_name}",
+                    "rehearsal": Decimal("0.00"),
+                    "concert": Decimal("0.00"),
+                    "event": Decimal("0.00"),
+                    "total": Decimal("0.00"),
+                },
+            )
+            amount = rules[activity.type]
+            row[activity.type] = Decimal(row[activity.type]) + amount
+            row["total"] = Decimal(row["total"]) + amount
+        return list(rows.values())
 
     def _get_activity(self, session: Session, activity_id: int) -> Activity:
         activity = self._activities.get_activity(session, activity_id)

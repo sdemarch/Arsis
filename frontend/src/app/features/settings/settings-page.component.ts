@@ -15,6 +15,7 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
     <section class="settings-grid">
       <article class="settings-card card"><div class="settings-icon">ST</div><div><h2>Strumenti e sezioni</h2><p>Organizza il catalogo musicale utilizzato nelle anagrafiche.</p></div><a class="button button--secondary" routerLink="/settings/catalogues">Gestisci</a></article>
       <article class="settings-card card"><div class="settings-icon">CC</div><div><h2>Categorie contabili</h2><p>Definisci le voci di entrata e uscita della prima nota.</p></div><a class="button button--secondary" routerLink="/settings/accounting-categories">Gestisci</a></article>
+      <article class="settings-card card"><div class="settings-icon">€</div><div><h2>Rimborsi attività</h2><p>Imposta l’importo per presenza in prove, concerti ed eventi.</p></div><a class="button button--secondary" routerLink="/settings/activity-refund-rules">Gestisci</a></article>
       <article class="settings-card card"><div class="settings-icon">DB</div><div><h2>Salvataggi</h2><p>Esporta tutti i dati in un file o ripristinali da un salvataggio.</p><span class="status-badge" [class.status-badge--success]="database.status() === 'ready'" [class.status-badge--warn]="database.status() === 'checking'" [class.status-badge--danger]="database.status() === 'unavailable'">{{ database.label(database.status()) }}</span></div><a class="button button--secondary" routerLink="/settings/saves">Gestisci</a></article>
     </section>
     <form class="config-section card" (ngSubmit)="save()">

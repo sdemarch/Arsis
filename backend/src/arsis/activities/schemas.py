@@ -1,5 +1,6 @@
 """Public HTTP contracts for activities."""
 
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -62,6 +63,7 @@ class ActivityResponse(ApiModel):
     participant_count: int = 0
     present_count: int = 0
     absent_count: int = 0
+    reimbursement_total: Decimal = Decimal("0.00")
 
 
 AttendanceStatus = Literal["present", "absent"]
@@ -97,3 +99,13 @@ class ParticipationResponse(ApiModel):
     status: ActivityStatus
     source: Literal["automatic", "manual"]
     attendance: AttendanceStatus | None
+    reimbursement_amount: Decimal = Decimal("0.00")
+
+
+class RefundSummaryRowResponse(ApiModel):
+    person_id: int
+    person_name: str
+    rehearsal: Decimal = Decimal("0.00")
+    concert: Decimal = Decimal("0.00")
+    event: Decimal = Decimal("0.00")
+    total: Decimal = Decimal("0.00")

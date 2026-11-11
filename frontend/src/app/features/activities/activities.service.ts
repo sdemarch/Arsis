@@ -12,6 +12,7 @@ export interface Activity {
   readonly location: string | null; readonly status: 'planned' | 'confirmed' | 'cancelled' | 'completed';
   readonly notes: string | null; readonly archived_at: string | null; readonly version: number;
   readonly participant_count: number; readonly present_count: number; readonly absent_count: number;
+  readonly reimbursement_total: string;
 }
 export type Attendance = 'present' | 'absent';
 export interface Participant {
@@ -30,6 +31,15 @@ export interface Participation {
   readonly status: Activity['status'];
   readonly source: Participant['source'];
   readonly attendance: Attendance | null;
+  readonly reimbursement_amount: string;
+}
+export interface RefundSummaryRow {
+  readonly person_id: number;
+  readonly person_name: string;
+  readonly rehearsal: string;
+  readonly concert: string;
+  readonly event: string;
+  readonly total: string;
 }
 export interface ActivityWrite { readonly type: Activity['type']; readonly title: string; readonly starts_at: string; readonly status?: Activity['status']; readonly location?: string | null; readonly description?: string | null; readonly notes?: string | null; readonly version?: number; }
 
@@ -50,4 +60,5 @@ export class ActivitiesService {
   convokeMusicians(id: number): Observable<Participant[]> { return this.http.post<Participant[]>(`${API_URL}/activities/${id}/participants/musicians`, {}); }
   saveAttendance(id: number, rows: { person_id: number; attendance: Attendance | null }[]): Observable<Participant[]> { return this.http.put<Participant[]>(`${API_URL}/activities/${id}/attendances`, { rows }); }
   participations(personId: number): Observable<Participation[]> { return this.http.get<Participation[]>(`${API_URL}/activities/participations`, { params: new HttpParams().set('person_id', personId) }); }
+  refundSummary(): Observable<RefundSummaryRow[]> { return this.http.get<RefundSummaryRow[]>(`${API_URL}/activities/refund-summary`); }
 }
