@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -21,7 +21,7 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
     <form class="config-section card" (ngSubmit)="save()">
       <header><div><p class="eyebrow">Organizzazione</p><h2>Identità dell’applicazione</h2><p class="section-description">Questo nome viene mostrato nel piè di pagina dell’interfaccia.</p></div></header>
       <label><span>Nome organizzazione</span><input name="organizationName" [(ngModel)]="organizationName" required maxlength="200" /></label>
-      <footer><button class="button button--primary" type="submit" [disabled]="saving || !loaded">{{ saving ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
+      <footer><button class="button button--primary" type="submit" [disabled]="saving() || !loaded">{{ saving() ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
     </form>
     <section class="config-section card">
       <header><div><p class="eyebrow">Accessi</p><h2>Utenti responsabili</h2><p class="section-description">Possono accedere e gestire l’intera applicazione.</p></div></header>
@@ -41,12 +41,12 @@ import { GeneralSettings, ResponsibleUser, SettingsService } from './settings.se
     <form class="config-section card" (ngSubmit)="save()">
       <header><div><p class="eyebrow">Archivio</p><h2>Collegamento Google Drive</h2><p class="section-description">Cartella principale usata per l’archivio documentale.</p></div></header>
       <label><span>URL cartella principale</span><input name="archiveUrl" [(ngModel)]="archiveGoogleDriveUrl" maxlength="2000" placeholder="https://drive.google.com/..." /></label>
-      <footer><button class="button button--primary" type="submit" [disabled]="saving || !loaded">{{ saving ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
+      <footer><button class="button button--primary" type="submit" [disabled]="saving() || !loaded">{{ saving() ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
     </form>
     <form class="config-section card" (ngSubmit)="save()">
       <header><div><p class="eyebrow">Interfaccia</p><h2>Tema predefinito</h2><p class="section-description">Preferenza salvata per la futura selezione del tema dell’applicazione.</p></div></header>
       <label><span>Tema</span><select name="defaultTheme" [(ngModel)]="defaultTheme"><option value="light">Chiaro</option><option value="dark">Scuro</option></select></label>
-      <footer><button class="button button--primary" type="submit" [disabled]="saving || !loaded">{{ saving ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
+      <footer><button class="button button--primary" type="submit" [disabled]="saving() || !loaded">{{ saving() ? 'Salvataggio…' : 'Salva configurazioni' }}</button><span class="feedback" [class.feedback--error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
     </form>
   `,
   styles: `
@@ -75,7 +75,7 @@ export class SettingsPageComponent implements OnInit {
   protected archiveGoogleDriveUrl = '';
   protected defaultTheme: GeneralSettings['default_theme'] = 'light';
   protected loaded = false;
-  protected saving = false;
+  protected readonly saving = signal(false);
   protected successMessage = '';
   protected errorMessage = '';
   protected responsibleUsers: ResponsibleUser[] = [];
@@ -97,7 +97,7 @@ export class SettingsPageComponent implements OnInit {
   protected save(): void {
     const current = this.settings.general();
     if (!current || !this.organizationName.trim()) return;
-    this.saving = true;
+    this.saving.set(true);
     this.successMessage = '';
     this.errorMessage = '';
     this.settings.saveGeneral({
@@ -106,8 +106,8 @@ export class SettingsPageComponent implements OnInit {
       archive_google_drive_url: this.archiveGoogleDriveUrl.trim(),
       default_theme: this.defaultTheme,
     }).subscribe({
-      next: (settings) => { this.setForm(settings); this.saving = false; this.successMessage = 'Configurazioni salvate.'; },
-      error: () => { this.saving = false; this.errorMessage = 'Salvataggio non riuscito: ricarica la pagina e riprova.'; },
+      next: (settings) => { this.setForm(settings); this.saving.set(false); this.successMessage = 'Configurazioni salvate.'; },
+      error: () => { this.saving.set(false); this.errorMessage = 'Salvataggio non riuscito: ricarica la pagina e riprova.'; },
     });
   }
 

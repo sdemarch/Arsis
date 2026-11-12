@@ -29,7 +29,7 @@ nessun dato utente. File di packaging: `packaging/launcher.py`,
    funzioni nuove o changeset, `MAJOR` per modifiche incompatibili. Aggiornarla in
    `backend/pyproject.toml` **e** `frontend/package.json`, poi
    `git commit -am "chore(release): vX.Y.Z"; git push`.
-3. **Build pulita:**
+3. **Build pulita locale (per il collaudo):**
 
    ```powershell
    Remove-Item -Recurse -Force build\pyinstaller, build\installer -ErrorAction SilentlyContinue
@@ -47,16 +47,11 @@ nessun dato utente. File di packaging: `packaging/launcher.py`,
    - [ ] secondo avvio con Arsis aperto: si apre solo il browser;
    - [ ] porta 8765 occupata da un altro programma: finestra d'errore;
    - [ ] disinstallazione: `%LOCALAPPDATA%\Arsis` resta presente.
-5. **Pubblicare:**
-
-   ```powershell
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   gh release create vX.Y.Z build\installer\Arsis-Setup-X.Y.Z.exe `
-     --title "Arsis X.Y.Z" --notes "Novità: ...`n`nAggiornamento: eseguire l'installer; i dati vengono conservati."
-   ```
-
-   Serve `gh auth login` una tantum.
+5. **Pubblicare:** creare su GitHub una Release con il tag `vX.Y.Z` e le note
+   della versione. Il workflow [Release Windows installer](../../.github/workflows/release.yml)
+   si avvia alla creazione della Release: esegue la build su Windows e allega
+   automaticamente `Arsis-Setup-X.Y.Z.exe`. Non caricare manualmente l'eseguibile
+   né versionarlo nel repository.
 6. **Comunicare agli utenti:**
 
    > Scaricare `Arsis-Setup-X.Y.Z.exe` ed eseguirlo, anche sopra la versione già
