@@ -41,10 +41,6 @@ né interfaccia:
 
 - [ ] **Shell responsive.** Topbar e sidebar fissa da 240 px non hanno breakpoint
   comuni; su schermi stretti possono comprimersi o andare in overflow.
-- [ ] **Font allineati ai token.** I font importati (DM Sans, DM Mono, Fraunces)
-  non coincidono con quelli dichiarati in `tokens.css` (Source Sans Pro, Libre
-  Baskerville, Space Mono): la resa dipende dai fallback. Decidere quale insieme
-  tenere e allineare token, import e [design tokens](riferimenti/design-tokens.md).
 - [ ] **Test del frontend.** Partire da autenticazione, interceptor HTTP e moduli
   con logica (prima nota, registro presenze, salvataggi).
 - [ ] **Lockfile delle dipendenze.** `uv.lock` è escluso da git: CI ed exe

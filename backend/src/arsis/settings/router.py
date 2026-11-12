@@ -9,6 +9,8 @@ from arsis.core.database import get_database_session
 from arsis.settings.schemas import (
     GeneralSettingsResponse,
     GeneralSettingsUpdateRequest,
+    RefundRulesResponse,
+    RefundRulesUpdateRequest,
     ResponsibleUserCreateRequest,
     ResponsibleUserResponse,
     ResponsibleUserUpdateRequest,
@@ -76,3 +78,20 @@ def update_general_settings(
     current_user: CurrentUser,
 ) -> GeneralSettingsResponse:
     return _service.update_general(session, data=payload, actor_id=current_user.id)
+
+
+@router.get("/activity-refund-rules", response_model=RefundRulesResponse, responses=ERROR_RESPONSES)
+def get_activity_refund_rules(
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> RefundRulesResponse:
+    return _service.get_refund_rules(session)
+
+
+@router.put("/activity-refund-rules", response_model=RefundRulesResponse, responses=ERROR_RESPONSES)
+def update_activity_refund_rules(
+    payload: RefundRulesUpdateRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> RefundRulesResponse:
+    return _service.update_refund_rules(session, data=payload, actor_id=current_user.id)

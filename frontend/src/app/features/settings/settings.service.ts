@@ -22,6 +22,13 @@ export interface ResponsibleUser {
   readonly version: number;
 }
 
+export interface ActivityRefundRules {
+  readonly rehearsal: string;
+  readonly concert: string;
+  readonly event: string;
+  readonly version: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SettingsService {
   readonly general = signal<GeneralSettings | null>(null);
@@ -50,5 +57,13 @@ export class SettingsService {
 
   updateResponsibleUser(id: number, payload: { is_active: boolean; version: number }): Observable<ResponsibleUser> {
     return this.http.patch<ResponsibleUser>(`${API_URL}/settings/responsible-users/${id}`, payload);
+  }
+
+  activityRefundRules(): Observable<ActivityRefundRules> {
+    return this.http.get<ActivityRefundRules>(`${API_URL}/settings/activity-refund-rules`);
+  }
+
+  saveActivityRefundRules(rules: ActivityRefundRules): Observable<ActivityRefundRules> {
+    return this.http.put<ActivityRefundRules>(`${API_URL}/settings/activity-refund-rules`, rules);
   }
 }

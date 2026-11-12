@@ -16,6 +16,8 @@ from arsis.generated.models import AppSetting, User
 from arsis.settings.schemas import (
     GeneralSettingsResponse,
     GeneralSettingsUpdateRequest,
+    RefundRulesResponse,
+    RefundRulesUpdateRequest,
     ResponsibleUserCreateRequest,
     ResponsibleUserResponse,
     ResponsibleUserUpdateRequest,
@@ -25,6 +27,7 @@ _ORGANIZATION_NAME = "organization.name"
 _ARCHIVE_URL = "archive.google_drive_url"
 _DEFAULT_THEME = "ui.default_theme"
 _SETTING_KEYS = (_ORGANIZATION_NAME, _ARCHIVE_URL, _DEFAULT_THEME)
+_REFUND_RULES = "activities.refund_rules"
 
 
 class SettingsService:
@@ -158,6 +161,39 @@ class SettingsService:
             session.flush()
             return self._response(settings)
 
+    def get_refund_rules(self, session: Session) -> RefundRulesResponse:
+        return self._refund_rules_response(self._get_refund_rules_setting(session))
+
+    def update_refund_rules(
+        self, session: Session, *, data: RefundRulesUpdateRequest, actor_id: int
+    ) -> RefundRulesResponse:
+        with transaction(session):
+            setting = self._get_refund_rules_setting(session)
+            if setting.version != data.version:
+                raise StaleVersionError(
+                    expected_version=data.version, current_version=setting.version
+                )
+            values = {
+                "rehearsal": format(data.rehearsal, ".2f"),
+                "concert": format(data.concert, ".2f"),
+                "event": format(data.event, ".2f"),
+            }
+            if self._decode(setting) != values:
+                setting.value = json.dumps(values)
+                setting.version += 1
+                setting.updated_at = utc_now_iso()
+                setting.updated_by = actor_id
+                record_audit_event(
+                    session,
+                    action="settings.activity_refund_rules_updated",
+                    entity_type="app_settings",
+                    entity_id=None,
+                    user_id=actor_id,
+                    details={"key": _REFUND_RULES},
+                )
+            session.flush()
+            return self._refund_rules_response(setting)
+
     def _get_settings(self, session: Session) -> dict[str, AppSetting]:
         rows = {
             setting.key: setting
@@ -167,6 +203,13 @@ class SettingsService:
         if missing is not None:
             raise ResourceNotFoundError("Configurazione", missing)
         return rows
+
+    @staticmethod
+    def _get_refund_rules_setting(session: Session) -> AppSetting:
+        setting = session.get(AppSetting, _REFUND_RULES)
+        if setting is None:
+            raise ResourceNotFoundError("Configurazione", _REFUND_RULES)
+        return setting
 
     @staticmethod
     def _decode(setting: AppSetting) -> Any:
@@ -186,6 +229,17 @@ class SettingsService:
             archive_google_drive_url_version=settings[_ARCHIVE_URL].version,
             default_theme=theme,
             default_theme_version=settings[_DEFAULT_THEME].version,
+        )
+
+    def _refund_rules_response(self, setting: AppSetting) -> RefundRulesResponse:
+        value = self._decode(setting)
+        if not isinstance(value, dict) or set(value) != {"rehearsal", "concert", "event"}:
+            raise ValueError("Regole di rimborso non valide")
+        return RefundRulesResponse(
+            rehearsal=value["rehearsal"],
+            concert=value["concert"],
+            event=value["event"],
+            version=setting.version,
         )
 
     @staticmethod

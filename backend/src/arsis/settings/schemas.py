@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import Field, field_validator
@@ -31,6 +32,20 @@ class GeneralSettingsUpdateRequest(ApiModel):
         if not normalized:
             raise ValueError("Il nome dell'organizzazione è obbligatorio")
         return normalized
+
+
+class RefundRulesResponse(ApiModel):
+    rehearsal: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    concert: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    event: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    version: int
+
+
+class RefundRulesUpdateRequest(ApiModel):
+    rehearsal: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    concert: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    event: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    version: int = Field(ge=1)
 
 
 class ResponsibleUserResponse(ApiModel):

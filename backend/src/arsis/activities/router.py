@@ -1,6 +1,7 @@
 """HTTP endpoints for activities."""
 
-from typing import Annotated, Any
+from decimal import Decimal
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
@@ -9,11 +10,13 @@ from arsis.activities.participants_service import ParticipantsService
 from arsis.activities.schemas import (
     ActivityCreateRequest,
     ActivityResponse,
+    ActivityType,
     ActivityUpdateRequest,
     ParticipantAddRequest,
     ParticipantAttendanceRequest,
     ParticipantResponse,
     ParticipationResponse,
+    RefundSummaryRowResponse,
 )
 from arsis.activities.service import ActivitiesService
 from arsis.auth.dependencies import CurrentUser
@@ -27,27 +30,44 @@ from arsis.core.api_models import (
 )
 from arsis.core.database import get_database_session
 from arsis.generated.schemas import ActivityCreateDTO, ActivityUpdateDTO
+from arsis.settings.service import SettingsService
 
 router = APIRouter(prefix="/api/v1/activities", tags=["activities"])
 _service = ActivitiesService()
 _participants = ParticipantsService()
+_settings = SettingsService()
 _SORT_FIELDS = {"title", "starts_at", "status", "created_at", "updated_at"}
 
 
-def _response(activity: Any, counts: tuple[int, int, int] = (0, 0, 0)) -> ActivityResponse:
+def _response(
+    activity: Any,
+    counts: tuple[int, int, int] = (0, 0, 0),
+    rules: dict[ActivityType, Decimal] | None = None,
+) -> ActivityResponse:
     participant_count, present_count, absent_count = counts
     return ActivityResponse.model_validate(activity).model_copy(
         update={
             "participant_count": participant_count,
             "present_count": present_count,
             "absent_count": absent_count,
+            "reimbursement_total": Decimal(present_count) * (rules or {}).get(
+                cast(ActivityType, activity.type), Decimal("0.00")
+            ),
         }
     )
 
 
 def _with_counts(session: Session, activities: list[Any]) -> list[ActivityResponse]:
     counts = _participants.counts(session, activity_ids=[activity.id for activity in activities])
-    return [_response(activity, counts.get(activity.id, (0, 0, 0))) for activity in activities]
+    refund_rules = _settings.get_refund_rules(session)
+    rules: dict[ActivityType, Decimal] = {
+        "rehearsal": refund_rules.rehearsal,
+        "concert": refund_rules.concert,
+        "event": refund_rules.event,
+    }
+    return [
+        _response(activity, counts.get(activity.id, (0, 0, 0)), rules) for activity in activities
+    ]
 
 
 @router.get("", response_model=Page[ActivityResponse], responses=ERROR_RESPONSES)
@@ -119,9 +139,42 @@ def list_participations(
     session: Annotated[Session, Depends(get_database_session)],
     _current_user: CurrentUser,
 ) -> list[ParticipationResponse]:
+    refund_rules = _settings.get_refund_rules(session)
+    rules: dict[ActivityType, Decimal] = {
+        "rehearsal": refund_rules.rehearsal,
+        "concert": refund_rules.concert,
+        "event": refund_rules.event,
+    }
     return [
-        ParticipationResponse.model_validate(row)
+        ParticipationResponse.model_validate(row).model_copy(
+            update={
+                "reimbursement_amount": rules[row["type"]]
+                if row["attendance"] == "present"
+                else Decimal("0.00")
+            }
+        )
         for row in _participants.participations(session, person_id=person_id)
+    ]
+
+
+@router.get(
+    "/refund-summary", response_model=list[RefundSummaryRowResponse], responses=ERROR_RESPONSES
+)
+def get_refund_summary(
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> list[RefundSummaryRowResponse]:
+    refund_rules = _settings.get_refund_rules(session)
+    return [
+        RefundSummaryRowResponse.model_validate(row)
+        for row in _participants.refund_summary(
+            session,
+            rules={
+                "rehearsal": refund_rules.rehearsal,
+                "concert": refund_rules.concert,
+                "event": refund_rules.event,
+            },
+        )
     ]
 
 
@@ -142,7 +195,9 @@ def update_activity(
     current_user: CurrentUser,
 ) -> ActivityResponse:
     values = payload.model_dump(exclude={"version"}, exclude_unset=True)
-    return _response(
+    return _with_counts(
+        session,
+        [
         _service.update_activity(
             session,
             activity_id=activity_id,
@@ -150,7 +205,8 @@ def update_activity(
             expected_version=payload.version,
             actor_id=current_user.id,
         )
-    )
+        ],
+    )[0]
 
 
 @router.delete("/{activity_id}", response_model=ActivityResponse, responses=ERROR_RESPONSES)
@@ -160,11 +216,14 @@ def archive_activity(
     session: Annotated[Session, Depends(get_database_session)],
     current_user: CurrentUser,
 ) -> ActivityResponse:
-    return _response(
+    return _with_counts(
+        session,
+        [
         _service.archive_activity(
             session, activity_id=activity_id, expected_version=version, actor_id=current_user.id
         )
-    )
+        ],
+    )[0]
 
 
 @router.get(

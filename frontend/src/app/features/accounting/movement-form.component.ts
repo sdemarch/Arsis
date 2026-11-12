@@ -88,11 +88,17 @@ function emptyDraft(): MovementDraft {
   `,
   styles: `
     form { display: grid; gap: var(--sp-4); grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    label { display: grid; gap: var(--sp-2); }
-    input, select { min-height: 38px; min-width: 0; }
+    label { color: var(--text-secondary); display: grid; font-size: var(--text-sm); font-weight: var(--weight-medium); gap: var(--sp-2); }
+    input, select { background: var(--bg-surface); border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-md); box-shadow: inset 0 1px 1px hsla(160, 20%, 10%, .02); box-sizing: border-box; color: var(--text-primary); font: inherit; min-height: 42px; min-width: 0; padding: 0 var(--sp-3); transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease); width: 100%; }
+    input:hover, select:hover { border-color: var(--border-strong); }
+    input:focus, select:focus { background: var(--bg-surface); border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); outline: 0; }
+    input:disabled, select:disabled { background: var(--bg-raised); color: var(--text-tertiary); cursor: not-allowed; }
+    input::placeholder { color: var(--text-tertiary); }
+    select { cursor: pointer; }
+    input[type='date'], input[type='number'] { font-variant-numeric: tabular-nums; }
     .actions { align-items: center; display: flex; gap: var(--sp-2); grid-column: 1 / -1; justify-content: flex-end; }
-    .flag { align-items: center; border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-full); color: var(--text-secondary); cursor: pointer; display: inline-flex; font-size: var(--text-sm); gap: var(--sp-1); margin-right: auto; padding: var(--sp-1) var(--sp-3); }
-    .flag input { accent-color: var(--color-warn); margin: 0; min-height: 0; }
+    .flag { align-items: center; background: var(--bg-raised); border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-full); color: var(--text-secondary); cursor: pointer; display: inline-flex; font-size: var(--text-sm); gap: var(--sp-1); margin-right: auto; padding: var(--sp-2) var(--sp-3); }
+    .flag input { accent-color: var(--color-warn); margin: 0; min-height: 0; padding: 0; width: auto; }
     .flag span { color: var(--color-warn); }
     .flag.on { background: var(--color-warn-soft); border-color: var(--color-warn); color: var(--text-primary); }
     .error { color: var(--color-danger); grid-column: 1 / -1; margin: 0; }

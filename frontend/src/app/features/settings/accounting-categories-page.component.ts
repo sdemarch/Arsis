@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 import {
   AccountingCategory,
   AccountingCategoryWrite,
@@ -25,10 +26,10 @@ const emptyDraft = (): CategoryDraft => ({ name: '', direction: 'income', requir
 
 @Component({
   selector: 'arsis-accounting-categories-page',
-  imports: [FormsModule, PageHeaderComponent, RouterLink],
+  imports: [BackLinkComponent, FormsModule, PageHeaderComponent],
   template: `
     <arsis-page-header eyebrow="Configurazioni" title="Categorie contabili" description="Definisci le voci della prima nota e i dati richiesti per ciascuna.">
-      <a class="button button--secondary" routerLink="/settings">← Configurazioni</a>
+      <arsis-back-link class="back-link--compact" link="/settings" label="Configurazioni" />
     </arsis-page-header>
 
     <section class="card">

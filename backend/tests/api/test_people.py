@@ -34,6 +34,10 @@ def people_app(tmp_path) -> Iterator[FastAPI]:
                 AppSetting(key="organization.name", value='"Filarmonica di test"'),
                 AppSetting(key="archive.google_drive_url", value='""'),
                 AppSetting(key="ui.default_theme", value='"light"'),
+                AppSetting(
+                    key="activities.refund_rules",
+                    value='{"rehearsal":"0.00","concert":"0.00","event":"0.00"}',
+                ),
             ]
         )
         session.commit()
@@ -92,6 +96,40 @@ def test_general_settings_are_persisted(people_app: FastAPI) -> None:
             "/api/v1/settings/general",
             headers=headers,
             json={**initial.json(), "organization_name": "Versione obsoleta"},
+        )
+        assert stale.status_code == 409
+        assert stale.json()["error"]["code"] == "STALE_VERSION"
+
+
+def test_activity_refund_rules_are_persisted(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        initial = client.get("/api/v1/settings/activity-refund-rules", headers=headers)
+        assert initial.status_code == 200
+        assert initial.json() == {
+            "rehearsal": "0.00",
+            "concert": "0.00",
+            "event": "0.00",
+            "version": 1,
+        }
+
+        saved = client.put(
+            "/api/v1/settings/activity-refund-rules",
+            headers=headers,
+            json={"rehearsal": "2", "concert": "8", "event": "5.50", "version": 1},
+        )
+        assert saved.status_code == 200
+        assert saved.json() == {
+            "rehearsal": "2.00",
+            "concert": "8.00",
+            "event": "5.50",
+            "version": 2,
+        }
+
+        stale = client.put(
+            "/api/v1/settings/activity-refund-rules",
+            headers=headers,
+            json={"rehearsal": "3", "concert": "8", "event": "5.50", "version": 1},
         )
         assert stale.status_code == 409
         assert stale.json()["error"]["code"] == "STALE_VERSION"

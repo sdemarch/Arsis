@@ -33,6 +33,14 @@ EXPECTED_TABLES = {
     "teachers",
     "users",
 }
+CHANGELOG_DIR = Path(__file__).parents[1] / "changelog" / "changes"
+
+
+def expected_changeset_count() -> int:
+    return sum(
+        path.read_text(encoding="utf-8").count("--changeset ")
+        for path in CHANGELOG_DIR.glob("*.sql")
+    )
 
 
 def verify_schema(database_path: Path) -> None:
@@ -53,7 +61,8 @@ def verify_schema(database_path: Path) -> None:
 
     missing = EXPECTED_TABLES - tables
     unexpected = tables - EXPECTED_TABLES
-    if missing or unexpected or foreign_key_errors or changesets != 8:
+    expected_changesets = expected_changeset_count()
+    if missing or unexpected or foreign_key_errors or changesets != expected_changesets:
         raise SystemExit(
             "Schema non valido: "
             f"missing={sorted(missing)}, unexpected={sorted(unexpected)}, "

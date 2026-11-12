@@ -5,6 +5,7 @@
 }
 
 html {
+  /* One typographic scale for the entire application, while preserving browser zoom. */
   font-size: 100%;
 }
 

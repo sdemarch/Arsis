@@ -6,6 +6,7 @@ import { catchError, map, of } from 'rxjs';
 
 import { apiErrorMessage } from '../../core/api/api-error';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 import { PeopleService, PersonListItem } from '../people/people.service';
 import { ActivitiesService, Activity, Attendance, Participant } from './activities.service';
 
@@ -14,10 +15,10 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
 /** Convoked participants of an activity and their attendance register (§9.4–9.5). */
 @Component({
   selector: 'arsis-activity-attendance',
-  imports: [FormsModule, PageHeaderComponent, RouterLink],
+  imports: [BackLinkComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Presenze" [title]="activity()?.title ?? 'Attività'" [description]="subtitle()">
-      <a class="button button--secondary" [routerLink]="['/activities', id]">← Scheda attività</a>
+      <arsis-back-link class="back-link--compact" [link]="['/activities', id]" label="Scheda attività" />
     </arsis-page-header>
 
     <section class="summary">

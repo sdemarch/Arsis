@@ -1,19 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { apiErrorMessage } from '../../core/api/api-error';
 import { PeopleService, PersonListItem } from '../people/people.service';
 import { Course, CoursesService } from './courses.service';
 import { LessonsService } from './lessons.service';
+import { BackLinkComponent } from '../../shared/ui/back-link.component';
 
 @Component({
   selector: 'arsis-lesson-create',
-  imports: [FormsModule, RouterLink],
+  imports: [BackLinkComponent, FormsModule],
   template: `
-    <a routerLink="/school/lessons">← Tutte le lezioni</a>
+    <arsis-back-link link="/school/lessons" label="Tutte le lezioni" />
     <article class="card">
       <h1>Nuova lezione</h1>
       <form (ngSubmit)="save()">

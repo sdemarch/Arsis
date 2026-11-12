@@ -103,3 +103,19 @@ class ParticipantsRepository:
             .order_by(Activity.starts_at.desc(), Activity.id.desc())
         ).all()
         return [(participant, activity) for participant, activity in rows]
+
+    def present_participations(
+        self, session: Session
+    ) -> Sequence[tuple[ActivityParticipant, Activity, Person]]:
+        rows = session.execute(
+            select(ActivityParticipant, Activity, Person)
+            .join(Activity, Activity.id == ActivityParticipant.activity_id)
+            .join(Person, Person.id == ActivityParticipant.person_id)
+            .where(
+                ActivityParticipant.attendance == "present",
+                ActivityParticipant.archived_at.is_(None),
+                Activity.archived_at.is_(None),
+            )
+            .order_by(func.lower(Person.last_name), func.lower(Person.first_name), Person.id)
+        ).all()
+        return [(participant, activity, person) for participant, activity, person in rows]
