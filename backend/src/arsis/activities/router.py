@@ -1,7 +1,7 @@
 """HTTP endpoints for activities."""
 
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
@@ -10,6 +10,7 @@ from arsis.activities.participants_service import ParticipantsService
 from arsis.activities.schemas import (
     ActivityCreateRequest,
     ActivityResponse,
+    ActivityType,
     ActivityUpdateRequest,
     ParticipantAddRequest,
     ParticipantAttendanceRequest,
@@ -41,7 +42,7 @@ _SORT_FIELDS = {"title", "starts_at", "status", "created_at", "updated_at"}
 def _response(
     activity: Any,
     counts: tuple[int, int, int] = (0, 0, 0),
-    rules: dict[str, Decimal] | None = None,
+    rules: dict[ActivityType, Decimal] | None = None,
 ) -> ActivityResponse:
     participant_count, present_count, absent_count = counts
     return ActivityResponse.model_validate(activity).model_copy(
@@ -50,7 +51,7 @@ def _response(
             "present_count": present_count,
             "absent_count": absent_count,
             "reimbursement_total": Decimal(present_count) * (rules or {}).get(
-                activity.type, Decimal("0.00")
+                cast(ActivityType, activity.type), Decimal("0.00")
             ),
         }
     )
@@ -59,7 +60,7 @@ def _response(
 def _with_counts(session: Session, activities: list[Any]) -> list[ActivityResponse]:
     counts = _participants.counts(session, activity_ids=[activity.id for activity in activities])
     refund_rules = _settings.get_refund_rules(session)
-    rules = {
+    rules: dict[ActivityType, Decimal] = {
         "rehearsal": refund_rules.rehearsal,
         "concert": refund_rules.concert,
         "event": refund_rules.event,
@@ -139,7 +140,7 @@ def list_participations(
     _current_user: CurrentUser,
 ) -> list[ParticipationResponse]:
     refund_rules = _settings.get_refund_rules(session)
-    rules = {
+    rules: dict[ActivityType, Decimal] = {
         "rehearsal": refund_rules.rehearsal,
         "concert": refund_rules.concert,
         "event": refund_rules.event,

@@ -2,11 +2,13 @@
 
 from collections.abc import Iterable, Sequence
 from decimal import Decimal
+from typing import TypedDict, cast
 
 from sqlalchemy.orm import Session
 
 from arsis.activities.participants_repository import ParticipantsRepository
 from arsis.activities.repository import ActivitiesRepository
+from arsis.activities.schemas import ActivityStatus, ActivityType, AttendanceStatus
 from arsis.audit.service import record_audit_event
 from arsis.core.database import transaction
 from arsis.core.errors import ConflictError, ImportValidationError, ResourceNotFoundError
@@ -14,6 +16,25 @@ from arsis.core.time import utc_now_iso
 from arsis.generated.models import Activity, ActivityParticipant, Person
 
 AttendanceRow = tuple[int, str | None]
+
+
+class ParticipationRow(TypedDict):
+    activity_id: int
+    title: str
+    type: ActivityType
+    starts_at: str
+    status: ActivityStatus
+    source: str
+    attendance: AttendanceStatus | None
+
+
+class RefundSummaryRow(TypedDict):
+    person_id: int
+    person_name: str
+    rehearsal: Decimal
+    concert: Decimal
+    event: Decimal
+    total: Decimal
 
 
 def _serialize(participant: ActivityParticipant, person: Person) -> dict[str, object]:
@@ -206,16 +227,16 @@ class ParticipantsService:
             )
         return len(normalized)
 
-    def participations(self, session: Session, *, person_id: int) -> list[dict[str, object]]:
+    def participations(self, session: Session, *, person_id: int) -> list[ParticipationRow]:
         return [
             {
                 "activity_id": activity.id,
                 "title": activity.title,
-                "type": activity.type,
+                "type": cast(ActivityType, activity.type),
                 "starts_at": activity.starts_at,
-                "status": activity.status,
+                "status": cast(ActivityStatus, activity.status),
                 "source": participant.source,
-                "attendance": participant.attendance,
+                "attendance": cast(AttendanceStatus | None, participant.attendance),
             }
             for participant, activity in self._repository.participations(
                 session, person_id=person_id
@@ -223,9 +244,9 @@ class ParticipantsService:
         ]
 
     def refund_summary(
-        self, session: Session, *, rules: dict[str, Decimal]
-    ) -> list[dict[str, object]]:
-        rows: dict[int, dict[str, object]] = {}
+        self, session: Session, *, rules: dict[ActivityType, Decimal]
+    ) -> list[RefundSummaryRow]:
+        rows: dict[int, RefundSummaryRow] = {}
         for _participant, activity, person in self._repository.present_participations(session):
             row = rows.setdefault(
                 person.id,
@@ -238,9 +259,10 @@ class ParticipantsService:
                     "total": Decimal("0.00"),
                 },
             )
-            amount = rules[activity.type]
-            row[activity.type] = Decimal(row[activity.type]) + amount
-            row["total"] = Decimal(row["total"]) + amount
+            activity_type = cast(ActivityType, activity.type)
+            amount = rules[activity_type]
+            row[activity_type] += amount
+            row["total"] += amount
         return list(rows.values())
 
     def _get_activity(self, session: Session, activity_id: int) -> Activity:
