@@ -1,6 +1,8 @@
 :host {
   display: block;
+  height: 100dvh;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 .topbar {
@@ -47,7 +49,8 @@
 .workspace {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  min-height: calc(100vh - var(--topbar-height));
+  height: calc(100dvh - var(--topbar-height));
+  min-height: 0;
 }
 
 .sidebar {
@@ -55,7 +58,14 @@
   border-right: var(--border-thin) solid var(--border-default);
   display: flex;
   flex-direction: column;
+  height: 100dvh;
+  left: 0;
+  overflow-y: auto;
   padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  position: fixed;
+  top: 0;
+  width: var(--sidebar-width);
+  z-index: 1;
 }
 
 .sidebar__brand {
@@ -141,7 +151,9 @@
 .page-column {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   min-width: 0;
+  overflow-y: auto;
 }
 
 .app-footer {
