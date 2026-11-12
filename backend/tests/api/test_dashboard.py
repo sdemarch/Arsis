@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from arsis.auth.service import bootstrap_first_responsible
 from arsis.core.database import get_database_session
-from arsis.generated.models import Base
+from arsis.generated.models import AppSetting, Base
 from arsis.main import create_app
 
 
@@ -27,6 +27,13 @@ def dashboard_app(tmp_path) -> Iterator[FastAPI]:
             display_name="Responsabile",
             password="correct horse battery staple",
         )
+        session.add(
+            AppSetting(
+                key="activities.refund_rules",
+                value='{"rehearsal":"0.00","concert":"0.00","event":"0.00"}',
+            )
+        )
+        session.commit()
 
     def override_session() -> Iterator[Session]:
         with factory() as session:
