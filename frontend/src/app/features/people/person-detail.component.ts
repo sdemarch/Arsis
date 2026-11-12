@@ -78,6 +78,12 @@ const ROLE_OPTIONS = [
             @if (editing()) { <textarea name="notes" [(ngModel)]="draft.notes" rows="4"></textarea> } @else { <p class="empty-value">{{ item.notes || 'Nessuna nota inserita.' }}</p> }
           </section>
 
+          <section>
+            <header><div><p class="section-kicker">Rimborsi</p><h2>Totale maturato</h2></div></header>
+            <p class="refund-total">{{ currency(totalRefund()) }}</p>
+            <p class="empty-value">Calcolato sulle presenze registrate con la regola corrente. Non crea movimenti in contabilità.</p>
+          </section>
+
           @if (participations().length) {
             <section>
               <header><div><p class="section-kicker">Storico</p><h2>Attività</h2></div><span class="history-summary">{{ attended() }} presenze su {{ recorded() }} registrate</span></header>
@@ -86,7 +92,7 @@ const ROLE_OPTIONS = [
                   <li>
                     <a [routerLink]="['/activities', p.activity_id, 'attendance']">{{ p.title }}</a>
                     <small>{{ formatDate(p.starts_at) }}</small>
-                    <span class="status-badge" [class.status-badge--success]="p.attendance === 'present'" [class.status-badge--danger]="p.attendance === 'absent'">{{ p.attendance === 'present' ? 'Presente' : p.attendance === 'absent' ? 'Assente' : 'Non registrata' }}</span>
+                    <span class="status-badge" [class.status-badge--success]="p.attendance === 'present'" [class.status-badge--danger]="p.attendance === 'absent'">{{ p.attendance === 'present' ? 'Presente' : p.attendance === 'absent' ? 'Assente' : 'Non registrata' }}</span><strong class="refund">{{ currency(p.reimbursement_amount) }}</strong>
                   </li>
                 }
               </ul>
@@ -106,7 +112,7 @@ const ROLE_OPTIONS = [
     .role-list { display: grid; gap: var(--sp-2); } .role-list > div { align-items: center; background: var(--bg-raised); border-radius: var(--radius-md); display: flex; gap: var(--sp-3); padding: var(--sp-3); }
     .role-list small { color: var(--text-secondary); flex: 1; } .text-button { background: transparent; border: 0; color: var(--color-danger); cursor: pointer; }
     .role-add { display: grid; gap: var(--sp-3); grid-template-columns: 1fr 160px auto; margin-top: var(--sp-4); } .role-add .button { white-space: nowrap; }
-    .history { display: grid; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; } .history li { align-items: center; display: grid; gap: var(--sp-3); grid-template-columns: 1fr auto auto; } .history small, .history-summary { color: var(--text-secondary); font-size: var(--text-sm); }
+    .history { display: grid; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; } .history li { align-items: center; display: grid; gap: var(--sp-3); grid-template-columns: 1fr auto auto auto; } .history small, .history-summary { color: var(--text-secondary); font-size: var(--text-sm); } .refund-total { color: var(--color-success); font-family: var(--font-display); font-size: var(--text-2xl); margin: 0; } .refund { color: var(--color-success); font-size: var(--text-sm); text-align: right; }
     .danger-zone { border: var(--border-thin) solid color-mix(in srgb, var(--color-danger) 35%, var(--border-default)); border-radius: var(--radius-md); padding: var(--sp-5); } .danger-zone p { color: var(--text-secondary); }
     @media (max-width: 640px) { .role-add { grid-template-columns: 1fr; } .role-list > div { align-items: flex-start; flex-direction: column; } }
   `,
@@ -122,6 +128,7 @@ export class PersonDetailComponent {
   protected readonly participations = toSignal(inject(ActivitiesService).participations(this.personId).pipe(catchError(() => of<Participation[]>([]))), { initialValue: [] });
   protected readonly attended = computed(() => this.participations().filter((p) => p.attendance === 'present').length);
   protected readonly recorded = computed(() => this.participations().filter((p) => p.attendance !== null).length);
+  protected readonly totalRefund = computed(() => this.participations().reduce((total, participation) => total + Number(participation.reimbursement_amount), 0));
   protected readonly editing = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -140,6 +147,8 @@ export class PersonDetailComponent {
   protected formatDate(value: string): string {
     return new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' }).format(new Date(value));
   }
+
+  protected currency(value: string | number): string { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(value)); }
 
   protected beginEditing(): void {
     const person = this.person();

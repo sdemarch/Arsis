@@ -68,6 +68,7 @@ function shiftMonth(month: string, delta: number): string {
     <nav class="view-tabs" aria-label="Vista">
       <a routerLink="/activities" queryParamsHandling="preserve" [class.is-active]="!calendarView">Elenco</a>
       <a routerLink="/activities/calendar" queryParamsHandling="preserve" [class.is-active]="calendarView">Calendario</a>
+      <a routerLink="/activities/refunds">Rimborsi</a>
     </nav>
 
     @if (calendarView) {
@@ -110,7 +111,7 @@ function shiftMonth(month: string, delta: number): string {
           @for (activity of filteredActivities(); track activity.id) {
             <a class="activity-card card" [routerLink]="attendanceMode ? ['/activities', activity.id, 'attendance'] : ['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
               <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
-              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }</p><div class="participants"><span class="avatar av-green">{{ activity.participant_count }}</span><small>convocati@if (activity.present_count || activity.absent_count) { · {{ activity.present_count }} presenti · {{ activity.absent_count }} assenti }</small></div></div>
+              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }</p><div class="participants"><span class="avatar av-green">{{ activity.participant_count }}</span><small>convocati@if (activity.present_count || activity.absent_count) { · {{ activity.present_count }} presenti · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
               <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.statusLabel }}</span></div>
             </a>
           }
@@ -217,6 +218,8 @@ export class ActivitiesPageComponent {
   protected readonly activities = computed(() => (this.response()?.items ?? []).map(decorate));
 
   protected readonly weekdays = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+
+  protected currency(value: string): string { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(value)); }
   protected readonly selectedDay = computed(() => this.queryParams().get('day'));
   /** Month shown by the calendars, `YYYY-MM`: from the URL, else the selected day, else today. */
   protected readonly month = computed(() => this.queryParams().get('month') ?? this.selectedDay()?.slice(0, 7) ?? localDateKey(new Date()).slice(0, 7));
