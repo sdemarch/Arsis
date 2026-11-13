@@ -151,6 +151,8 @@
 .page-column {
   display: flex;
   flex-direction: column;
+  /* The fixed sidebar is removed from grid flow, so reserve its column. */
+  grid-column: 2;
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
