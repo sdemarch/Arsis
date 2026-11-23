@@ -1,12 +1,15 @@
 """Business operations for people and their roles."""
 
 from collections.abc import Sequence
+from copy import copy
+from io import BytesIO
 
+from openpyxl import Workbook, load_workbook  # type: ignore[import-untyped]
 from sqlalchemy.orm import Session
 
 from arsis.audit.service import record_audit_event
 from arsis.core.database import transaction
-from arsis.core.errors import ConflictError, ResourceNotFoundError
+from arsis.core.errors import ConflictError, ImportValidationError, ResourceNotFoundError
 from arsis.core.time import utc_now_iso
 from arsis.core.versioning import update_versioned
 from arsis.generated.models import Person, PersonRole
@@ -18,8 +21,21 @@ from arsis.generated.schemas import (
 )
 from arsis.people.repository import PeopleRepository
 
-_ROLE_TYPES = {"member", "musician", "student", "teacher"}
+_ROLE_DEFINITIONS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "member": ("Socio", ("socio",)),
+    "musician": ("Musicante", ("musicante",)),
+    "student": ("Allievo", ("allievo",)),
+    "teacher": ("Insegnante", ("insegnante",)),
+}
+_ROLE_TYPES = set(_ROLE_DEFINITIONS)
 _ROLE_STATUSES = {"active", "inactive"}
+_ROLE_ALIASES = {
+    alias: role_type
+    for role_type, definition in _ROLE_DEFINITIONS.items()
+    for alias in (role_type, *definition[1])
+}
+_IMPORT_HEADERS = {"first_name", "last_name"}
+_MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 
 class PeopleService:
@@ -44,8 +60,9 @@ class PeopleService:
         return person
 
     def create_person(
-        self, session: Session, *, data: PersonCreateDTO, actor_id: int
+        self, session: Session, *, data: PersonCreateDTO, actor_id: int, roles: Sequence[str] = ()
     ) -> Person:
+        normalized_roles = self._validate_roles(roles)
         with transaction(session):
             person = self._repository.add_person(
                 session,
@@ -56,6 +73,18 @@ class PeopleService:
                 ),
             )
             session.flush()
+            for role_type in normalized_roles:
+                self._repository.add_role(
+                    session,
+                    PersonRole(
+                        person_id=person.id,
+                        role_type=role_type,
+                        start_date=utc_now_iso()[:10],
+                        status="active",
+                        created_by=actor_id,
+                        updated_by=actor_id,
+                    ),
+                )
             record_audit_event(
                 session,
                 action="person.created",
@@ -64,6 +93,75 @@ class PeopleService:
                 user_id=actor_id,
             )
         return person
+
+    def import_excel(self, session: Session, *, content: bytes, actor_id: int) -> int:
+        if len(content) > _MAX_IMPORT_BYTES:
+            raise ImportValidationError("Il file Excel supera la dimensione massima di 5 MB")
+        rows = self._parse_excel(content)
+        with transaction(session):
+            for data, roles in rows:
+                person = self._repository.add_person(
+                    session, Person(**data.model_dump(), created_by=actor_id, updated_by=actor_id)
+                )
+                session.flush()
+                for role_type in roles:
+                    self._repository.add_role(
+                        session,
+                        PersonRole(
+                            person_id=person.id, role_type=role_type,
+                            start_date=utc_now_iso()[:10], status="active",
+                            created_by=actor_id, updated_by=actor_id,
+                        ),
+                    )
+                record_audit_event(
+                    session, action="person.imported", entity_type="person", entity_id=person.id,
+                    user_id=actor_id,
+                )
+        return len(rows)
+
+    def build_import_template(self) -> bytes:
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Anagrafiche"
+        headers = [
+            "first_name", "last_name", "birth_date", "birth_place", "tax_code",
+            "residence_address", "email", "phone", "notes", "roles",
+        ]
+        worksheet.append(headers)
+        worksheet.append(["Mario", "Rossi", "", "", "", "", "", "", "", "member, musician"])
+        worksheet.freeze_panes = "A2"
+        worksheet.auto_filter.ref = "A1:J2"
+        for cell in worksheet[1]:
+            font = copy(cell.font)
+            font.bold = True
+            cell.font = font
+        for column in worksheet.columns:
+            letter = column[0].column_letter
+            worksheet.column_dimensions[letter].width = 20
+
+        legend = workbook.create_sheet("Legenda")
+        legend.append(["Campo", "Indicazioni"])
+        legend.append(["first_name", "Obbligatorio: nome della persona"])
+        legend.append(["last_name", "Obbligatorio: cognome della persona"])
+        legend.append(["birth_date", "Facoltativo: data nel formato AAAA-MM-GG"])
+        legend.append(
+            ["roles", "Facoltativo: uno o più ruoli, separati da virgola o punto e virgola"]
+        )
+        legend.append([])
+        legend.append(["Ruolo ammesso", "Valore tecnico"])
+        for role_type, definition in _ROLE_DEFINITIONS.items():
+            legend.append([definition[0], role_type])
+        legend.freeze_panes = "A2"
+        legend.column_dimensions["A"].width = 28
+        legend.column_dimensions["B"].width = 70
+        for row_number in (1, 7):
+            for cell in legend[row_number]:
+                font = copy(cell.font)
+                font.bold = True
+                cell.font = font
+        output = BytesIO()
+        workbook.save(output)
+        return output.getvalue()
 
     def update_person(
         self,
@@ -279,3 +377,78 @@ class PeopleService:
             raise ValueError("Stato ruolo non valido")
         if end_date is not None and end_date < start_date:
             raise ValueError("La data di fine non può precedere la data di inizio")
+
+    @staticmethod
+    def _validate_roles(roles: Sequence[str]) -> list[str]:
+        normalized = []
+        for role in roles:
+            canonical = _ROLE_ALIASES.get(role.strip().casefold())
+            if canonical is None:
+                raise ValueError("Tipo ruolo non valido")
+            if canonical not in normalized:
+                normalized.append(canonical)
+        return normalized
+
+    def _parse_excel(self, content: bytes) -> list[tuple[PersonCreateDTO, list[str]]]:
+        try:
+            workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
+            values = workbook.active.iter_rows(values_only=True)
+            headers = next(values, None)
+        except Exception as exc:
+            raise ImportValidationError("Il file Excel non è leggibile") from exc
+        if headers is None:
+            raise ImportValidationError("Il file Excel non contiene intestazioni")
+        normalized_headers = [
+            str(value).strip().casefold() if value is not None else "" for value in headers
+        ]
+        if not _IMPORT_HEADERS.issubset(normalized_headers):
+            raise ImportValidationError("Il file deve contenere le colonne first_name e last_name")
+        imported: list[tuple[PersonCreateDTO, list[str]]] = []
+        for row_number, values_row in enumerate(values, start=2):
+            row = {
+                header: values_row[index] if index < len(values_row) else None
+                for index, header in enumerate(normalized_headers) if header
+            }
+            if not any(value is not None and str(value).strip() for value in row.values()):
+                continue
+            try:
+                first_name = self._string_cell(row, "first_name")
+                last_name = self._string_cell(row, "last_name")
+                if first_name is None or last_name is None:
+                    raise ValueError("Nome e cognome sono obbligatori")
+                data = PersonCreateDTO(
+                    first_name=first_name,
+                    last_name=last_name,
+                    birth_date=self._string_cell(row, "birth_date"),
+                    birth_place=self._string_cell(row, "birth_place"),
+                    tax_code=self._string_cell(row, "tax_code"),
+                    residence_address=self._string_cell(row, "residence_address"),
+                    email=self._string_cell(row, "email"),
+                    phone=self._string_cell(row, "phone"),
+                    notes=self._string_cell(row, "notes"),
+                )
+            except Exception as exc:
+                raise ImportValidationError(
+                    "Riga anagrafica non valida", details={"row": row_number}
+                ) from exc
+            raw_roles = "" if row.get("roles") is None else str(row["roles"])
+            try:
+                roles = self._validate_roles(
+                    [item for item in raw_roles.replace(";", ",").split(",") if item.strip()]
+                )
+            except ValueError as exc:
+                raise ImportValidationError(
+                    "Ruolo non valido", details={"row": row_number}
+                ) from exc
+            imported.append((data, roles))
+        if not imported:
+            raise ImportValidationError("Il file non contiene anagrafiche")
+        return imported
+
+    @staticmethod
+    def _string_cell(row: dict[str, object | None], field: str) -> str | None:
+        value = row.get(field)
+        if value is None:
+            return None
+        normalized = str(value).strip()
+        return normalized or None
