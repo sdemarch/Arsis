@@ -3,7 +3,10 @@ param(
     # Riusa la build Angular esistente in frontend\dist.
     [switch]$SkipFrontend,
     # Ferma il processo dopo l'exe, senza creare l'installer.
-    [switch]$SkipInstaller
+    [switch]$SkipInstaller,
+    # Versione mostrata e usata nel nome dell'installer. Per le release GitHub
+    # riceve il tag; senza valore usa la versione dichiarata dal backend.
+    [string]$Version
 )
 
 # Crea build\pyinstaller\dist\Arsis\Arsis.exe e, se Inno Setup 6 e installato,
@@ -21,8 +24,13 @@ function Invoke-Checked {
     if ($LASTEXITCODE -ne 0) { throw "$Command ha restituito il codice $LASTEXITCODE." }
 }
 
-$versionLine = Select-String -Path (Join-Path $projectRoot "backend\pyproject.toml") -Pattern '^version = "(.+)"' | Select-Object -First 1
-$version = $versionLine.Matches[0].Groups[1].Value
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $versionLine = Select-String -Path (Join-Path $projectRoot "backend\pyproject.toml") -Pattern '^version = "(.+)"' | Select-Object -First 1
+    $version = $versionLine.Matches[0].Groups[1].Value
+}
+else {
+    $version = $Version.Trim()
+}
 Write-Host "Arsis $version" -ForegroundColor Cyan
 New-Item -ItemType Directory -Force $buildDir | Out-Null
 

@@ -14,5 +14,15 @@ class SpaStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope: MutableMapping[str, Any]) -> Response:
         filename = PurePosixPath(path).name
         if "." not in filename:
-            return await super().get_response("index.html", scope)
-        return await super().get_response(path, scope)
+            response = await super().get_response("index.html", scope)
+            # The installer replaces the generated chunks on every update.  Never let
+            # a browser reuse an old index document that refers to removed chunks.
+            response.headers["Cache-Control"] = "no-store"
+            return response
+
+        response = await super().get_response(path, scope)
+        # Angular names production assets with a content hash, so they are safe to
+        # cache indefinitely and cannot be confused with assets from another build.
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response

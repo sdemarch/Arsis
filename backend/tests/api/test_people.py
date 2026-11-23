@@ -4,7 +4,7 @@ from io import BytesIO
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -223,6 +223,58 @@ def test_people_crud_roles_and_pagination(people_app: FastAPI) -> None:
         assert archived.status_code == 200
         assert archived.json()["archived_at"] is not None
         assert client.get("/api/v1/people", headers=headers).json()["items"] == []
+
+
+def test_people_creation_and_excel_import_with_roles(people_app: FastAPI) -> None:
+    with TestClient(people_app) as client:
+        headers = _headers(client)
+        created = client.post(
+            "/api/v1/people",
+            headers=headers,
+            json={
+                "first_name": "Giulia",
+                "last_name": "Blu",
+                "roles": ["member", "teacher"],
+            },
+        )
+        assert created.status_code == 201
+        roles = client.get(f"/api/v1/people/{created.json()['id']}/roles", headers=headers)
+        assert {role["role_type"] for role in roles.json()} == {"member", "teacher"}
+
+        workbook = Workbook()
+        worksheet = workbook.active
+        worksheet.append(["first_name", "last_name", "email", "roles"])
+        worksheet.append(["Anna", "Neri", "anna@example.it", "allievo; musicante"])
+        content = BytesIO()
+        workbook.save(content)
+        imported = client.post(
+            "/api/v1/people/import",
+            headers=headers,
+            files={
+                "file": (
+                    "anagrafiche.xlsx",
+                    content.getvalue(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                )
+            },
+        )
+        assert imported.status_code == 200
+        assert imported.json()["processed_rows"] == 1
+        people = client.get("/api/v1/people?q=anna", headers=headers).json()["items"]
+        assert len(people) == 1
+        imported_roles = client.get(f"/api/v1/people/{people[0]['id']}/roles", headers=headers)
+        assert {role["role_type"] for role in imported_roles.json()} == {"student", "musician"}
+
+        template = client.get("/api/v1/people/import/template", headers=headers)
+        assert template.status_code == 200
+        assert template.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        template_workbook = load_workbook(BytesIO(template.content), read_only=True)
+        assert template_workbook.sheetnames == ["Anagrafiche", "Legenda"]
+        legend = template_workbook["Legenda"]
+        assert legend[8][0].value == "Socio"
+        assert legend[11][1].value == "teacher"
 
 
 def test_activities_crud_and_archiving(people_app: FastAPI) -> None:

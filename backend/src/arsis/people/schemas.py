@@ -16,6 +16,11 @@ class PersonCreateRequest(ApiModel):
     phone: str | None = None
     photo_key: str | None = None
     notes: str | None = None
+    roles: list[str] = Field(default_factory=list)
+
+
+class PeopleImportResponse(ApiModel):
+    processed_rows: int
 
 
 class PersonUpdateRequest(ApiModel):

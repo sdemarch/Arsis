@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { catchError, combineLatest, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
@@ -13,8 +13,10 @@ import { PeopleService } from './people.service';
   imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Soci" title="Persone" description="Anagrafica unica di soci, musicanti, allievi e insegnanti.">
-      <a class="button button--primary" routerLink="/people/new">＋ Nuova persona</a>
+      <div class="actions"><label class="button button--secondary">Importa Excel<input type="file" accept=".xlsx" (change)="importFile($event)" /></label><button class="button button--secondary" type="button" (click)="downloadTemplate()">Scarica modello</button><a class="button button--primary" routerLink="/people/new">＋ Nuova persona</a></div>
     </arsis-page-header>
+
+    @if (importMessage()) { <p class="notice" role="status">{{ importMessage() }}</p> }
 
     <div class="summary-line">
       <span><strong>{{ summary().active }}</strong> persone attive</span>
@@ -52,6 +54,7 @@ import { PeopleService } from './people.service';
   `,
   styles: `
     .summary-line { color: var(--text-secondary); display: flex; font-size: var(--text-sm); gap: var(--sp-5); margin: calc(var(--sp-5) * -1) 0 var(--sp-6); }
+    .actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); } .actions label input { display: none; } .notice { color: var(--text-secondary); }
     .summary-line strong { color: var(--text-primary); }
     tbody tr { cursor: pointer; }
     .person { align-items: center; color: var(--text-primary); display: flex; gap: var(--sp-3); text-decoration: none; }
@@ -79,14 +82,16 @@ export class PeoplePageComponent {
   protected readonly search = computed(() => this.queryParams().get('q')?.trim() ?? '');
   protected readonly selectedRoles = computed(() => this.queryParams().getAll('role'));
   protected readonly selectedStatuses = computed(() => this.queryParams().getAll('status'));
+  private readonly refresh = signal(0);
   private readonly response = toSignal(
-    toObservable(this.search).pipe(
+    combineLatest([toObservable(this.search), toObservable(this.refresh)]).pipe(
       debounceTime(200),
       distinctUntilChanged(),
-      switchMap((query) => this.peopleService.listPeople(query).pipe(catchError(() => of(null)))),
+      switchMap(([query]) => this.peopleService.listPeople(query).pipe(catchError(() => of(null)))),
     ),
     { initialValue: null },
   );
+  protected readonly importMessage = signal<string | null>(null);
   protected readonly people = computed(() =>
     (this.response()?.items ?? []).map((person) => ({
       ...person,
@@ -140,6 +145,38 @@ export class PeoplePageComponent {
 
   protected clearFilters(): void {
     this.updateQuery({ q: null, role: null, status: null });
+  }
+
+  protected downloadTemplate(): void {
+    this.peopleService.peopleImportTemplate().subscribe({
+      next: (file) => {
+        const url = URL.createObjectURL(file);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = 'modello-anagrafiche.xlsx';
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.importMessage.set('Download del modello non riuscito.'),
+    });
+  }
+
+  protected importFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.importMessage.set(null);
+    this.peopleService.importPeople(file).subscribe({
+      next: (result) => {
+        this.importMessage.set(`${result.processed_rows} anagrafiche importate.`);
+        input.value = '';
+        this.refresh.update((value) => value + 1);
+      },
+      error: (response: { error?: { error?: { message?: string } } }) => {
+        this.importMessage.set(response.error?.error?.message ?? 'Importazione non riuscita.');
+        input.value = '';
+      },
+    });
   }
 
   protected roleLabel(role: string): string {
