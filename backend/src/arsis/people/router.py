@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from arsis.auth.dependencies import CurrentUser
@@ -15,6 +15,7 @@ from arsis.generated.schemas import (
     PersonUpdateDTO,
 )
 from arsis.people.schemas import (
+    PeopleImportResponse,
     PersonCreateRequest,
     PersonResponse,
     PersonRoleCreateRequest,
@@ -83,10 +84,36 @@ def create_person(
 ) -> PersonResponse:
     person = _service.create_person(
         session,
-        data=PersonCreateDTO(**payload.model_dump()),
+        data=PersonCreateDTO(**payload.model_dump(exclude={"roles"})),
         actor_id=current_user.id,
+        roles=payload.roles,
     )
     return _person_response(person)
+
+
+@router.get("/import/template", responses=ERROR_RESPONSES)
+def download_people_import_template(_current_user: CurrentUser) -> Response:
+    return Response(
+        content=_service.build_import_template(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="modello-anagrafiche.xlsx"'},
+    )
+
+
+@router.post("/import", response_model=PeopleImportResponse, responses=ERROR_RESPONSES)
+async def import_people(
+    file: Annotated[UploadFile, File(description="File Excel .xlsx delle anagrafiche")],
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> PeopleImportResponse:
+    if not file.filename or not file.filename.lower().endswith(".xlsx"):
+        from arsis.core.errors import ImportValidationError
+        raise ImportValidationError("Caricare un file con estensione .xlsx")
+    return PeopleImportResponse(
+        processed_rows=_service.import_excel(
+            session, content=await file.read(), actor_id=current_user.id
+        )
+    )
 
 
 @router.get("/{person_id}", response_model=PersonResponse, responses=ERROR_RESPONSES)

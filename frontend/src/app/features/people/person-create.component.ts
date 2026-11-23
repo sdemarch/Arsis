@@ -18,6 +18,7 @@ import { BackLinkComponent } from '../../shared/ui/back-link.component';
         <label>Cognome <input name="lastName" [(ngModel)]="lastName" required /></label>
         <label>Email <input name="email" type="email" [(ngModel)]="email" /></label>
         <label>Telefono <input name="phone" type="tel" [(ngModel)]="phone" /></label>
+        <fieldset class="wide roles"><legend>Ruoli</legend><p>Seleziona uno o più ruoli da assegnare subito.</p>@for (role of roleOptions; track role.value) { <label><input type="checkbox" [checked]="roles.includes(role.value)" (change)="toggleRole(role.value, $any($event.target).checked)" /> {{ role.label }}</label> }</fieldset>
         <label class="wide">Note <textarea name="notes" [(ngModel)]="notes" rows="4"></textarea></label>
         @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
         <div class="actions"><a class="button button--secondary" routerLink="/people">Annulla</a><button class="button button--primary" [disabled]="saving()">{{ saving() ? 'Salvataggio…' : 'Crea persona' }}</button></div>
@@ -30,6 +31,7 @@ import { BackLinkComponent } from '../../shared/ui/back-link.component';
     form { display: grid; gap: var(--sp-5); grid-template-columns: 1fr 1fr; }
     label { display: grid; font-weight: var(--weight-medium); gap: var(--sp-2); } .wide, .actions, .error { grid-column: 1 / -1; }
     input, textarea { border: var(--border-thin) solid var(--border-default); border-radius: var(--radius-md); padding: var(--sp-3); }
+    .roles { border: 0; margin: 0; padding: 0; } .roles p { color: var(--text-secondary); font-size: var(--text-sm); margin: var(--sp-1) 0 var(--sp-3); } .roles label { display: inline-flex; margin: 0 var(--sp-4) var(--sp-2) 0; } .roles input { accent-color: var(--color-accent); padding: 0; }
     .actions { display: flex; gap: var(--sp-3); justify-content: flex-end; } .error { color: var(--color-danger); margin: 0; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +44,11 @@ export class PersonCreateComponent {
   protected email = '';
   protected phone = '';
   protected notes = '';
+  protected roles: string[] = [];
+  protected readonly roleOptions = [
+    { value: 'member', label: 'Socio' }, { value: 'musician', label: 'Musicante' },
+    { value: 'student', label: 'Allievo' }, { value: 'teacher', label: 'Insegnante' },
+  ];
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -55,6 +62,7 @@ export class PersonCreateComponent {
       email: this.email || null,
       phone: this.phone || null,
       notes: this.notes || null,
+      roles: this.roles,
     }).subscribe({
       next: (person) => void this.router.navigate(['/people', person.id]),
       error: (response: { error?: ApiError }) => {
@@ -62,5 +70,9 @@ export class PersonCreateComponent {
         this.saving.set(false);
       },
     });
+  }
+
+  protected toggleRole(role: string, selected: boolean): void {
+    this.roles = selected ? [...this.roles, role] : this.roles.filter((item) => item !== role);
   }
 }

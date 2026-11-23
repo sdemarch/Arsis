@@ -31,6 +31,11 @@ export interface PersonCreate {
   readonly email?: string | null;
   readonly phone?: string | null;
   readonly notes?: string | null;
+  readonly roles?: string[];
+}
+
+export interface PeopleImportResult {
+  readonly processed_rows: number;
 }
 
 export interface PersonRole {
@@ -93,6 +98,16 @@ export class PeopleService {
 
   createPerson(payload: PersonCreate): Observable<PersonDetail> {
     return this.http.post<PersonDetail>(`${API_URL}/people`, payload);
+  }
+
+  importPeople(file: File): Observable<PeopleImportResult> {
+    const data = new FormData();
+    data.append('file', file);
+    return this.http.post<PeopleImportResult>(`${API_URL}/people/import`, data);
+  }
+
+  peopleImportTemplate(): Observable<Blob> {
+    return this.http.get(`${API_URL}/people/import/template`, { responseType: 'blob' });
   }
 
   updatePerson(personId: number, payload: PersonUpdate): Observable<PersonDetail> {
