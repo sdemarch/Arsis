@@ -89,6 +89,19 @@ class ParticipantsRepository:
             for activity_id, total, present, absent in rows
         }
 
+    def present_on_activities(
+        self, session: Session, *, activity_ids: Sequence[int]
+    ) -> Sequence[ActivityParticipant]:
+        if not activity_ids:
+            return []
+        return session.scalars(
+            select(ActivityParticipant).where(
+                ActivityParticipant.activity_id.in_(activity_ids),
+                ActivityParticipant.attendance == "present",
+                ActivityParticipant.archived_at.is_(None),
+            )
+        ).all()
+
     def participations(
         self, session: Session, *, person_id: int
     ) -> Sequence[tuple[ActivityParticipant, Activity]]:

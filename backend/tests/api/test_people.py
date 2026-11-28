@@ -110,6 +110,12 @@ def test_activity_refund_rules_are_persisted(people_app: FastAPI) -> None:
             "rehearsal": "0.00",
             "concert": "0.00",
             "event": "0.00",
+            "mileage": {
+                "enabled_types": ["event"],
+                "rate_per_km": "0.00",
+                "passenger_bonus_pct": 0,
+                "max_bonus_passengers": 4,
+            },
             "version": 1,
         }
 
@@ -123,6 +129,12 @@ def test_activity_refund_rules_are_persisted(people_app: FastAPI) -> None:
             "rehearsal": "2.00",
             "concert": "8.00",
             "event": "5.50",
+            "mileage": {
+                "enabled_types": ["event"],
+                "rate_per_km": "0.00",
+                "passenger_bonus_pct": 0,
+                "max_bonus_passengers": 4,
+            },
             "version": 2,
         }
 

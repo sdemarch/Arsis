@@ -226,6 +226,8 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
                 "status": "planned",
                 "source": "automatic",
                 "attendance": "absent",
+                "is_driver": False,
+                "passenger_count": None,
                 "reimbursement_amount": "0.00",
             }
         ]
@@ -273,6 +275,9 @@ def test_refunds_are_calculated_from_present_attendance(activities_app: FastAPI)
                 "rehearsal": "2.00",
                 "concert": "8.00",
                 "event": "0.00",
+                "mileage": "0.00",
+                "highway": "0.00",
+                "distance_km": 0,
                 "total": "10.00",
             },
             {
@@ -281,6 +286,9 @@ def test_refunds_are_calculated_from_present_attendance(activities_app: FastAPI)
                 "rehearsal": "0.00",
                 "concert": "8.00",
                 "event": "0.00",
+                "mileage": "0.00",
+                "highway": "0.00",
+                "distance_km": 0,
                 "total": "8.00",
             },
         ]
