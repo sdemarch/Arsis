@@ -27,6 +27,7 @@ EXPECTED_TABLES = {
     "musicians",
     "people",
     "person_roles",
+    "places",
     "refresh_sessions",
     "sections",
     "students",
