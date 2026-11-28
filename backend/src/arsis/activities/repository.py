@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session
 
-from arsis.generated.models import Activity
+from arsis.generated.models import Activity, ActivitySeries
 
 
 class ActivitiesRepository:
@@ -50,3 +50,14 @@ class ActivitiesRepository:
     def add_activity(self, session: Session, activity: Activity) -> Activity:
         session.add(activity)
         return activity
+
+    def get_series(self, session: Session, series_id: int) -> ActivitySeries | None:
+        return session.get(ActivitySeries, series_id)
+
+    def series_occurrences(self, session: Session, series_id: int) -> Sequence[Activity]:
+        """Non-archived occurrences of a series, in date order."""
+        return session.scalars(
+            select(Activity)
+            .where(Activity.series_id == series_id, Activity.archived_at.is_(None))
+            .order_by(Activity.starts_at, Activity.id)
+        ).all()

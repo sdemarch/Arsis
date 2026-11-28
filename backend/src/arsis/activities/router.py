@@ -1,22 +1,32 @@
 """HTTP endpoints for activities."""
 
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from arsis.activities.participants_service import ActivityTotals, ParticipantsService
+from arsis.activities.recurrence import describe, occurrence_dates
 from arsis.activities.schemas import (
     ActivityCreateRequest,
     ActivityPlaceSummary,
     ActivityResponse,
+    ActivitySeriesCreateRequest,
+    ActivitySeriesResponse,
+    ActivitySeriesSummary,
+    ActivityStatus,
     ActivityUpdateRequest,
     ParticipantAttendanceRequest,
     ParticipantResponse,
     ParticipationResponse,
     RefundSummaryRowResponse,
+    SeriesBulkResponse,
+    SeriesFollowingUpdateRequest,
+    SeriesOccurrenceResponse,
+    SeriesPreviewRequest,
+    SeriesPreviewResponse,
 )
-from arsis.activities.service import ActivitiesService
+from arsis.activities.service import ActivitiesService, series_summary
 from arsis.auth.dependencies import CurrentUser
 from arsis.core.api_models import (
     ERROR_RESPONSES,
@@ -27,6 +37,7 @@ from arsis.core.api_models import (
     parse_sort,
 )
 from arsis.core.database import get_database_session
+from arsis.core.errors import ImportValidationError
 from arsis.generated.models import Place
 from arsis.generated.schemas import ActivityCreateDTO, ActivityUpdateDTO
 from arsis.places.repository import PlacesRepository
@@ -43,9 +54,11 @@ def _response(
     counts: tuple[int, int, int] = (0, 0, 0),
     totals: ActivityTotals | None = None,
     place: Place | None = None,
+    series: dict[str, Any] | None = None,
 ) -> ActivityResponse:
     participant_count, present_count, absent_count = counts
     update: dict[str, Any] = {
+        "series": None if series is None else ActivitySeriesSummary.model_validate(series),
         "participant_count": participant_count,
         "present_count": present_count,
         "absent_count": absent_count,
@@ -81,12 +94,14 @@ def _with_counts(session: Session, activities: list[Any]) -> list[ActivityRespon
         place = _places.get_place(session, place_id, active_only=False)
         if place is not None:
             places[place_id] = place
+    series = _service.series_summaries(session, activities)
     return [
         _response(
             activity,
             counts.get(activity.id, (0, 0, 0)),
             totals.get(activity.id),
             places.get(activity.place_id) if activity.place_id else None,
+            series.get(activity.id),
         )
         for activity in activities
     ]
@@ -152,6 +167,74 @@ def create_activity(
     return _with_counts(session, [activity])[0]
 
 
+@router.post(
+    "/series/preview", response_model=SeriesPreviewResponse, responses=ERROR_RESPONSES
+)
+def preview_series(
+    payload: SeriesPreviewRequest,
+    _current_user: CurrentUser,
+) -> SeriesPreviewResponse:
+    rule = _service.preview_series(
+        starts_on=payload.starts_on, recurrence=payload.recurrence.model_dump()
+    )
+    try:
+        dates = [day.isoformat() for day in occurrence_dates(rule)]
+    except ValueError as exc:
+        raise ImportValidationError(str(exc)) from exc
+    return SeriesPreviewResponse(dates=dates, description=describe(rule))
+
+
+@router.post(
+    "/series",
+    response_model=list[ActivityResponse],
+    status_code=status.HTTP_201_CREATED,
+    responses=ERROR_RESPONSES,
+)
+def create_series(
+    payload: ActivitySeriesCreateRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> list[ActivityResponse]:
+    values = payload.model_dump(exclude={"starts_on", "recurrence", "occurrences"})
+    try:
+        _series, created = _service.create_series(
+            session,
+            values=values,
+            starts_on=payload.starts_on,
+            recurrence=payload.recurrence.model_dump(),
+            occurrences=payload.occurrences,
+            actor_id=current_user.id,
+        )
+    except ValueError as exc:
+        raise ImportValidationError(str(exc)) from exc
+    return _with_counts(session, created)
+
+
+@router.get(
+    "/series/{series_id}", response_model=ActivitySeriesResponse, responses=ERROR_RESPONSES
+)
+def get_series(
+    series_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> ActivitySeriesResponse:
+    series = _service.get_series(session, series_id)
+    occurrences = list(_service.series_occurrences(session, series_id))
+    counts = _participants.counts(session, activity_ids=[item.id for item in occurrences])
+    return ActivitySeriesResponse(
+        series=ActivitySeriesSummary.model_validate(series_summary(series, len(occurrences))),
+        occurrences=[
+            SeriesOccurrenceResponse(
+                id=item.id,
+                starts_at=item.starts_at,
+                status=cast(ActivityStatus, item.status),
+                participant_count=counts.get(item.id, (0, 0, 0))[0],
+            )
+            for item in occurrences
+        ],
+    )
+
+
 # Declared before /{activity_id} so the literal path is not read as an id.
 @router.get(
     "/participations", response_model=list[ParticipationResponse], responses=ERROR_RESPONSES
@@ -206,6 +289,42 @@ def update_activity(
         recalculate_refunds=payload.recalculate_refunds,
     )
     return _with_counts(session, [activity])[0]
+
+
+@router.patch(
+    "/{activity_id}/following", response_model=SeriesBulkResponse, responses=ERROR_RESPONSES
+)
+def update_following(
+    activity_id: int,
+    payload: SeriesFollowingUpdateRequest,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> SeriesBulkResponse:
+    """Apply the same changes to this occurrence and the following ones of its series."""
+    values = payload.model_dump(exclude={"recalculate_refunds"}, exclude_unset=True)
+    updated = _service.update_following(
+        session,
+        activity_id=activity_id,
+        values=values,
+        actor_id=current_user.id,
+        recalculate_refunds=payload.recalculate_refunds,
+    )
+    return SeriesBulkResponse(updated=updated)
+
+
+@router.post(
+    "/{activity_id}/end-series", response_model=SeriesBulkResponse, responses=ERROR_RESPONSES
+)
+def end_series(
+    activity_id: int,
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+) -> SeriesBulkResponse:
+    """End the series after this occurrence; those with recorded attendance are kept."""
+    archived, kept = _service.end_series_after(
+        session, activity_id=activity_id, actor_id=current_user.id
+    )
+    return SeriesBulkResponse(archived=archived, kept=kept)
 
 
 @router.delete("/{activity_id}", response_model=ActivityResponse, responses=ERROR_RESPONSES)

@@ -43,10 +43,13 @@ def quote_identifier(identifier: str) -> str:
 
 
 def class_name(table_name: str) -> str:
-    exceptions = {"people": "person"}
+    # Irregular plurals; "series" is the same in the singular.
+    exceptions = {"people": "person", "series": "series"}
     words = table_name.split("_")
-    last = exceptions.get(words[-1], words[-1])
-    if last.endswith("ies"):
+    last = words[-1]
+    if last in exceptions:
+        last = exceptions[last]
+    elif last.endswith("ies"):
         last = last[:-3] + "y"
     elif last.endswith("sses"):
         last = last[:-2]

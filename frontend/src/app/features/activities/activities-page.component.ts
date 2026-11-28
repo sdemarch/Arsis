@@ -90,7 +90,7 @@ function shiftMonth(month: string, delta: number): string {
               <span class="cell-day">{{ day.day }}</span>
               @for (activity of day.activities; track activity.id) {
                 <a class="chip chip--{{ activity.type }}" [class.cancelled]="activity.status === 'cancelled'" [routerLink]="['/activities', activity.id]" [title]="activity.title">
-                  {{ activity.title }}
+                  @if (activity.series_id) { <span aria-label="Ricorrente">↻</span> }{{ activity.title }}
                 </a>
               }
             </div>
@@ -113,7 +113,7 @@ function shiftMonth(month: string, delta: number): string {
           @for (activity of filteredActivities(); track activity.id) {
             <a class="activity-card card" [routerLink]="attendanceMode ? ['/activities', activity.id, 'attendance'] : ['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
               <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
-              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div>@if (activity.location) { <p>{{ activity.location }}</p> }<div class="participants"><span class="avatar av-green">{{ activity.present_count }}</span><small>presenti@if (activity.absent_count) { · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
+              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}@if (activity.series) { <small class="recurring" [title]="activity.series.description">↻ {{ activity.series.position }}/{{ activity.series.occurrence_count }}</small> }</h2></div>@if (activity.location) { <p>{{ activity.location }}</p> }<div class="participants"><span class="avatar av-green">{{ activity.present_count }}</span><small>presenti@if (activity.absent_count) { · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
               <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.statusLabel }}</span></div>
             </a>
           }
@@ -137,6 +137,7 @@ function shiftMonth(month: string, delta: number): string {
     }
   `,
   styles: `
+    .recurring { color: var(--text-secondary); font-family: var(--font-sans); font-size: var(--text-xs); font-weight: var(--weight-medium); margin-left: var(--sp-2); white-space: nowrap; }
     .view-tabs { border-bottom: var(--border-thin) solid var(--border-default); display: flex; margin-bottom: var(--sp-5); }
     .view-tabs a { border-bottom: 2px solid transparent; color: var(--text-secondary); padding: var(--sp-3) var(--sp-4); text-decoration: none; }
     .view-tabs a.is-active { border-color: var(--color-accent); color: var(--color-accent-hover); font-weight: var(--weight-semi); }

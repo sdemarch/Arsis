@@ -399,6 +399,12 @@ L’area **Obiettivi** mostra per ogni obiettivo le persone che l’hanno raggiu
 
 Ogni raggiungimento è **registrato nello storico** (Obiettivi → Storico) con data, persona, obiettivo e progresso (RB-20). Il traguardo resta *raggiunto* finché un azzeramento non lo chiude (*azzerato*); se il progresso scende sotto la soglia, per una presenza tolta, un’attività archiviata o una soglia alzata, viene *revocato*. Annullare un azzeramento riapre il traguardo con la sua data originale. Ogni registrazione compare anche nel tracciamento delle operazioni.
 
+### 9.8 Attività ricorrenti
+
+Creando un’attività si può scegliere di **ripeterla**: ogni settimana su uno o più giorni (ogni N settimane) oppure ogni mese sullo stesso giorno (ogni N mesi; i mesi senza quel giorno sono saltati), fino a una data di fine entro un anno e con al massimo 200 attività. Prima di salvare, la pagina mostra l’anteprima delle date.
+
+Ogni ricorrenza è un’attività come le altre, con presenze, rimborsi e obiettivi propri; la scheda indica la regola e la posizione nella serie. Modificando una ricorrenza si può applicare la modifica anche alle successive (titolo, tipo, luogo, stato e note; la data resta quella di ciascuna). «Interrompi la serie dopo questa» archivia le ricorrenze successive che non hanno presenze registrate (RB-22).
+
 ## 10. Area Scuola
 
 ### 10.1 Tipologie e categorie di corso
@@ -788,6 +794,7 @@ erDiagram
 | RB-19 | Progresso di una persona su un obiettivo = totale della metrica sulle presenze registrate − somma delle soglie consumate dagli azzeramenti attivi; l’obiettivo è raggiunto floor(progresso / soglia) volte. L’azzeramento è ammesso solo con progresso ≥ soglia e consuma la soglia in vigore in quel momento. |
 | RB-20 | Per ogni persona e obiettivo i traguardi aperti sono sempre floor(progresso / soglia): quando il progresso copre una soglia in più si registra un traguardo con la data del momento; quando ne copre meno si revocano i più recenti. L’azzeramento chiude il traguardo aperto più vecchio. |
 | RB-21 | Il ruolo assegnato a una persona o richiesto da una categoria contabile deve esistere nel catalogo dei ruoli ed essere attivo. I ruoli predefiniti non si archiviano; un ruolo personalizzato si archivia solo se nessuno lo ricopre e nessuna categoria contabile attiva lo richiede. Il codice di un ruolo non cambia mai. |
+| RB-22 | Le date di una serie sono quelle prodotte dalla regola tra la prima data e la data di fine incluse, calcolate sul calendario locale; ogni ricorrenza è un’attività indipendente. Interrompere una serie non archivia mai un’attività con presenze registrate. |
 
 ## 16. Requisiti non funzionali
 

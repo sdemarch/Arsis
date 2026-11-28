@@ -13,6 +13,7 @@ EXPECTED_TABLES = {
     "accounting_opening_balances",
     "activities",
     "activity_participants",
+    "activity_series",
     "app_settings",
     "associated_contacts",
     "audit_events",
