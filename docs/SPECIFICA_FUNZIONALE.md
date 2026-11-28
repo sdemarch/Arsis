@@ -337,8 +337,7 @@ Campi previsti:
 
 - titolo;
 - tipologia;
-- data;
-- ora di inizio e fine;
+- data (senza orario: l’attività si registra solo per giorno);
 - luogo, scelto tra quelli configurati (sezione 13), e dettaglio libero del luogo;
 - descrizione;
 - stato;

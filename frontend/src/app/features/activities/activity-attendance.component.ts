@@ -175,7 +175,7 @@ export class ActivityAttendanceComponent {
   protected readonly subtitle = computed(() => {
     const a = this.activity();
     if (!a) return '';
-    const when = new Intl.DateTimeFormat('it-IT', { dateStyle: 'full', timeStyle: 'short' }).format(new Date(a.starts_at));
+    const when = new Intl.DateTimeFormat('it-IT', { dateStyle: 'full' }).format(new Date(a.starts_at));
     return `${TYPE_LABELS[a.type]} · ${when}${a.location ? ' · ' + a.location : ''}`;
   });
 

@@ -47,7 +47,7 @@ interface Loaded {
           @for (activity of activities(); track activity.id) {
             <a class="activity-row" [routerLink]="['/activities', activity.id]">
               <time><strong>{{ activity.day }}</strong><span>{{ activity.month }}</span></time>
-              <div><strong>{{ activity.title }}</strong><span>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }@if (activity.participant_count) { · {{ activity.participant_count }} presenti }</span></div>
+              <div><strong>{{ activity.title }}</strong><span>{{ activity.weekday }}@if (activity.location) { · {{ activity.location }} }@if (activity.participant_count) { · {{ activity.participant_count }} presenti }</span></div>
               <span class="type-pill">{{ activity.typeLabel }}</span>
             </a>
           } @empty {
@@ -221,7 +221,7 @@ export class HomePageComponent {
         ...activity,
         day: new Intl.DateTimeFormat('it-IT', { day: '2-digit' }).format(date),
         month: new Intl.DateTimeFormat('it-IT', { month: 'short' }).format(date).toUpperCase(),
-        time: new Intl.DateTimeFormat('it-IT', { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(date),
+        weekday: new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(date),
         typeLabel: TYPE_LABELS[activity.type],
       };
     }),

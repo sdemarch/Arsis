@@ -30,7 +30,6 @@ function decorate(activity: Activity) {
     date: new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'short' }).format(date).toUpperCase(),
     year: date.getFullYear(),
     weekday: new Intl.DateTimeFormat('it-IT', { weekday: 'long' }).format(date),
-    time: new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(date),
     tone: STATUS_TONES[activity.status],
     statusLabel: STATUS_LABELS[activity.status],
     typeLabel: TYPE_LABELS[activity.type],
@@ -91,7 +90,7 @@ function shiftMonth(month: string, delta: number): string {
               <span class="cell-day">{{ day.day }}</span>
               @for (activity of day.activities; track activity.id) {
                 <a class="chip chip--{{ activity.type }}" [class.cancelled]="activity.status === 'cancelled'" [routerLink]="['/activities', activity.id]" [title]="activity.title">
-                  {{ time(activity.starts_at) }} {{ activity.title }}
+                  {{ activity.title }}
                 </a>
               }
             </div>
@@ -114,7 +113,7 @@ function shiftMonth(month: string, delta: number): string {
           @for (activity of filteredActivities(); track activity.id) {
             <a class="activity-card card" [routerLink]="attendanceMode ? ['/activities', activity.id, 'attendance'] : ['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
               <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
-              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }</p><div class="participants"><span class="avatar av-green">{{ activity.present_count }}</span><small>presenti@if (activity.absent_count) { · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
+              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div>@if (activity.location) { <p>{{ activity.location }}</p> }<div class="participants"><span class="avatar av-green">{{ activity.present_count }}</span><small>presenti@if (activity.absent_count) { · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
               <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.statusLabel }}</span></div>
             </a>
           }
@@ -274,10 +273,6 @@ export class ActivitiesPageComponent {
       return matchesQuery && matchesType && matchesYear && matchesDay;
     });
   });
-
-  protected time(value: string): string {
-    return new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
-  }
 
   protected dayLabel(key: string): string {
     const [year, month, day] = key.split('-').map(Number);
