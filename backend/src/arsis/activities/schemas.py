@@ -77,7 +77,9 @@ class ActivityResponse(ApiModel):
     archived_at: str | None
     archived_by: int | None
     version: int
-    participant_count: int = 0
+    participant_count: int = Field(
+        default=0, description="Persone con presenza registrata (presenti + assenti)."
+    )
     present_count: int = 0
     absent_count: int = 0
     reimbursement_flat: Decimal = Decimal("0.00")
@@ -91,14 +93,9 @@ class ActivityResponse(ApiModel):
 AttendanceStatus = Literal["present", "absent"]
 
 
-class ParticipantAddRequest(ApiModel):
-    person_id: int = Field(ge=1)
-
-
 class ParticipantResponse(ApiModel):
     person_id: int
     person_name: str
-    source: Literal["automatic", "manual"]
     attendance: AttendanceStatus | None
     attendance_recorded_at: str | None
     is_driver: bool = False
@@ -141,7 +138,6 @@ class ParticipationResponse(ApiModel):
     type: ActivityType
     starts_at: str
     status: ActivityStatus
-    source: Literal["automatic", "manual"]
     attendance: AttendanceStatus | None
     is_driver: bool = False
     passenger_count: int | None = None

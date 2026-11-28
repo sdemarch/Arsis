@@ -68,17 +68,12 @@ class ActivitiesService:
                 session, Activity(**values, created_by=actor_id, updated_by=actor_id)
             )
             session.flush()
-            # RB-04: a new activity starts with every musician active on its date.
-            convoked = self._participants.convoke_musicians(
-                session, activity=activity, actor_id=actor_id
-            )
             record_audit_event(
                 session,
                 action="activity.created",
                 entity_type="activity",
                 entity_id=activity.id,
                 user_id=actor_id,
-                details={"convoked": convoked},
             )
         return activity
 

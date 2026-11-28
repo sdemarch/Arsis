@@ -2,6 +2,8 @@
 
 from typing import Literal
 
+from pydantic import Field
+
 from arsis.core.api_models import ApiModel
 
 
@@ -29,7 +31,7 @@ class UpcomingActivity(ApiModel):
     status: Literal["planned", "confirmed", "cancelled", "completed"]
     starts_at: str
     location: str | None
-    participant_count: int
+    participant_count: int = Field(description="Presenti già registrati.")
 
 
 class TodayLesson(ApiModel):

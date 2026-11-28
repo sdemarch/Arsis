@@ -16,7 +16,7 @@ maggiorazione percentuale per passeggero, più il **pedaggio autostradale** del 
 | Pedaggio | Registrato sul luogo (A/R), in euro con due decimali, sommato al rimborso di ogni autista. Non è soggetto alla maggiorazione. |
 | Passeggeri | Solo il **numero**, indicato per ciascun autista presente. |
 | Maggiorazione | +N% per passeggero (intero), fino a un massimo di passeggeri conteggiati (default 4). |
-| Tipi ammessi | Configurabili per tipo (prova, concerto, evento); default solo evento. |
+| Tipi ammessi | Configurabili per tipo (prova, concerto, processione); default solo processione. |
 | Importo fisso | Resta e si somma al rimborso chilometrico. |
 | Configurazione | Nella stessa regola `activities.refund_rules` e nella stessa pagina dei rimborsi fissi. |
 | Storicizzazione | **Snapshot**: importi e parametri vengono salvati sulla presenza quando viene registrata. Le modifiche a regole e luoghi valgono solo per le registrazioni successive. Vale anche per l'importo fisso. |

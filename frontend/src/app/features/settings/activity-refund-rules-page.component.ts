@@ -9,7 +9,7 @@ import { ActivityRefundRules, RefundActivityType, SettingsService } from './sett
 const TYPES: readonly { readonly value: RefundActivityType; readonly label: string }[] = [
   { value: 'rehearsal', label: 'Prove' },
   { value: 'concert', label: 'Concerti' },
-  { value: 'event', label: 'Eventi' },
+  { value: 'event', label: 'Processioni' },
 ];
 
 @Component({
@@ -23,7 +23,7 @@ const TYPES: readonly { readonly value: RefundActivityType; readonly label: stri
       <p>Il rimborso è calcolato per ciascun partecipante segnato come presente. Le presenze assenti o non registrate non maturano alcun importo.</p>
       <label><span>Prova</span><input name="rehearsal" [(ngModel)]="rehearsal" type="number" min="0" step="0.01" required /><small>€ per presenza</small></label>
       <label><span>Concerto</span><input name="concert" [(ngModel)]="concert" type="number" min="0" step="0.01" required /><small>€ per presenza</small></label>
-      <label><span>Evento</span><input name="event" [(ngModel)]="event" type="number" min="0" step="0.01" required /><small>€ per presenza</small></label>
+      <label><span>Processione</span><input name="event" [(ngModel)]="event" type="number" min="0" step="0.01" required /><small>€ per presenza</small></label>
 
       <fieldset>
         <legend>Rimborso chilometrico</legend>

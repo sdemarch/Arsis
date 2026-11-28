@@ -13,7 +13,7 @@ import { ActivitiesService, RefundSummaryRow } from './activities.service';
       <arsis-back-link class="back-link--compact" link="/activities" label="Attività" />
     </arsis-page-header>
     <p class="note">Questo riepilogo è informativo e non genera movimenti nella prima nota.</p>
-    <div class="table-shell card"><table><thead><tr><th>Socio</th><th>Prove</th><th>Concerti</th><th>Eventi</th><th>Km guidati</th><th>Carburante</th><th>Pedaggi</th><th>Totale</th></tr></thead><tbody>
+    <div class="table-shell card"><table><thead><tr><th>Socio</th><th>Prove</th><th>Concerti</th><th>Processioni</th><th>Km guidati</th><th>Carburante</th><th>Pedaggi</th><th>Totale</th></tr></thead><tbody>
       @for (row of rows(); track row.person_id) { <tr><td><a [routerLink]="['/people', row.person_id]">{{ row.person_name }}</a></td><td>{{ currency(row.rehearsal) }}</td><td>{{ currency(row.concert) }}</td><td>{{ currency(row.event) }}</td><td>{{ row.distance_km || '—' }}</td><td>{{ currency(row.mileage) }}</td><td>{{ currency(row.highway) }}</td><td><strong>{{ currency(row.total) }}</strong></td></tr> }
       @empty { <tr><td colspan="8" class="empty">Nessun rimborso maturato: registra almeno una presenza.</td></tr> }
     </tbody></table></div>

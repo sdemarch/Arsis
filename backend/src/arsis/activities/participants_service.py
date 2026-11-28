@@ -1,4 +1,4 @@
-"""Convocation and attendance of activity participants."""
+"""Attendance register of activities: every active person can be marked present."""
 
 from collections.abc import Iterable, Sequence
 from decimal import Decimal
@@ -17,7 +17,7 @@ from arsis.activities.repository import ActivitiesRepository
 from arsis.activities.schemas import ActivityStatus, ActivityType, AttendanceStatus
 from arsis.audit.service import record_audit_event
 from arsis.core.database import transaction
-from arsis.core.errors import ConflictError, ImportValidationError, ResourceNotFoundError
+from arsis.core.errors import ImportValidationError, ResourceNotFoundError
 from arsis.core.time import utc_now_iso
 from arsis.generated.models import Activity, ActivityParticipant, Person, Place
 from arsis.places.repository import PlacesRepository
@@ -39,7 +39,6 @@ class ParticipationRow(TypedDict):
     type: ActivityType
     starts_at: str
     status: ActivityStatus
-    source: str
     attendance: AttendanceStatus | None
     is_driver: bool
     passenger_count: int | None
@@ -62,12 +61,20 @@ class RefundSummaryRow(TypedDict):
     total: Decimal
 
 
-def _serialize(participant: ActivityParticipant, person: Person) -> dict[str, object]:
+def _serialize(participant: ActivityParticipant | None, person: Person) -> dict[str, object]:
+    """A register row; people with nothing recorded yet have no participant row."""
+    if participant is None:
+        return {
+            "person_id": person.id,
+            "person_name": f"{person.first_name} {person.last_name}",
+            "attendance": None,
+            "attendance_recorded_at": None,
+            "version": 0,
+        }
     breakdown = ReimbursementBreakdown.of(participant)
     return {
         "person_id": person.id,
         "person_name": f"{person.first_name} {person.last_name}",
-        "source": participant.source,
         "attendance": participant.attendance,
         "attendance_recorded_at": participant.attendance_recorded_at,
         "is_driver": bool(participant.is_driver),
@@ -99,9 +106,7 @@ class ParticipantsService:
         activity = self._get_activity(session, activity_id)
         return [
             _serialize(participant, person)
-            for participant, person in self._repository.list_participants(
-                session, activity_id=activity.id
-            )
+            for person, participant in self._repository.register(session, activity_id=activity.id)
         ]
 
     def counts(
@@ -125,111 +130,6 @@ class ParticipantsService:
                 row["passenger_count"] += participant.passenger_count or 0
         return totals
 
-    def convoke_musicians(self, session: Session, *, activity: Activity, actor_id: int) -> int:
-        """Add the musicians active on the activity date who are not on it yet.
-
-        People removed by hand keep their (archived) row and are not added back.
-        Runs inside the caller's transaction.
-        """
-        known = self._repository.person_ids_on_activity(session, activity_id=activity.id)
-        added = 0
-        for person_id in self._repository.active_musician_ids(
-            session, on_date=activity.starts_at[:10]
-        ):
-            if person_id in known:
-                continue
-            session.add(
-                ActivityParticipant(
-                    activity_id=activity.id,
-                    person_id=person_id,
-                    source="automatic",
-                    created_by=actor_id,
-                    updated_by=actor_id,
-                )
-            )
-            added += 1
-        return added
-
-    def refresh_musicians(self, session: Session, *, activity_id: int, actor_id: int) -> int:
-        with transaction(session):
-            activity = self._get_activity(session, activity_id)
-            added = self.convoke_musicians(session, activity=activity, actor_id=actor_id)
-            record_audit_event(
-                session,
-                action="activity_participants.musicians_added",
-                entity_type="activity",
-                entity_id=activity.id,
-                user_id=actor_id,
-                details={"added": added},
-            )
-        return added
-
-    def add_participant(
-        self, session: Session, *, activity_id: int, person_id: int, actor_id: int
-    ) -> dict[str, object]:
-        with transaction(session):
-            activity = self._get_activity(session, activity_id)
-            person = self._repository.get_active_person(session, person_id)
-            if person is None:
-                raise ConflictError(
-                    "La persona selezionata non è attiva", code="INVALID_ACTIVITY_PARTICIPANT"
-                )
-            participant = self._repository.get_by_person(
-                session, activity_id=activity.id, person_id=person_id
-            )
-            if participant is not None and participant.archived_at is None:
-                raise ConflictError(
-                    "La persona è già tra i partecipanti", code="ACTIVITY_PARTICIPANT_EXISTS"
-                )
-            if participant is None:
-                participant = ActivityParticipant(
-                    activity_id=activity.id,
-                    person_id=person_id,
-                    source="manual",
-                    created_by=actor_id,
-                    updated_by=actor_id,
-                )
-                session.add(participant)
-            else:
-                participant.source = "manual"
-                participant.archived_at = None
-                participant.archived_by = None
-                participant.updated_by = actor_id
-                participant.version += 1
-            session.flush()
-            record_audit_event(
-                session,
-                action="activity_participant.added",
-                entity_type="activity",
-                entity_id=activity.id,
-                user_id=actor_id,
-                details={"person_id": person_id},
-            )
-            return _serialize(participant, person)
-
-    def remove_participant(
-        self, session: Session, *, activity_id: int, person_id: int, actor_id: int
-    ) -> None:
-        with transaction(session):
-            activity = self._get_activity(session, activity_id)
-            participant = self._repository.get_by_person(
-                session, activity_id=activity.id, person_id=person_id
-            )
-            if participant is None or participant.archived_at is not None:
-                raise ResourceNotFoundError("Partecipante", person_id)
-            participant.archived_at = utc_now_iso()
-            participant.archived_by = actor_id
-            participant.updated_by = actor_id
-            participant.version += 1
-            record_audit_event(
-                session,
-                action="activity_participant.removed",
-                entity_type="activity",
-                entity_id=activity.id,
-                user_id=actor_id,
-                details={"person_id": person_id},
-            )
-
     def save_attendance(
         self,
         session: Session,
@@ -240,11 +140,16 @@ class ParticipantsService:
     ) -> int:
         with transaction(session):
             activity = self._get_activity(session, activity_id)
-            participants = {
-                participant.person_id: participant
-                for participant, _ in self._repository.list_participants(
+            register = {
+                person.id: participant
+                for person, participant in self._repository.register(
                     session, activity_id=activity.id
                 )
+            }
+            participants = {
+                person_id: participant
+                for person_id, participant in register.items()
+                if participant is not None
             }
             normalized: list[AttendanceRow] = []
             seen: set[int] = set()
@@ -254,9 +159,9 @@ class ParticipantsService:
                         "La stessa persona è presente più volte nel registro",
                         details={"person_id": person_id},
                     )
-                if person_id not in participants:
+                if person_id not in register:
                     raise ImportValidationError(
-                        "La persona non è tra i partecipanti dell'attività",
+                        "La persona non è attiva in anagrafica",
                         details={"person_id": person_id},
                     )
                 seen.add(person_id)
@@ -265,7 +170,15 @@ class ParticipantsService:
             place = self._place_of(session, activity)
             now = utc_now_iso()
             for person_id, attendance, is_driver, passenger_count in normalized:
-                participant = participants[person_id]
+                existing = participants.get(person_id)
+                if existing is None:
+                    if attendance is None:
+                        continue
+                    existing = self._open_row(
+                        session, activity_id=activity.id, person_id=person_id, actor_id=actor_id
+                    )
+                    participants[person_id] = existing
+                participant = existing
                 driver = bool(participant.is_driver) if is_driver is None else is_driver
                 if attendance != "present":
                     driver = False
@@ -303,6 +216,35 @@ class ParticipantsService:
                 details={"rows": len(normalized)},
             )
         return len(normalized)
+
+    def _open_row(
+        self, session: Session, *, activity_id: int, person_id: int, actor_id: int
+    ) -> ActivityParticipant:
+        """The row holding a person's attendance, created on first recording."""
+        participant = self._repository.get_by_person(
+            session, activity_id=activity_id, person_id=person_id
+        )
+        if participant is None:
+            participant = ActivityParticipant(
+                activity_id=activity_id,
+                person_id=person_id,
+                source="manual",
+                created_by=actor_id,
+                updated_by=actor_id,
+                # Bumped to 1 by the attendance write that follows (a new row always changes).
+                version=0,
+            )
+            session.add(participant)
+        else:
+            # A row removed under the former convocation flow: start again from blank.
+            participant.archived_at = None
+            participant.archived_by = None
+        participant.attendance = None
+        participant.attendance_recorded_at = None
+        participant.attendance_recorded_by = None
+        participant.is_driver = False
+        participant.passenger_count = None
+        return participant
 
     def has_recorded_attendance(self, session: Session, *, activity_id: int) -> bool:
         return bool(self._repository.present_on_activities(session, activity_ids=[activity_id]))
@@ -355,7 +297,6 @@ class ParticipantsService:
             "type": cast(ActivityType, activity.type),
             "starts_at": activity.starts_at,
             "status": cast(ActivityStatus, activity.status),
-            "source": participant.source,
             "attendance": cast(AttendanceStatus | None, participant.attendance),
             "is_driver": bool(participant.is_driver),
             "passenger_count": participant.passenger_count,

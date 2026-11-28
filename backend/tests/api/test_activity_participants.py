@@ -94,63 +94,58 @@ def _names(response) -> list[str]:
     return [row["person_name"] for row in response.json()]
 
 
-def test_new_activity_convokes_musicians_active_on_its_date(activities_app: FastAPI) -> None:
+def test_register_lists_every_active_person_without_convocation(
+    activities_app: FastAPI,
+) -> None:
     with TestClient(activities_app) as client:
         headers = _headers(client)
         _person(client, headers, "Anna Bianchi", "musician")
         _person(client, headers, "Bruno Conti", "musician", end="2026-03-01")
-        _person(client, headers, "Carla Dini", "musician", start="2026-06-01")
         _person(client, headers, "Dario Esposito", "member")
+        _person(client, headers, "Gino Lodi")
         archived_id = _person(client, headers, "Elio Fabbri", "musician")
         version = client.get(f"/api/v1/people/{archived_id}", headers=headers).json()["version"]
         client.delete(f"/api/v1/people/{archived_id}?version={version}", headers=headers)
 
         activity = _activity(client, headers, "2026-05-10T20:45")
-        assert activity["participant_count"] == 1
+        assert activity["participant_count"] == 0
 
-        participants = client.get(
-            f"/api/v1/activities/{activity['id']}/participants", headers=headers
+        register = client.get(f"/api/v1/activities/{activity['id']}/participants", headers=headers)
+        assert register.status_code == 200
+        assert _names(register) == ["Anna Bianchi", "Bruno Conti", "Dario Esposito", "Gino Lodi"]
+        assert all(row["attendance"] is None for row in register.json())
+        assert "source" not in register.json()[0]
+
+        archived = client.put(
+            f"/api/v1/activities/{activity['id']}/attendances",
+            headers=headers,
+            json={"rows": [{"person_id": archived_id, "attendance": "present"}]},
         )
-        assert participants.status_code == 200
-        assert participants.json()[0]["source"] == "automatic"
-        assert participants.json()[0]["attendance"] is None
-        assert _names(participants) == ["Anna Bianchi"]
+        assert archived.status_code == 422
+        # Convocation endpoints are gone.
+        base = f"/api/v1/activities/{activity['id']}/participants"
+        assert client.post(base, headers=headers, json={"person_id": 1}).status_code == 405
+        assert client.post(f"{base}/musicians", headers=headers).status_code in {404, 405}
 
 
-def test_participants_can_be_added_removed_and_refreshed(activities_app: FastAPI) -> None:
+def test_archived_people_with_recorded_attendance_stay_in_the_register(
+    activities_app: FastAPI,
+) -> None:
     with TestClient(activities_app) as client:
         headers = _headers(client)
-        anna = _person(client, headers, "Anna Bianchi", "musician")
-        guest = _person(client, headers, "Dario Esposito")
+        anna = _person(client, headers, "Anna Bianchi")
         activity = _activity(client, headers, "2026-05-10T20:45")
-        base = f"/api/v1/activities/{activity['id']}/participants"
+        client.put(
+            f"/api/v1/activities/{activity['id']}/attendances",
+            headers=headers,
+            json={"rows": [{"person_id": anna, "attendance": "present"}]},
+        )
+        version = client.get(f"/api/v1/people/{anna}", headers=headers).json()["version"]
+        client.delete(f"/api/v1/people/{anna}?version={version}", headers=headers)
 
-        added = client.post(base, headers=headers, json={"person_id": guest})
-        assert added.status_code == 201
-        assert added.json()["source"] == "manual"
-        duplicate = client.post(base, headers=headers, json={"person_id": guest})
-        assert duplicate.json()["error"]["code"] == "ACTIVITY_PARTICIPANT_EXISTS"
-        missing = client.post(base, headers=headers, json={"person_id": 999})
-        assert missing.json()["error"]["code"] == "INVALID_ACTIVITY_PARTICIPANT"
-
-        assert client.delete(f"{base}/{anna}", headers=headers).status_code == 204
-        assert client.delete(f"{base}/{anna}", headers=headers).status_code == 404
-        assert _names(client.get(base, headers=headers)) == ["Dario Esposito"]
-
-        # A musician added after the activity was created is convoked on refresh,
-        # while the one removed by hand stays out.
-        _person(client, headers, "Carla Dini", "musician")
-        refreshed = client.post(f"{base}/musicians", headers=headers)
-        assert refreshed.status_code == 200
-        assert _names(refreshed) == ["Carla Dini", "Dario Esposito"]
-
-        readded = client.post(base, headers=headers, json={"person_id": anna})
-        assert readded.status_code == 201
-        assert readded.json()["source"] == "manual"
-        assert _names(client.get(base, headers=headers)) == [
-            "Anna Bianchi",
-            "Carla Dini",
-            "Dario Esposito",
+        register = client.get(f"/api/v1/activities/{activity['id']}/participants", headers=headers)
+        assert [(row["person_name"], row["attendance"]) for row in register.json()] == [
+            ("Anna Bianchi", "present")
         ]
 
 
@@ -177,8 +172,10 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
         assert {row["person_name"]: row["attendance"] for row in saved.json()} == {
             "Anna Bianchi": "present",
             "Bruno Conti": "absent",
+            "Dario Esposito": None,
         }
-        assert all(row["attendance_recorded_at"] for row in saved.json())
+        recorded = [row for row in saved.json() if row["attendance"]]
+        assert all(row["attendance_recorded_at"] for row in recorded)
 
         counted = client.get(f"/api/v1/activities/{activity['id']}", headers=headers).json()
         assert (counted["participant_count"], counted["present_count"]) == (2, 1)
@@ -186,10 +183,15 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
         listed = client.get("/api/v1/activities", headers=headers).json()["items"][0]
         assert listed["present_count"] == 1
 
-        not_participant = client.put(
+        # No convocation: anyone active can be marked present.
+        outsider_saved = client.put(
             url, headers=headers, json={"rows": [{"person_id": outsider, "attendance": "present"}]}
         )
-        assert not_participant.status_code == 422
+        assert outsider_saved.status_code == 200
+        unknown = client.put(
+            url, headers=headers, json={"rows": [{"person_id": 999, "attendance": "present"}]}
+        )
+        assert unknown.status_code == 422
         duplicated = client.put(
             url,
             headers=headers,
@@ -224,7 +226,6 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
                 "type": "rehearsal",
                 "starts_at": "2026-05-10T20:45",
                 "status": "planned",
-                "source": "automatic",
                 "attendance": "absent",
                 "is_driver": False,
                 "passenger_count": None,

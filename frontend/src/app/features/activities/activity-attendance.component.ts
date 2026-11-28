@@ -1,13 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
 
 import { apiErrorMessage } from '../../core/api/api-error';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { BackLinkComponent } from '../../shared/ui/back-link.component';
-import { PeopleService, PersonListItem } from '../people/people.service';
 import { placeLabel } from '../settings/places.service';
 import { ActivityRefundRules, SettingsService } from '../settings/settings.service';
 import { ActivitiesService, Activity, Attendance, AttendanceWrite, Participant } from './activities.service';
@@ -19,9 +16,9 @@ interface RowDraft {
   readonly passenger_count: number;
 }
 
-const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' };
+const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Processione' };
 
-/** Convoked participants of an activity and their attendance register (§9.4–9.5). */
+/** Attendance register of an activity: every active person can be marked present (§9.5). */
 @Component({
   selector: 'arsis-activity-attendance',
   imports: [BackLinkComponent, FormsModule, PageHeaderComponent, RouterLink],
@@ -31,7 +28,7 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
     </arsis-page-header>
 
     <section class="summary">
-      <div><strong>{{ rows().length }}</strong><span>Convocati</span></div>
+      <div><strong>{{ rows().length }}</strong><span>Persone attive</span></div>
       <div><strong class="present">{{ count('present') }}</strong><span>Presenti</span></div>
       <div><strong class="absent">{{ count('absent') }}</strong><span>Assenti</span></div>
       <div><strong>{{ count(null) }}</strong><span>Da registrare</span></div>
@@ -49,8 +46,10 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
 
     <div class="toolbar">
       <div class="group">
-        <button type="button" class="button button--secondary" (click)="markAll('present')" [disabled]="!rows().length">Tutti presenti</button>
-        <button type="button" class="button button--secondary" (click)="markAll(null)" [disabled]="!rows().length">Azzera</button>
+        <input class="search" type="search" placeholder="Cerca una persona…" aria-label="Cerca una persona" [ngModel]="query()" (ngModelChange)="query.set($event)" />
+        <label class="only-recorded"><input type="checkbox" [ngModel]="onlyRecorded()" (ngModelChange)="onlyRecorded.set($event)" />Solo registrate</label>
+        <button type="button" class="button button--secondary" (click)="markAll('present')" [disabled]="!visibleRows().length">{{ filtered() ? 'Visibili presenti' : 'Tutti presenti' }}</button>
+        <button type="button" class="button button--secondary" (click)="markAll(null)" [disabled]="!visibleRows().length">Azzera</button>
       </div>
       <div class="group">
         @if (dirty()) { <span class="unsaved">Modifiche non salvate</span> }
@@ -62,12 +61,11 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
 
     <div class="table-shell">
       <table>
-        <thead><tr><th>Partecipante</th><th>Convocazione</th><th>Presenza</th>@if (mileageEnabled()) { <th>Autista</th><th>Passeggeri</th> }<th class="amount">Rimborso</th><th><span class="visually-hidden">Rimuovi</span></th></tr></thead>
+        <thead><tr><th>Persona</th><th>Presenza</th>@if (mileageEnabled()) { <th>Autista</th><th>Passeggeri</th> }<th class="amount">Rimborso</th></tr></thead>
         <tbody>
-          @for (row of rows(); track row.person_id) {
+          @for (row of visibleRows(); track row.person_id) {
             <tr>
               <td><a [routerLink]="['/people', row.person_id]">{{ row.person_name }}</a></td>
-              <td><span class="source">{{ row.source === 'automatic' ? 'Musicante attivo' : 'Aggiunto' }}</span></td>
               <td>
                 <div class="segmented" role="group" [attr.aria-label]="'Presenza di ' + row.person_name">
                   <button type="button" class="is-present" [class.on]="attendanceOf(row) === 'present'" [attr.aria-pressed]="attendanceOf(row) === 'present'" (click)="toggle(row, 'present')">Presente</button>
@@ -90,29 +88,14 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
                 @if (changes().has(row.person_id)) { <span class="pending" title="Calcolato al salvataggio">da salvare</span> }
                 @else if (row.attendance === 'present') { <span [title]="refundDetail(row)">{{ currency(row.refund_total) }}</span> }
               </td>
-              <td class="remove"><button type="button" (click)="remove(row)" [attr.aria-label]="'Rimuovi ' + row.person_name" title="Rimuovi dai convocati">×</button></td>
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="mileageEnabled() ? 7 : 5" class="empty">Nessun partecipante. Aggiungi i musicanti attivi o singole persone.</td></tr>
+            <tr><td [attr.colspan]="mileageEnabled() ? 5 : 3" class="empty">{{ rows().length ? 'Nessuna persona corrisponde alla ricerca.' : 'Nessuna persona attiva in anagrafica.' }}</td></tr>
           }
         </tbody>
       </table>
     </div>
 
-    <section class="card add">
-      <h2>Convocati</h2>
-      <form (ngSubmit)="add()">
-        <select name="person" [(ngModel)]="personToAdd" aria-label="Persona da aggiungere">
-          <option [ngValue]="null">Aggiungi una persona…</option>
-          @for (p of addable(); track p.id) { <option [ngValue]="p.id">{{ p.last_name }} {{ p.first_name }}</option> }
-        </select>
-        <button class="button button--secondary" [disabled]="!personToAdd || busy()">Aggiungi</button>
-      </form>
-      <p>
-        <button type="button" class="link" (click)="convoke()" [disabled]="busy()">Aggiungi i musicanti attivi mancanti</button>
-        — utile per le attività create prima della convocazione automatica. Chi è stato rimosso a mano non viene riaggiunto.
-      </p>
-    </section>
   `,
   styles: `
     .summary { display: grid; gap: var(--sp-4); grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: var(--sp-5); }
@@ -127,7 +110,8 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
     .message { margin: 0 0 var(--sp-4); }
     table { width: 100%; }
     th, td { border-bottom: var(--border-thin) solid var(--border-subtle); padding: var(--sp-3); text-align: left; }
-    .source { color: var(--text-secondary); font-size: var(--text-sm); }
+    .search { min-height: 38px; min-width: 220px; padding: 0 var(--sp-3); }
+    .only-recorded { align-items: center; color: var(--text-secondary); display: inline-flex; font-size: var(--text-sm); gap: var(--sp-2); white-space: nowrap; }
     .segmented { display: inline-flex; }
     .segmented button { background: var(--bg-surface); border: var(--border-thin) solid var(--border-default); color: var(--text-secondary); cursor: pointer; font: inherit; font-size: var(--text-sm); padding: var(--sp-1) var(--sp-3); }
     .segmented button:first-child { border-radius: var(--radius-full) 0 0 var(--radius-full); }
@@ -139,16 +123,6 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
     .passengers { min-height: 32px; padding: 0 var(--sp-2); width: 72px; }
     .amount { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
     .pending { color: var(--color-warn); font-size: var(--text-sm); }
-    .remove { text-align: right; width: 40px; }
-    .remove button { background: none; border: 0; color: var(--text-tertiary); cursor: pointer; font-size: var(--text-xl); }
-    .remove button:hover { color: var(--color-danger); }
-    .empty { color: var(--text-secondary); text-align: center; }
-    .add { margin-top: var(--sp-6); padding: var(--sp-5); }
-    .add h2 { font-size: var(--text-lg); margin: 0 0 var(--sp-3); }
-    .add form { display: flex; gap: var(--sp-2); max-width: 560px; }
-    .add select { flex: 1; min-height: 38px; min-width: 0; }
-    .add p { color: var(--text-secondary); font-size: var(--text-sm); margin: var(--sp-3) 0 0; }
-    .link { background: none; border: 0; color: var(--color-accent-hover); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
     .visually-hidden { clip: rect(0, 0, 0, 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
     @media (max-width: 800px) { .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .table-shell { overflow-x: auto; } }
   `,
@@ -184,12 +158,18 @@ export class ActivityAttendanceComponent {
   protected readonly busy = signal(false);
   protected readonly message = signal('');
   protected readonly failed = signal(false);
-  protected personToAdd: number | null = null;
-
-  private readonly people = toSignal(inject(PeopleService).listPeople('').pipe(map((page) => page.items), catchError(() => of<PersonListItem[]>([]))), { initialValue: [] });
-  protected readonly addable = computed(() => {
-    const present = new Set(this.rows().map((row) => row.person_id));
-    return this.people().filter((p) => !p.archived_at && !present.has(p.id));
+  protected readonly query = signal('');
+  protected readonly onlyRecorded = signal(false);
+  protected readonly filtered = computed(() => !!this.query().trim() || this.onlyRecorded());
+  /** Rows matching the search; "Solo registrate" keeps those with attendance or unsaved edits. */
+  protected readonly visibleRows = computed(() => {
+    const query = this.query().trim().toLocaleLowerCase('it');
+    const onlyRecorded = this.onlyRecorded();
+    return this.rows().filter(
+      (row) =>
+        (!query || row.person_name.toLocaleLowerCase('it').includes(query)) &&
+        (!onlyRecorded || this.attendanceOf(row) !== null || this.changes().has(row.person_id)),
+    );
   });
   protected readonly dirty = computed(() => this.changes().size > 0);
   protected readonly subtitle = computed(() => {
@@ -202,7 +182,7 @@ export class ActivityAttendanceComponent {
   constructor() {
     this.api.get(this.id).subscribe({ next: (a) => this.activity.set(a), error: (err: unknown) => this.fail(err, 'Attività non trovata.') });
     inject(SettingsService).activityRefundRules().subscribe({ next: (rules) => this.rules.set(rules) });
-    this.api.participants(this.id).subscribe({ next: (rows) => this.rows.set(rows), error: (err: unknown) => this.fail(err, 'Impossibile caricare i partecipanti.') });
+    this.api.participants(this.id).subscribe({ next: (rows) => this.rows.set(rows), error: (err: unknown) => this.fail(err, 'Impossibile caricare le persone.') });
   }
 
   protected draftOf(row: Participant): RowDraft {
@@ -245,8 +225,9 @@ export class ActivityAttendanceComponent {
     this.setAttendance(row, this.attendanceOf(row) === value ? null : value);
   }
 
+  /** Applies to the rows currently shown, so a search narrows "Tutti presenti". */
   protected markAll(value: Attendance | null): void {
-    for (const row of this.rows()) this.setAttendance(row, value);
+    for (const row of this.visibleRows()) this.setAttendance(row, value);
   }
 
   protected save(): void {
@@ -256,49 +237,6 @@ export class ActivityAttendanceComponent {
         : { person_id, attendance: draft.attendance },
     );
     this.run(this.api.saveAttendance(this.id, rows), 'Presenze salvate.', 'Salvataggio delle presenze non riuscito.');
-  }
-
-  protected add(): void {
-    const personId = this.personToAdd;
-    if (!personId) return;
-    this.busy.set(true);
-    this.api.addParticipant(this.id, personId).subscribe({
-      next: (participant) => {
-        this.busy.set(false);
-        this.personToAdd = null;
-        this.rows.update((rows) => [...rows, participant].sort((a, b) => this.sortKey(a).localeCompare(this.sortKey(b), 'it')));
-        this.notify(`${participant.person_name} aggiunto ai convocati.`);
-      },
-      error: (err: unknown) => this.fail(err, 'Aggiunta non riuscita.'),
-    });
-  }
-
-  protected remove(row: Participant): void {
-    if (!window.confirm(`Rimuovere ${row.person_name} dai convocati?`)) return;
-    this.busy.set(true);
-    this.api.removeParticipant(this.id, row.person_id).subscribe({
-      next: () => {
-        this.busy.set(false);
-        this.rows.update((rows) => rows.filter((r) => r.person_id !== row.person_id));
-        this.changes.update((changes) => { const next = new Map(changes); next.delete(row.person_id); return next; });
-        this.notify(`${row.person_name} rimosso dai convocati.`);
-      },
-      error: (err: unknown) => this.fail(err, 'Rimozione non riuscita.'),
-    });
-  }
-
-  protected convoke(): void {
-    const before = this.rows().length;
-    this.busy.set(true);
-    this.api.convokeMusicians(this.id).subscribe({
-      next: (rows) => {
-        this.busy.set(false);
-        this.rows.set(rows);
-        const added = rows.length - before;
-        this.notify(added ? `${added} musicanti aggiunti.` : 'Tutti i musicanti attivi sono già convocati.');
-      },
-      error: (err: unknown) => this.fail(err, 'Aggiornamento dei convocati non riuscito.'),
-    });
   }
 
   private setAttendance(row: Participant, value: Attendance | null): void {
@@ -339,11 +277,6 @@ export class ActivityAttendanceComponent {
       },
       error: (err: unknown) => this.fail(err, failure),
     });
-  }
-
-  private sortKey(row: Participant): string {
-    const person = this.people().find((p) => p.id === row.person_id);
-    return person ? `${person.last_name} ${person.first_name}` : row.person_name;
   }
 
   private notify(text: string): void {

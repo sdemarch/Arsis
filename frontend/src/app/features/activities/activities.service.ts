@@ -25,7 +25,6 @@ export type Attendance = 'present' | 'absent';
 export interface Participant {
   readonly person_id: number;
   readonly person_name: string;
-  readonly source: 'automatic' | 'manual';
   readonly attendance: Attendance | null;
   readonly attendance_recorded_at: string | null;
   readonly is_driver: boolean;
@@ -50,7 +49,6 @@ export interface Participation {
   readonly type: Activity['type'];
   readonly starts_at: string;
   readonly status: Activity['status'];
-  readonly source: Participant['source'];
   readonly attendance: Attendance | null;
   readonly is_driver: boolean;
   readonly passenger_count: number | null;
@@ -85,9 +83,6 @@ export class ActivitiesService {
   archive(id: number, version: number): Observable<Activity> { return this.http.delete<Activity>(`${API_URL}/activities/${id}`, { params: new HttpParams().set('version', version) }); }
 
   participants(id: number): Observable<Participant[]> { return this.http.get<Participant[]>(`${API_URL}/activities/${id}/participants`); }
-  addParticipant(id: number, personId: number): Observable<Participant> { return this.http.post<Participant>(`${API_URL}/activities/${id}/participants`, { person_id: personId }); }
-  removeParticipant(id: number, personId: number): Observable<void> { return this.http.delete<void>(`${API_URL}/activities/${id}/participants/${personId}`); }
-  convokeMusicians(id: number): Observable<Participant[]> { return this.http.post<Participant[]>(`${API_URL}/activities/${id}/participants/musicians`, {}); }
   saveAttendance(id: number, rows: AttendanceWrite[]): Observable<Participant[]> { return this.http.put<Participant[]>(`${API_URL}/activities/${id}/attendances`, { rows }); }
   participations(personId: number): Observable<Participation[]> { return this.http.get<Participation[]>(`${API_URL}/activities/participations`, { params: new HttpParams().set('person_id', personId) }); }
   refundSummary(): Observable<RefundSummaryRow[]> { return this.http.get<RefundSummaryRow[]>(`${API_URL}/activities/refund-summary`); }

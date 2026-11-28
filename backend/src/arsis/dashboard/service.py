@@ -137,6 +137,7 @@ class DashboardService:
             select(func.count())
             .where(
                 ActivityParticipant.activity_id == Activity.id,
+                ActivityParticipant.attendance == "present",
                 ActivityParticipant.archived_at.is_(None),
             )
             .correlate(Activity)

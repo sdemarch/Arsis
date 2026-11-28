@@ -37,7 +37,7 @@ Il documento dei design token è la fonte di riferimento per colori, tipografia,
 La webapp deve offrire ai responsabili un unico punto di accesso per:
 
 1. gestire l’anagrafica comune di allievi, insegnanti, musicanti e soci;
-2. organizzare prove, concerti ed eventi della banda;
+2. organizzare prove, concerti e processioni della banda;
 3. configurare corsi, iscrizioni, lezioni e presenze della scuola;
 4. accedere rapidamente all’archivio documentale su Google Drive;
 5. registrare entrate e uscite in una prima nota di Banca e Cassa.
@@ -52,8 +52,8 @@ La webapp deve offrire ai responsabili un unico punto di accesso per:
 - Assegnazione di più ruoli alla stessa persona.
 - Gestione dei contatti associati tra persone registrate.
 - Gestione di soci, musicanti, strumenti e sezioni.
-- Gestione di prove, concerti ed eventi.
-- Convocazione predefinita dei musicanti attivi.
+- Gestione di prove, concerti e processioni.
+- Registro presenze aperto a tutte le persone attive.
 - Rilevazione delle presenze alle attività.
 - Gestione di corsi individuali e collettivi.
 - Gestione delle iscrizioni degli allievi ai corsi.
@@ -123,7 +123,7 @@ La selezione di un’area aggiorna il contenuto della sidebar sinistra.
 |---|---|
 | Home | Dashboard |
 | Soci | Tutte le persone; Soci; Musicanti; Allievi; Insegnanti |
-| Attività | Calendario; Tutte le attività; Prove; Concerti; Eventi; Presenze |
+| Attività | Calendario; Tutte le attività; Prove; Concerti; Processioni; Presenze |
 | Scuola | Corsi; Iscrizioni; Lezioni; Registro presenze |
 | Archivio | Apri Google Drive |
 | Contabilità | Registro contabile; Bilancio |
@@ -317,7 +317,7 @@ L’MVP gestisce tre tipologie di attività:
 
 - prova;
 - concerto;
-- evento.
+- processione.
 
 ### 9.2 Elenco e calendario
 
@@ -341,7 +341,6 @@ Campi previsti:
 - stato;
 - referente facoltativo;
 - note;
-- partecipanti;
 - stato delle presenze.
 
 Stati suggeriti:
@@ -351,21 +350,15 @@ Stati suggeriti:
 - annullata;
 - conclusa.
 
-### 9.4 Partecipanti e convocazione
+### 9.4 Chi può essere presente
 
-Alla creazione di una nuova attività, il sistema propone come partecipanti tutti i musicanti attivi alla data dell’attività.
+Non esiste una convocazione: tutte le persone attive in anagrafica, con qualunque ruolo, possono essere segnate presenti o assenti a qualsiasi attività. Il registro mostra l’elenco completo con una ricerca per nome e il filtro “Solo registrate”.
 
-Il responsabile può:
-
-- rimuovere singoli partecipanti;
-- aggiungere persone idonee non incluse automaticamente;
-- aggiornare l’elenco prima o dopo l’attività.
-
-L’elenco dei partecipanti viene salvato sull’attività, così successive variazioni dello stato di un musicante non alterano retroattivamente lo storico.
+La presenza registrata viene salvata sull’attività: se in seguito una persona viene archiviata, la sua presenza resta visibile nel registro di quell’attività.
 
 ### 9.5 Presenze alle attività
 
-Per ciascun partecipante sono ammessi due soli valori:
+Per ciascuna persona sono ammessi due soli valori:
 
 - presente;
 - assente.
@@ -379,7 +372,7 @@ Azioni principali:
 - salvataggio e modifica successiva;
 - consultazione del totale dei rimborsi, con il dettaglio di presenze, chilometri e pedaggi, nella scheda della persona.
 
-Per ciascun partecipante presente si può indicare se ha **guidato** e quanti **passeggeri** ha trasportato (solo il numero). Chi è assente o non registrato non può essere autista.
+Per ciascuna persona presente si può indicare se ha **guidato** e quanti **passeggeri** ha trasportato (solo il numero). Chi è assente o non registrato non può essere autista.
 
 ### 9.6 Rimborsi delle attività
 
@@ -752,7 +745,7 @@ erDiagram
 - `RUOLO_PERSONA` consente ruoli multipli e conserva le date di validità.
 - I dati specifici dei ruoli possono essere implementati in tabelle dedicate collegate a `RUOLO_PERSONA`; il diagramma mostra il livello concettuale.
 - Le presenze usano tre condizioni tecniche: non registrata, presente e assente. Nell’interfaccia operativa gli stati selezionabili sono solo presente e assente.
-- Le partecipazioni vengono materializzate per preservare l’elenco storico dei convocati.
+- Una partecipazione viene creata alla prima registrazione della presenza di una persona e conserva presenza e rimborsi registrati.
 - Tariffe, rate proposte e agevolazioni sono dati organizzativi, non movimenti contabili.
 - I movimenti contabili sono registrati a mano nella prima nota; il collegamento a persona e corso serve a verificarne la coerenza, non a calcolare crediti.
 - Tutte le entità principali includono metadati di creazione, modifica e archiviazione anche quando non riportati nel diagramma.
@@ -764,7 +757,7 @@ erDiagram
 | RB-01 | Una persona viene registrata una sola volta e può avere più ruoli contemporanei. |
 | RB-02 | Un contatto associato deve essere una persona già presente nell’anagrafica. |
 | RB-03 | Un musicante può essere collegato a più strumenti; le sue sezioni sono dedotte dalle sezioni degli strumenti assegnati. |
-| RB-04 | Alla creazione di un’attività vengono proposti tutti i musicanti attivi. |
+| RB-04 | Ogni persona attiva può essere segnata presente o assente a qualsiasi attività, senza convocazione. |
 | RB-05 | Le presenze alle attività e alle lezioni sono presente/assente; il valore può restare inizialmente non registrato. |
 | RB-06 | La tariffa annuale è definita sul corso ed è comune agli iscritti. |
 | RB-07 | Le agevolazioni sono applicate alla singola iscrizione come percentuale o importo fisso. |
@@ -878,7 +871,7 @@ L’MVP può essere considerato funzionalmente accettabile quando un responsabil
 3. assegnare più ruoli alla stessa persona;
 4. collegare un minorenne a un contatto già registrato;
 5. associare più strumenti a un musicante e verificarne le sezioni inferite;
-6. creare una prova, un concerto o un evento;
+6. creare una prova, un concerto o una processione;
 7. ottenere automaticamente l’elenco dei musicanti attivi e modificarlo;
 8. registrare presenti e assenti a un’attività;
 9. creare corsi individuali e collettivi e assegnare loro un colore identificativo;

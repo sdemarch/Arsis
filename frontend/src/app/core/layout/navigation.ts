@@ -31,7 +31,7 @@ export const NAVIGATION: readonly NavigationArea[] = [
       { label: 'Tutte le attività', path: '/activities' },
       { label: 'Prove', path: '/activities', queryParams: { type: 'rehearsal' } },
       { label: 'Concerti', path: '/activities', queryParams: { type: 'concert' } },
-      { label: 'Eventi', path: '/activities', queryParams: { type: 'event' } },
+      { label: 'Processioni', path: '/activities', queryParams: { type: 'event' } },
       { label: 'Presenze', path: '/activities/attendance' },
     ],
   },

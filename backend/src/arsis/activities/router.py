@@ -11,7 +11,6 @@ from arsis.activities.schemas import (
     ActivityPlaceSummary,
     ActivityResponse,
     ActivityUpdateRequest,
-    ParticipantAddRequest,
     ParticipantAttendanceRequest,
     ParticipantResponse,
     ParticipationResponse,
@@ -240,59 +239,6 @@ def list_participants(
         ParticipantResponse.model_validate(row)
         for row in _participants.list_participants(session, activity_id=activity_id)
     ]
-
-
-@router.post(
-    "/{activity_id}/participants",
-    response_model=ParticipantResponse,
-    status_code=status.HTTP_201_CREATED,
-    responses=ERROR_RESPONSES,
-)
-def add_participant(
-    activity_id: int,
-    payload: ParticipantAddRequest,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> ParticipantResponse:
-    return ParticipantResponse.model_validate(
-        _participants.add_participant(
-            session, activity_id=activity_id, person_id=payload.person_id, actor_id=current_user.id
-        )
-    )
-
-
-@router.post(
-    "/{activity_id}/participants/musicians",
-    response_model=list[ParticipantResponse],
-    responses=ERROR_RESPONSES,
-)
-def convoke_musicians(
-    activity_id: int,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> list[ParticipantResponse]:
-    """Add the musicians active on the activity date who are missing (not those removed)."""
-    _participants.refresh_musicians(session, activity_id=activity_id, actor_id=current_user.id)
-    return [
-        ParticipantResponse.model_validate(row)
-        for row in _participants.list_participants(session, activity_id=activity_id)
-    ]
-
-
-@router.delete(
-    "/{activity_id}/participants/{person_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses=ERROR_RESPONSES,
-)
-def remove_participant(
-    activity_id: int,
-    person_id: int,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> None:
-    _participants.remove_participant(
-        session, activity_id=activity_id, person_id=person_id, actor_id=current_user.id
-    )
 
 
 @router.put(

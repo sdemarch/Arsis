@@ -19,9 +19,9 @@ completi in [Specifica funzionale](SPECIFICA_FUNZIONALE.md).
 | Area | Disponibile | Non ancora |
 |---|---|---|
 | **Accesso** | login, logout, refresh in cookie, primo responsabile dalla pagina di accesso, limite agli accessi falliti | recupero password |
-| **Home** | persone attive per ruolo, prossime attività con convocati, lezioni del giorno, indicatori della scuola, accessi rapidi | — |
+| **Home** | persone attive per ruolo, prossime attività con i presenti registrati, lezioni del giorno, indicatori della scuola, accessi rapidi | — |
 | **Soci** | anagrafica unica con ricerca e filtro per ruolo; scheda con dati personali, ruoli con date, contatti, note, totale rimborsi con dettaglio; archiviazione | contatti associati, dati specifici dei ruoli (tessera, quota, strumenti del musicante), foto, riattivazione dei record archiviati, corsi e presenze lezioni nella scheda |
-| **Attività** | prove, concerti, eventi; elenco filtrato per tipo e calendario mensile; convocazione automatica dei musicanti attivi; aggiunta e rimozione di partecipanti; registro presenze con compilazione rapida; luogo collegato; rimborsi per presenza e chilometrici agli autisti (km A/R, maggiorazione per passeggero, pedaggio) registrati con la presenza; riepilogo rimborsi | elenco oltre 100 attività |
+| **Attività** | prove, concerti, processioni; elenco filtrato per tipo e calendario mensile; registro presenze aperto a tutte le persone attive, con ricerca e compilazione rapida; luogo collegato; rimborsi per presenza e chilometrici agli autisti (km A/R, maggiorazione per passeggero, pedaggio) registrati con la presenza; riepilogo rimborsi | elenco oltre 100 attività |
 | **Scuola** | corsi con colore, insegnante e tariffa; iscrizioni; lezioni manuali; registro presenze con modello e import Excel `.xlsx`; panoramica | piano rate proposto, agevolazioni sulle iscrizioni |
 | **Archivio** | apertura della cartella Google Drive configurata | — |
 | **Contabilità** | prima nota Banca e Cassa, categorie configurabili con regole su persona e corso, filtri ed evidenziazione, saldi iniziali, bilancio annuale per conto e categoria | tutto ciò che va oltre la prima nota (vedi TODO) |

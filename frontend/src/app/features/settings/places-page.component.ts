@@ -54,7 +54,7 @@ const emptyDraft = (): PlaceDraft => ({ name: '', address: '', distance_km: 0, h
             </span>
           </li>
         } @empty {
-          <li class="empty">Nessun luogo. Aggiungi i luoghi dove si svolgono concerti ed eventi.</li>
+          <li class="empty">Nessun luogo. Aggiungi i luoghi dove si svolgono concerti e processioni.</li>
         }
       </ul>
       @if (archived().length) {
