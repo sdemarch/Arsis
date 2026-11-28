@@ -59,6 +59,11 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'settings/places',
+        loadComponent: () =>
+          import('./features/settings/places-page.component').then((module) => module.PlacesPageComponent),
+      },
+      {
         path: 'settings/activity-refund-rules',
         loadComponent: () =>
           import('./features/settings/activity-refund-rules-page.component').then(

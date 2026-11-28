@@ -22,10 +22,21 @@ export interface ResponsibleUser {
   readonly version: number;
 }
 
+export type RefundActivityType = 'rehearsal' | 'concert' | 'event';
+
+/** Fuel reimbursement for drivers: round-trip km of the place × rate, + % per passenger. */
+export interface MileageRules {
+  readonly enabled_types: readonly RefundActivityType[];
+  readonly rate_per_km: string;
+  readonly passenger_bonus_pct: number;
+  readonly max_bonus_passengers: number;
+}
+
 export interface ActivityRefundRules {
   readonly rehearsal: string;
   readonly concert: string;
   readonly event: string;
+  readonly mileage: MileageRules;
   readonly version: number;
 }
 

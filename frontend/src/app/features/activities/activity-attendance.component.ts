@@ -8,7 +8,16 @@ import { apiErrorMessage } from '../../core/api/api-error';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { BackLinkComponent } from '../../shared/ui/back-link.component';
 import { PeopleService, PersonListItem } from '../people/people.service';
-import { ActivitiesService, Activity, Attendance, Participant } from './activities.service';
+import { placeLabel } from '../settings/places.service';
+import { ActivityRefundRules, SettingsService } from '../settings/settings.service';
+import { ActivitiesService, Activity, Attendance, AttendanceWrite, Participant } from './activities.service';
+
+/** Unsaved edits of one register row. */
+interface RowDraft {
+  readonly attendance: Attendance | null;
+  readonly is_driver: boolean;
+  readonly passenger_count: number;
+}
 
 const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' };
 
@@ -28,6 +37,16 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
       <div><strong>{{ count(null) }}</strong><span>Da registrare</span></div>
     </section>
 
+    @if (mileageEnabled()) {
+      <p class="mileage-note">
+        Rimborso chilometrico attivo · {{ placeText() }}. Indica chi guida e quanti passeggeri trasporta:
+        {{ drivers() }} autisti, {{ passengers() }} passeggeri su {{ count('present') - drivers() }} presenti senza auto.
+      </p>
+    } @else if (activity() && !activity()!.place && mileageType()) {
+      <p class="mileage-note">Collega un luogo all’attività per calcolare il rimborso chilometrico agli autisti.</p>
+    }
+    @if (tooManyPassengers()) { <p class="message error" role="alert">I passeggeri indicati superano i presenti che non guidano.</p> }
+
     <div class="toolbar">
       <div class="group">
         <button type="button" class="button button--secondary" (click)="markAll('present')" [disabled]="!rows().length">Tutti presenti</button>
@@ -35,7 +54,7 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
       </div>
       <div class="group">
         @if (dirty()) { <span class="unsaved">Modifiche non salvate</span> }
-        <button type="button" class="button button--primary" (click)="save()" [disabled]="!dirty() || busy()">Salva presenze</button>
+        <button type="button" class="button button--primary" (click)="save()" [disabled]="!dirty() || busy() || tooManyPassengers()">Salva presenze</button>
       </div>
     </div>
 
@@ -43,7 +62,7 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
 
     <div class="table-shell">
       <table>
-        <thead><tr><th>Partecipante</th><th>Convocazione</th><th>Presenza</th><th><span class="visually-hidden">Rimuovi</span></th></tr></thead>
+        <thead><tr><th>Partecipante</th><th>Convocazione</th><th>Presenza</th>@if (mileageEnabled()) { <th>Autista</th><th>Passeggeri</th> }<th class="amount">Rimborso</th><th><span class="visually-hidden">Rimuovi</span></th></tr></thead>
         <tbody>
           @for (row of rows(); track row.person_id) {
             <tr>
@@ -55,10 +74,26 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
                   <button type="button" class="is-absent" [class.on]="attendanceOf(row) === 'absent'" [attr.aria-pressed]="attendanceOf(row) === 'absent'" (click)="toggle(row, 'absent')">Assente</button>
                 </div>
               </td>
+              @if (mileageEnabled()) {
+                <td>
+                  @if (draftOf(row).attendance === 'present') {
+                    <label class="driver"><input type="checkbox" [checked]="draftOf(row).is_driver" (change)="setDriver(row, $any($event.target).checked)" [attr.aria-label]="row.person_name + ' guida'" />Guida</label>
+                  }
+                </td>
+                <td>
+                  @if (draftOf(row).attendance === 'present' && draftOf(row).is_driver) {
+                    <input class="passengers" type="number" min="0" step="1" [value]="draftOf(row).passenger_count" (input)="setPassengers(row, $any($event.target).value)" [attr.aria-label]="'Passeggeri di ' + row.person_name" />
+                  }
+                </td>
+              }
+              <td class="amount">
+                @if (changes().has(row.person_id)) { <span class="pending" title="Calcolato al salvataggio">da salvare</span> }
+                @else if (row.attendance === 'present') { <span [title]="refundDetail(row)">{{ currency(row.refund_total) }}</span> }
+              </td>
               <td class="remove"><button type="button" (click)="remove(row)" [attr.aria-label]="'Rimuovi ' + row.person_name" title="Rimuovi dai convocati">×</button></td>
             </tr>
           } @empty {
-            <tr><td colspan="4" class="empty">Nessun partecipante. Aggiungi i musicanti attivi o singole persone.</td></tr>
+            <tr><td [attr.colspan]="mileageEnabled() ? 7 : 5" class="empty">Nessun partecipante. Aggiungi i musicanti attivi o singole persone.</td></tr>
           }
         </tbody>
       </table>
@@ -99,6 +134,11 @@ const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', conc
     .segmented button:last-child { border-left: 0; border-radius: 0 var(--radius-full) var(--radius-full) 0; }
     .segmented .is-present.on { background: var(--color-success-soft); border-color: var(--color-success); color: var(--color-success); }
     .segmented .is-absent.on { background: var(--color-danger-soft); border-color: var(--color-danger); color: var(--color-danger); }
+    .mileage-note { color: var(--text-secondary); font-size: var(--text-sm); margin: 0 0 var(--sp-4); }
+    .driver { align-items: center; display: inline-flex; font-size: var(--text-sm); gap: var(--sp-2); }
+    .passengers { min-height: 32px; padding: 0 var(--sp-2); width: 72px; }
+    .amount { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .pending { color: var(--color-warn); font-size: var(--text-sm); }
     .remove { text-align: right; width: 40px; }
     .remove button { background: none; border: 0; color: var(--text-tertiary); cursor: pointer; font-size: var(--text-xl); }
     .remove button:hover { color: var(--color-danger); }
@@ -120,8 +160,27 @@ export class ActivityAttendanceComponent {
 
   protected readonly activity = signal<Activity | null>(null);
   protected readonly rows = signal<Participant[]>([]);
-  /** Attendance edited but not yet saved, by person. */
-  private readonly changes = signal<ReadonlyMap<number, Attendance | null>>(new Map());
+  /** Register rows edited but not yet saved, by person. */
+  protected readonly changes = signal<ReadonlyMap<number, RowDraft>>(new Map());
+  private readonly rules = signal<ActivityRefundRules | null>(null);
+  protected readonly mileageType = computed(() => {
+    const a = this.activity();
+    const rules = this.rules();
+    return !!a && !!rules && rules.mileage.enabled_types.includes(a.type);
+  });
+  protected readonly mileageEnabled = computed(() => this.mileageType() && !!this.activity()?.place);
+  protected readonly placeText = computed(() => {
+    const place = this.activity()?.place;
+    return place ? placeLabel(place) : '';
+  });
+  protected readonly drivers = computed(() => this.rows().filter((row) => this.drives(this.draftOf(row))).length);
+  protected readonly passengers = computed(() =>
+    this.rows().reduce((sum, row) => {
+      const draft = this.draftOf(row);
+      return sum + (this.drives(draft) ? draft.passenger_count : 0);
+    }, 0),
+  );
+  protected readonly tooManyPassengers = computed(() => this.mileageEnabled() && this.passengers() > this.count('present') - this.drivers());
   protected readonly busy = signal(false);
   protected readonly message = signal('');
   protected readonly failed = signal(false);
@@ -142,12 +201,39 @@ export class ActivityAttendanceComponent {
 
   constructor() {
     this.api.get(this.id).subscribe({ next: (a) => this.activity.set(a), error: (err: unknown) => this.fail(err, 'Attività non trovata.') });
+    inject(SettingsService).activityRefundRules().subscribe({ next: (rules) => this.rules.set(rules) });
     this.api.participants(this.id).subscribe({ next: (rows) => this.rows.set(rows), error: (err: unknown) => this.fail(err, 'Impossibile caricare i partecipanti.') });
   }
 
+  protected draftOf(row: Participant): RowDraft {
+    return this.changes().get(row.person_id) ?? this.savedDraft(row);
+  }
+
   protected attendanceOf(row: Participant): Attendance | null {
-    const changes = this.changes();
-    return changes.has(row.person_id) ? (changes.get(row.person_id) ?? null) : row.attendance;
+    return this.draftOf(row).attendance;
+  }
+
+  protected setDriver(row: Participant, driver: boolean): void {
+    const draft = this.draftOf(row);
+    this.setDraft(row, { ...draft, is_driver: driver, passenger_count: driver ? draft.passenger_count : 0 });
+  }
+
+  protected setPassengers(row: Participant, value: string): void {
+    const count = Math.max(0, Math.trunc(Number(value) || 0));
+    this.setDraft(row, { ...this.draftOf(row), passenger_count: count });
+  }
+
+  protected currency(value: string): string {
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(value));
+  }
+
+  protected refundDetail(row: Participant): string {
+    const parts = [`Presenza ${this.currency(row.refund_flat_amount)}`];
+    if (row.refund_distance_km !== null) {
+      parts.push(`${row.refund_distance_km} km (+${row.refund_bonus_pct ?? 0}%) ${this.currency(row.refund_mileage_amount)}`);
+      parts.push(`pedaggio ${this.currency(row.refund_highway_amount)}`);
+    }
+    return parts.join(' · ');
   }
 
   protected count(value: Attendance | null): number {
@@ -164,7 +250,11 @@ export class ActivityAttendanceComponent {
   }
 
   protected save(): void {
-    const rows = [...this.changes()].map(([person_id, attendance]) => ({ person_id, attendance }));
+    const rows: AttendanceWrite[] = [...this.changes()].map(([person_id, draft]) =>
+      draft.attendance === 'present'
+        ? { person_id, attendance: draft.attendance, is_driver: draft.is_driver, passenger_count: draft.is_driver ? draft.passenger_count : null }
+        : { person_id, attendance: draft.attendance },
+    );
     this.run(this.api.saveAttendance(this.id, rows), 'Presenze salvate.', 'Salvataggio delle presenze non riuscito.');
   }
 
@@ -212,10 +302,28 @@ export class ActivityAttendanceComponent {
   }
 
   private setAttendance(row: Participant, value: Attendance | null): void {
+    // Only someone present can drive.
+    this.setDraft(row, value === 'present' ? { ...this.draftOf(row), attendance: value } : { attendance: value, is_driver: false, passenger_count: 0 });
+  }
+
+  private drives(draft: RowDraft): boolean {
+    return draft.attendance === 'present' && draft.is_driver;
+  }
+
+  private savedDraft(row: Participant): RowDraft {
+    return { attendance: row.attendance, is_driver: row.is_driver, passenger_count: row.passenger_count ?? 0 };
+  }
+
+  private setDraft(row: Participant, draft: RowDraft): void {
+    const saved = this.savedDraft(row);
+    const unchanged =
+      draft.attendance === saved.attendance &&
+      draft.is_driver === saved.is_driver &&
+      (!draft.is_driver || draft.passenger_count === saved.passenger_count);
     this.changes.update((changes) => {
       const next = new Map(changes);
-      if (value === row.attendance) next.delete(row.person_id);
-      else next.set(row.person_id, value);
+      if (unchanged) next.delete(row.person_id);
+      else next.set(row.person_id, draft);
       return next;
     });
   }
