@@ -8,8 +8,9 @@ import { localDateKey } from '../../core/time/local-datetime';
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { ActivitiesService, Activity } from './activities.service';
+import { ActivityRefundsPageComponent } from './activity-refunds-page.component';
 
-const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' };
+const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Processione' };
 const STATUS_LABELS: Record<Activity['status'], string> = { planned: 'Pianificata', confirmed: 'Confermata', cancelled: 'Annullata', completed: 'Conclusa' };
 const STATUS_TONES: Record<Activity['status'], string> = { planned: 'warn', confirmed: 'success', cancelled: 'danger', completed: 'success' };
 
@@ -59,19 +60,21 @@ function shiftMonth(month: string, delta: number): string {
 
 @Component({
   selector: 'arsis-activities-page',
-  imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
+  imports: [ActivityRefundsPageComponent, FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
-    <arsis-page-header eyebrow="Attività" [title]="attendanceMode ? 'Presenze alle attività' : 'Calendario e attività'" [description]="attendanceMode ? 'Scegli un’attività per gestire convocati e presenze.' : 'Organizza prove, concerti, eventi e presenze.'">
+    <arsis-page-header eyebrow="Attività" [title]="attendanceMode ? 'Presenze alle attività' : 'Calendario e attività'" [description]="attendanceMode ? 'Scegli un’attività per registrare le presenze.' : 'Organizza prove, concerti, processioni e presenze.'">
       <a class="button button--primary" routerLink="/activities/new">＋ Nuova attività</a>
     </arsis-page-header>
 
     <nav class="view-tabs" aria-label="Vista">
-      <a routerLink="/activities" queryParamsHandling="preserve" [class.is-active]="!calendarView">Elenco</a>
+      <a routerLink="/activities" queryParamsHandling="preserve" [class.is-active]="!calendarView && !refundsView">Elenco</a>
       <a routerLink="/activities/calendar" queryParamsHandling="preserve" [class.is-active]="calendarView">Calendario</a>
-      <a routerLink="/activities/refunds">Rimborsi</a>
+      <a routerLink="/activities/refunds" [class.is-active]="refundsView">Rimborsi</a>
     </nav>
 
-    @if (calendarView) {
+    @if (refundsView) {
+      <arsis-activity-refunds-page />
+    } @else if (calendarView) {
       <section class="month card">
         <header>
           <h2>{{ monthLabel() }}</h2>
@@ -94,7 +97,7 @@ function shiftMonth(month: string, delta: number): string {
             </div>
           }
         </div>
-        <footer class="legend"><span><i class="dot--rehearsal"></i> Prova</span><span><i class="dot--concert"></i> Concerto</span><span><i class="dot--event"></i> Evento</span></footer>
+        <footer class="legend"><span><i class="dot--rehearsal"></i> Prova</span><span><i class="dot--concert"></i> Concerto</span><span><i class="dot--event"></i> Processione</span></footer>
       </section>
     } @else {
       <div class="toolbar">
@@ -111,7 +114,7 @@ function shiftMonth(month: string, delta: number): string {
           @for (activity of filteredActivities(); track activity.id) {
             <a class="activity-card card" [routerLink]="attendanceMode ? ['/activities', activity.id, 'attendance'] : ['/activities', activity.id]" aria-label="Apri {{ activity.title }}">
               <div class="date-block"><strong>{{ activity.date.split(' ')[0] }}</strong><span>{{ activity.date.split(' ')[1] }}</span><small>{{ activity.weekday }}</small></div>
-              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }</p><div class="participants"><span class="avatar av-green">{{ activity.participant_count }}</span><small>convocati@if (activity.present_count || activity.absent_count) { · {{ activity.present_count }} presenti · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
+              <div class="activity-main"><div class="activity-title"><span>{{ activity.typeLabel }}</span><h2>{{ activity.title }}</h2></div><p>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }</p><div class="participants"><span class="avatar av-green">{{ activity.present_count }}</span><small>presenti@if (activity.absent_count) { · {{ activity.absent_count }} assenti } · rimborsi {{ currency(activity.reimbursement_total) }}</small></div></div>
               <div class="activity-state"><span class="status-badge status-badge--{{ activity.tone }}">{{ activity.statusLabel }}</span></div>
             </a>
           }
@@ -129,7 +132,7 @@ function shiftMonth(month: string, delta: number): string {
               </button>
             }
           </div>
-          <footer><span><i class="dot--rehearsal"></i> Prova</span><span><i class="dot--concert"></i> Concerto</span><span><i class="dot--event"></i> Evento</span></footer>
+          <footer><span><i class="dot--rehearsal"></i> Prova</span><span><i class="dot--concert"></i> Concerto</span><span><i class="dot--event"></i> Processione</span></footer>
         </aside>
       </section>
     }
@@ -213,6 +216,7 @@ export class ActivitiesPageComponent {
   /** Opened from the "Presenze" entry: each card leads to the attendance register. */
   protected readonly attendanceMode = this.route.snapshot.routeConfig?.path === 'attendance';
   protected readonly calendarView = this.route.snapshot.routeConfig?.path === 'calendar';
+  protected readonly refundsView = this.route.snapshot.routeConfig?.path === 'refunds';
 
   private readonly response = toSignal(toObservable(computed(() => this.queryParams().get('q')?.trim() ?? '')).pipe(debounceTime(200), distinctUntilChanged(), switchMap((query) => this.activitiesService.list(query))), { initialValue: null });
   protected readonly activities = computed(() => (this.response()?.items ?? []).map(decorate));
@@ -247,7 +251,7 @@ export class ActivitiesPageComponent {
   protected readonly typeOptions: readonly FilterOption[] = [
     { label: 'Prove', value: 'rehearsal' },
     { label: 'Concerti', value: 'concert' },
-    { label: 'Eventi', value: 'event' },
+    { label: 'Processioni', value: 'event' },
   ];
   protected readonly yearOptions = computed<readonly FilterOption[]>(() => [...new Set(this.activities().map((activity) => activity.year))]
     .sort((first, second) => second - first)

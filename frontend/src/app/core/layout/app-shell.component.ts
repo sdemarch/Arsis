@@ -7,6 +7,7 @@ import { NAVIGATION } from './navigation';
 import { AuthService } from '../auth/auth.service';
 import { ThemeService } from '../theme/theme.service';
 import { SettingsService } from '../../features/settings/settings.service';
+import { openPickerOnClick } from '../../shared/ui/open-picker';
 
 /** `/school/lessons/3?tab=x` → `school`. */
 function firstSegment(url: string): string {
@@ -16,6 +17,8 @@ function firstSegment(url: string): string {
 @Component({
   selector: 'arsis-app-shell',
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  // Every date and time field opens its calendar on click.
+  host: { '(click)': 'openPicker($event)' },
   template: `
     <header class="topbar">
       <nav class="topnav" aria-label="Aree principali">
@@ -62,7 +65,7 @@ function firstSegment(url: string): string {
         </div>
       </aside>
       <div class="page-column">
-        <main class="content" id="main-content"><router-outlet /></main>
+        <div class="page-scroll"><main class="content" id="main-content"><router-outlet /></main></div>
         <footer class="app-footer">
           <span>{{ settings.general()?.organization_name ?? 'Arsis' }}</span>
         </footer>
@@ -79,6 +82,7 @@ export class AppShellComponent {
   protected readonly auth = inject(AuthService);
   protected readonly settings = inject(SettingsService);
   protected readonly theme = inject(ThemeService);
+  protected readonly openPicker = openPickerOnClick;
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),

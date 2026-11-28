@@ -7,7 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { DashboardService, DashboardSummary } from './dashboard.service';
 
-const TYPE_LABELS = { rehearsal: 'Prova', concert: 'Concerto', event: 'Evento' } as const;
+const TYPE_LABELS = { rehearsal: 'Prova', concert: 'Concerto', event: 'Processione' } as const;
 
 const QUICK_ACTIONS = [
   { label: 'Nuova persona', path: '/people/new', symbol: '+' },
@@ -46,7 +46,7 @@ interface Loaded {
           @for (activity of activities(); track activity.id) {
             <a class="activity-row" [routerLink]="['/activities', activity.id]">
               <time><strong>{{ activity.day }}</strong><span>{{ activity.month }}</span></time>
-              <div><strong>{{ activity.title }}</strong><span>{{ activity.time }}@if (activity.location) { · {{ activity.location }} } · {{ activity.participant_count }} convocati</span></div>
+              <div><strong>{{ activity.title }}</strong><span>{{ activity.time }}@if (activity.location) { · {{ activity.location }} }@if (activity.participant_count) { · {{ activity.participant_count }} presenti }</span></div>
               <span class="type-pill">{{ activity.typeLabel }}</span>
             </a>
           } @empty {

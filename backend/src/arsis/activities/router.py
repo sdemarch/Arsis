@@ -1,18 +1,16 @@
 """HTTP endpoints for activities."""
 
-from decimal import Decimal
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from arsis.activities.participants_service import ParticipantsService
+from arsis.activities.participants_service import ActivityTotals, ParticipantsService
 from arsis.activities.schemas import (
     ActivityCreateRequest,
+    ActivityPlaceSummary,
     ActivityResponse,
-    ActivityType,
     ActivityUpdateRequest,
-    ParticipantAddRequest,
     ParticipantAttendanceRequest,
     ParticipantResponse,
     ParticipationResponse,
@@ -29,44 +27,68 @@ from arsis.core.api_models import (
     parse_sort,
 )
 from arsis.core.database import get_database_session
+from arsis.generated.models import Place
 from arsis.generated.schemas import ActivityCreateDTO, ActivityUpdateDTO
-from arsis.settings.service import SettingsService
+from arsis.places.repository import PlacesRepository
 
 router = APIRouter(prefix="/api/v1/activities", tags=["activities"])
 _service = ActivitiesService()
 _participants = ParticipantsService()
-_settings = SettingsService()
+_places = PlacesRepository()
 _SORT_FIELDS = {"title", "starts_at", "status", "created_at", "updated_at"}
 
 
 def _response(
     activity: Any,
     counts: tuple[int, int, int] = (0, 0, 0),
-    rules: dict[ActivityType, Decimal] | None = None,
+    totals: ActivityTotals | None = None,
+    place: Place | None = None,
 ) -> ActivityResponse:
     participant_count, present_count, absent_count = counts
-    return ActivityResponse.model_validate(activity).model_copy(
-        update={
-            "participant_count": participant_count,
-            "present_count": present_count,
-            "absent_count": absent_count,
-            "reimbursement_total": Decimal(present_count) * (rules or {}).get(
-                cast(ActivityType, activity.type), Decimal("0.00")
-            ),
+    update: dict[str, Any] = {
+        "participant_count": participant_count,
+        "present_count": present_count,
+        "absent_count": absent_count,
+        "place": None
+        if place is None
+        else ActivityPlaceSummary(
+            id=place.id,
+            name=place.name,
+            distance_km=place.distance_km,
+            highway_cost=place.highway_cost,
+            archived=place.archived_at is not None,
+        ),
+    }
+    if totals is not None:
+        breakdown = totals["breakdown"]
+        update |= {
+            "reimbursement_flat": breakdown.flat,
+            "reimbursement_mileage": breakdown.mileage,
+            "reimbursement_highway": breakdown.highway,
+            "reimbursement_total": breakdown.total,
+            "driver_count": totals["driver_count"],
+            "passenger_count": totals["passenger_count"],
         }
-    )
+    return ActivityResponse.model_validate(activity).model_copy(update=update)
 
 
 def _with_counts(session: Session, activities: list[Any]) -> list[ActivityResponse]:
-    counts = _participants.counts(session, activity_ids=[activity.id for activity in activities])
-    refund_rules = _settings.get_refund_rules(session)
-    rules: dict[ActivityType, Decimal] = {
-        "rehearsal": refund_rules.rehearsal,
-        "concert": refund_rules.concert,
-        "event": refund_rules.event,
-    }
+    ids = [activity.id for activity in activities]
+    counts = _participants.counts(session, activity_ids=ids)
+    totals = _participants.totals(session, activity_ids=ids)
+    places: dict[int, Place] = {}
+    for place_id in {activity.place_id for activity in activities if activity.place_id}:
+        place = _places.get_place(session, place_id, active_only=False)
+        if place is not None:
+            places[place_id] = place
     return [
-        _response(activity, counts.get(activity.id, (0, 0, 0)), rules) for activity in activities
+        _response(
+            activity,
+            counts.get(activity.id, (0, 0, 0)),
+            totals.get(activity.id),
+            places.get(activity.place_id) if activity.place_id else None,
+        )
+        for activity in activities
     ]
 
 
@@ -139,20 +161,8 @@ def list_participations(
     session: Annotated[Session, Depends(get_database_session)],
     _current_user: CurrentUser,
 ) -> list[ParticipationResponse]:
-    refund_rules = _settings.get_refund_rules(session)
-    rules: dict[ActivityType, Decimal] = {
-        "rehearsal": refund_rules.rehearsal,
-        "concert": refund_rules.concert,
-        "event": refund_rules.event,
-    }
     return [
-        ParticipationResponse.model_validate(row).model_copy(
-            update={
-                "reimbursement_amount": rules[row["type"]]
-                if row["attendance"] == "present"
-                else Decimal("0.00")
-            }
-        )
+        ParticipationResponse.model_validate(row)
         for row in _participants.participations(session, person_id=person_id)
     ]
 
@@ -164,17 +174,9 @@ def get_refund_summary(
     session: Annotated[Session, Depends(get_database_session)],
     _current_user: CurrentUser,
 ) -> list[RefundSummaryRowResponse]:
-    refund_rules = _settings.get_refund_rules(session)
     return [
         RefundSummaryRowResponse.model_validate(row)
-        for row in _participants.refund_summary(
-            session,
-            rules={
-                "rehearsal": refund_rules.rehearsal,
-                "concert": refund_rules.concert,
-                "event": refund_rules.event,
-            },
-        )
+        for row in _participants.refund_summary(session)
     ]
 
 
@@ -194,19 +196,16 @@ def update_activity(
     session: Annotated[Session, Depends(get_database_session)],
     current_user: CurrentUser,
 ) -> ActivityResponse:
-    values = payload.model_dump(exclude={"version"}, exclude_unset=True)
-    return _with_counts(
+    values = payload.model_dump(exclude={"version", "recalculate_refunds"}, exclude_unset=True)
+    activity = _service.update_activity(
         session,
-        [
-        _service.update_activity(
-            session,
-            activity_id=activity_id,
-            data=ActivityUpdateDTO(**values),
-            expected_version=payload.version,
-            actor_id=current_user.id,
-        )
-        ],
-    )[0]
+        activity_id=activity_id,
+        data=ActivityUpdateDTO(**values),
+        expected_version=payload.version,
+        actor_id=current_user.id,
+        recalculate_refunds=payload.recalculate_refunds,
+    )
+    return _with_counts(session, [activity])[0]
 
 
 @router.delete("/{activity_id}", response_model=ActivityResponse, responses=ERROR_RESPONSES)
@@ -219,9 +218,9 @@ def archive_activity(
     return _with_counts(
         session,
         [
-        _service.archive_activity(
-            session, activity_id=activity_id, expected_version=version, actor_id=current_user.id
-        )
+            _service.archive_activity(
+                session, activity_id=activity_id, expected_version=version, actor_id=current_user.id
+            )
         ],
     )[0]
 
@@ -242,59 +241,6 @@ def list_participants(
     ]
 
 
-@router.post(
-    "/{activity_id}/participants",
-    response_model=ParticipantResponse,
-    status_code=status.HTTP_201_CREATED,
-    responses=ERROR_RESPONSES,
-)
-def add_participant(
-    activity_id: int,
-    payload: ParticipantAddRequest,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> ParticipantResponse:
-    return ParticipantResponse.model_validate(
-        _participants.add_participant(
-            session, activity_id=activity_id, person_id=payload.person_id, actor_id=current_user.id
-        )
-    )
-
-
-@router.post(
-    "/{activity_id}/participants/musicians",
-    response_model=list[ParticipantResponse],
-    responses=ERROR_RESPONSES,
-)
-def convoke_musicians(
-    activity_id: int,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> list[ParticipantResponse]:
-    """Add the musicians active on the activity date who are missing (not those removed)."""
-    _participants.refresh_musicians(session, activity_id=activity_id, actor_id=current_user.id)
-    return [
-        ParticipantResponse.model_validate(row)
-        for row in _participants.list_participants(session, activity_id=activity_id)
-    ]
-
-
-@router.delete(
-    "/{activity_id}/participants/{person_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses=ERROR_RESPONSES,
-)
-def remove_participant(
-    activity_id: int,
-    person_id: int,
-    session: Annotated[Session, Depends(get_database_session)],
-    current_user: CurrentUser,
-) -> None:
-    _participants.remove_participant(
-        session, activity_id=activity_id, person_id=person_id, actor_id=current_user.id
-    )
-
-
 @router.put(
     "/{activity_id}/attendances",
     response_model=list[ParticipantResponse],
@@ -309,7 +255,10 @@ def save_attendances(
     _participants.save_attendance(
         session,
         activity_id=activity_id,
-        rows=[(row.person_id, row.attendance) for row in payload.rows],
+        rows=[
+            (row.person_id, row.attendance, row.is_driver, row.passenger_count)
+            for row in payload.rows
+        ],
         actor_id=current_user.id,
     )
     return [

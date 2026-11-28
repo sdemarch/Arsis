@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-SCHEMA_FINGERPRINT = "c8661565e8cef503"
+SCHEMA_FINGERPRINT = "162a1999cea12056"
 
 
 class GeneratedDTO(BaseModel):
@@ -134,6 +134,7 @@ class ActivityCreateDTO(GeneratedDTO):
     status: str | None = None
     reference_person_id: int | None = None
     notes: str | None = None
+    place_id: int | None = None
 
 
 class ActivityUpdateDTO(GeneratedDTO):
@@ -146,6 +147,7 @@ class ActivityUpdateDTO(GeneratedDTO):
     status: str | None = None
     reference_person_id: int | None = None
     notes: str | None = None
+    place_id: int | None = None
 
 
 class ActivityReadDTO(GeneratedDTO):
@@ -166,6 +168,7 @@ class ActivityReadDTO(GeneratedDTO):
     archived_at: str | None
     archived_by: int | None
     version: int
+    place_id: int | None
 
 
 class ActivityParticipantCreateDTO(GeneratedDTO):
@@ -175,6 +178,14 @@ class ActivityParticipantCreateDTO(GeneratedDTO):
     attendance: str | None = None
     attendance_recorded_at: str | None = None
     attendance_recorded_by: int | None = None
+    is_driver: bool | None = None
+    passenger_count: int | None = None
+    refund_flat_amount: Decimal | None = None
+    refund_distance_km: int | None = None
+    refund_rate_per_km: Decimal | None = None
+    refund_bonus_pct: int | None = None
+    refund_mileage_amount: Decimal | None = None
+    refund_highway_amount: Decimal | None = None
 
 
 class ActivityParticipantUpdateDTO(GeneratedDTO):
@@ -184,6 +195,14 @@ class ActivityParticipantUpdateDTO(GeneratedDTO):
     attendance: str | None = None
     attendance_recorded_at: str | None = None
     attendance_recorded_by: int | None = None
+    is_driver: bool | None = None
+    passenger_count: int | None = None
+    refund_flat_amount: Decimal | None = None
+    refund_distance_km: int | None = None
+    refund_rate_per_km: Decimal | None = None
+    refund_bonus_pct: int | None = None
+    refund_mileage_amount: Decimal | None = None
+    refund_highway_amount: Decimal | None = None
 
 
 class ActivityParticipantReadDTO(GeneratedDTO):
@@ -201,6 +220,14 @@ class ActivityParticipantReadDTO(GeneratedDTO):
     archived_at: str | None
     archived_by: int | None
     version: int
+    is_driver: bool
+    passenger_count: int | None
+    refund_flat_amount: Decimal | None
+    refund_distance_km: int | None
+    refund_rate_per_km: Decimal | None
+    refund_bonus_pct: int | None
+    refund_mileage_amount: Decimal | None
+    refund_highway_amount: Decimal | None
 
 
 class AppSettingCreateDTO(GeneratedDTO):
@@ -729,6 +756,38 @@ class PersonRoleReadDTO(GeneratedDTO):
     version: int
 
 
+class PlaceCreateDTO(GeneratedDTO):
+    name: str
+    address: str | None = None
+    distance_km: int | None = None
+    highway_cost: Decimal | None = None
+    notes: str | None = None
+
+
+class PlaceUpdateDTO(GeneratedDTO):
+    name: str | None = None
+    address: str | None = None
+    distance_km: int | None = None
+    highway_cost: Decimal | None = None
+    notes: str | None = None
+
+
+class PlaceReadDTO(GeneratedDTO):
+    id: int
+    name: str
+    address: str | None
+    distance_km: int
+    highway_cost: Decimal
+    notes: str | None
+    created_at: str
+    created_by: int | None
+    updated_at: str
+    updated_by: int | None
+    archived_at: str | None
+    archived_by: int | None
+    version: int
+
+
 class RefreshSessionCreateDTO(GeneratedDTO):
     user_id: int
     token_hash: str
@@ -859,4 +918,4 @@ class UserReadDTO(GeneratedDTO):
     version: int
 
 
-__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'AccountingCategoryCreateDTO', 'AccountingCategoryUpdateDTO', 'AccountingCategoryReadDTO', 'AccountingMovementCreateDTO', 'AccountingMovementUpdateDTO', 'AccountingMovementReadDTO', 'AccountingOpeningBalanceCreateDTO', 'AccountingOpeningBalanceUpdateDTO', 'AccountingOpeningBalanceReadDTO', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']
+__all__ = ['GeneratedDTO', 'SCHEMA_FINGERPRINT', 'AccountingCategoryCreateDTO', 'AccountingCategoryUpdateDTO', 'AccountingCategoryReadDTO', 'AccountingMovementCreateDTO', 'AccountingMovementUpdateDTO', 'AccountingMovementReadDTO', 'AccountingOpeningBalanceCreateDTO', 'AccountingOpeningBalanceUpdateDTO', 'AccountingOpeningBalanceReadDTO', 'ActivityCreateDTO', 'ActivityUpdateDTO', 'ActivityReadDTO', 'ActivityParticipantCreateDTO', 'ActivityParticipantUpdateDTO', 'ActivityParticipantReadDTO', 'AppSettingCreateDTO', 'AppSettingUpdateDTO', 'AppSettingReadDTO', 'AssociatedContactCreateDTO', 'AssociatedContactUpdateDTO', 'AssociatedContactReadDTO', 'AuditEventCreateDTO', 'AuditEventUpdateDTO', 'AuditEventReadDTO', 'CourseInstallmentTemplateCreateDTO', 'CourseInstallmentTemplateUpdateDTO', 'CourseInstallmentTemplateReadDTO', 'CourseCreateDTO', 'CourseUpdateDTO', 'CourseReadDTO', 'EnrollmentDiscountCreateDTO', 'EnrollmentDiscountUpdateDTO', 'EnrollmentDiscountReadDTO', 'EnrollmentCreateDTO', 'EnrollmentUpdateDTO', 'EnrollmentReadDTO', 'InstrumentCreateDTO', 'InstrumentUpdateDTO', 'InstrumentReadDTO', 'LessonAttendanceCreateDTO', 'LessonAttendanceUpdateDTO', 'LessonAttendanceReadDTO', 'LessonCreateDTO', 'LessonUpdateDTO', 'LessonReadDTO', 'MemberCreateDTO', 'MemberUpdateDTO', 'MemberReadDTO', 'MusicianInstrumentCreateDTO', 'MusicianInstrumentUpdateDTO', 'MusicianInstrumentReadDTO', 'MusicianCreateDTO', 'MusicianUpdateDTO', 'MusicianReadDTO', 'PersonCreateDTO', 'PersonUpdateDTO', 'PersonReadDTO', 'PersonRoleCreateDTO', 'PersonRoleUpdateDTO', 'PersonRoleReadDTO', 'PlaceCreateDTO', 'PlaceUpdateDTO', 'PlaceReadDTO', 'RefreshSessionCreateDTO', 'RefreshSessionUpdateDTO', 'RefreshSessionReadDTO', 'SectionCreateDTO', 'SectionUpdateDTO', 'SectionReadDTO', 'StudentCreateDTO', 'StudentUpdateDTO', 'StudentReadDTO', 'TeacherCreateDTO', 'TeacherUpdateDTO', 'TeacherReadDTO', 'UserCreateDTO', 'UserUpdateDTO', 'UserReadDTO']

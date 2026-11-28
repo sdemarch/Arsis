@@ -34,10 +34,33 @@ class GeneralSettingsUpdateRequest(ApiModel):
         return normalized
 
 
+RefundActivityType = Literal["rehearsal", "concert", "event"]
+
+
+def _default_mileage_types() -> list[RefundActivityType]:
+    return ["event"]
+
+
+class MileageRules(ApiModel):
+    """Fuel reimbursement for drivers: round-trip km of the place × rate, plus a bonus."""
+
+    enabled_types: list[RefundActivityType] = Field(default_factory=_default_mileage_types)
+    rate_per_km: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=8, decimal_places=2)
+    passenger_bonus_pct: int = Field(default=0, ge=0, le=1_000)
+    max_bonus_passengers: int = Field(default=4, ge=0, le=50)
+
+    @field_validator("enabled_types")
+    @classmethod
+    def deduplicate_types(cls, value: list[RefundActivityType]) -> list[RefundActivityType]:
+        order: tuple[RefundActivityType, ...] = ("rehearsal", "concert", "event")
+        return [item for item in order if item in value]
+
+
 class RefundRulesResponse(ApiModel):
     rehearsal: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     concert: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     event: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    mileage: MileageRules = Field(default_factory=MileageRules)
     version: int
 
 
@@ -45,6 +68,7 @@ class RefundRulesUpdateRequest(ApiModel):
     rehearsal: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     concert: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
     event: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    mileage: MileageRules | None = None
     version: int = Field(ge=1)
 
 

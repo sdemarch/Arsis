@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "c8661565e8cef503"
+SCHEMA_FINGERPRINT = "162a1999cea12056"
 
 
 class Base(DeclarativeBase):
@@ -91,6 +91,7 @@ class Activity(Base):
     archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+    place_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('places.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
 
 
 class ActivityParticipant(Base):
@@ -110,6 +111,14 @@ class ActivityParticipant(Base):
     archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+    is_driver: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('0'))
+    passenger_count: Mapped[int | None] = mapped_column(Integer, primary_key=False, nullable=True)
+    refund_flat_amount: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
+    refund_distance_km: Mapped[int | None] = mapped_column(Integer, primary_key=False, nullable=True)
+    refund_rate_per_km: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
+    refund_bonus_pct: Mapped[int | None] = mapped_column(Integer, primary_key=False, nullable=True)
+    refund_mileage_amount: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
+    refund_highway_amount: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
 
 
 class AppSetting(Base):
@@ -389,6 +398,24 @@ class PersonRole(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
+class Place(Base):
+    __tablename__ = "places"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    address: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    distance_km: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
+    highway_cost: Mapped[Decimal] = mapped_column(Numeric(scale=2), primary_key=False, nullable=False, server_default=text('0'))
+    notes: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+
+
 class RefreshSession(Base):
     __tablename__ = "refresh_sessions"
 
@@ -465,4 +492,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']

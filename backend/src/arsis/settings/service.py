@@ -16,6 +16,7 @@ from arsis.generated.models import AppSetting, User
 from arsis.settings.schemas import (
     GeneralSettingsResponse,
     GeneralSettingsUpdateRequest,
+    MileageRules,
     RefundRulesResponse,
     RefundRulesUpdateRequest,
     ResponsibleUserCreateRequest,
@@ -91,9 +92,9 @@ class SettingsService:
                         code="CANNOT_DEACTIVATE_SELF",
                     )
                 active_count = session.scalar(
-                    select(func.count()).select_from(User).where(
-                        User.is_active.is_(True), User.archived_at.is_(None)
-                    )
+                    select(func.count())
+                    .select_from(User)
+                    .where(User.is_active.is_(True), User.archived_at.is_(None))
                 )
                 if active_count is not None and active_count <= 1:
                     raise ConflictError(
@@ -173,10 +174,18 @@ class SettingsService:
                 raise StaleVersionError(
                     expected_version=data.version, current_version=setting.version
                 )
+            current = self._refund_rules_response(setting)
+            mileage = data.mileage or current.mileage
             values = {
                 "rehearsal": format(data.rehearsal, ".2f"),
                 "concert": format(data.concert, ".2f"),
                 "event": format(data.event, ".2f"),
+                "mileage": {
+                    "enabled_types": list(mileage.enabled_types),
+                    "rate_per_km": format(mileage.rate_per_km, ".2f"),
+                    "passenger_bonus_pct": mileage.passenger_bonus_pct,
+                    "max_bonus_passengers": mileage.max_bonus_passengers,
+                },
             }
             if self._decode(setting) != values:
                 setting.value = json.dumps(values)
@@ -233,12 +242,17 @@ class SettingsService:
 
     def _refund_rules_response(self, setting: AppSetting) -> RefundRulesResponse:
         value = self._decode(setting)
-        if not isinstance(value, dict) or set(value) != {"rehearsal", "concert", "event"}:
+        if not isinstance(value, dict) or not {"rehearsal", "concert", "event"} <= set(value):
             raise ValueError("Regole di rimborso non valide")
+        # Values saved before changeset 0010 have no mileage block: use the defaults.
+        mileage = value.get("mileage") or {}
+        if not isinstance(mileage, dict):
+            raise ValueError("Regole di rimborso chilometrico non valide")
         return RefundRulesResponse(
             rehearsal=value["rehearsal"],
             concert=value["concert"],
             event=value["event"],
+            mileage=MileageRules.model_validate(mileage),
             version=setting.version,
         )
 

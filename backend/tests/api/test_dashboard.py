@@ -187,7 +187,7 @@ def test_dashboard_summary_reflects_people_school_and_agenda(dashboard_app: Fast
                 "status": "planned",
                 "starts_at": "2026-11-10T21:00:00+01:00",
                 "location": "Teatro",
-                "participant_count": 1,
+                "participant_count": 0,
             }
         ]
         assert body["today_lessons"] == [
