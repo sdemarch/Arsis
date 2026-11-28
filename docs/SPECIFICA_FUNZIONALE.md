@@ -71,7 +71,7 @@ La webapp deve offrire ai responsabili un unico punto di accesso per:
 - Contabilità di rate, scadenze, insoluti, ricevute e compensi calcolati: **TBD**.
 - Importazione Excel massiva delle lezioni: rinviata.
 - Collegamento di documenti Drive a persone, corsi o attività.
-- Gestione delle spese e dei rimborsi associati alle attività.
+- Gestione delle spese associate alle attività (i rimborsi ai partecipanti sono descritti in 9.6).
 - Portale dedicato ad allievi, genitori o insegnanti.
 - Ottimizzazione specifica per smartphone e tablet.
 
@@ -336,7 +336,7 @@ Campi previsti:
 - tipologia;
 - data;
 - ora di inizio e fine;
-- luogo;
+- luogo, scelto tra quelli configurati (sezione 13), e dettaglio libero del luogo;
 - descrizione;
 - stato;
 - referente facoltativo;
@@ -379,7 +379,20 @@ Azioni principali:
 - salvataggio e modifica successiva;
 - consultazione dello storico nella scheda della persona.
 
-Le spese e i rimborsi associati alle attività sono esclusi dall’MVP.
+Per ciascun partecipante presente si può indicare se ha **guidato** e quanti **passeggeri** ha trasportato (solo il numero). Chi è assente o non registrato non può essere autista.
+
+### 9.6 Rimborsi delle attività
+
+Ogni presenza registrata matura:
+
+- l’**importo fisso** previsto per la tipologia di attività;
+- per gli **autisti**, se la tipologia ha il rimborso chilometrico attivo e l’attività ha un luogo, il **rimborso chilometrico** (RB-18) più il **pedaggio autostradale** del luogo.
+
+Gli importi sono **registrati sulla presenza al momento della registrazione**, insieme ai parametri usati (km, tariffa, maggiorazione). Le modifiche successive alle regole o ai luoghi valgono solo per le presenze registrate da quel momento. Se si cambiano tipologia o luogo di un’attività con presenze già registrate, l’applicazione chiede conferma e ricalcola i rimborsi di quell’attività con le regole correnti.
+
+La scheda attività mostra il totale suddiviso tra presenze, chilometri e pedaggi, con il numero di autisti e passeggeri; il riepilogo rimborsi lo mostra per persona. I rimborsi sono informativi e non generano movimenti nella prima nota.
+
+Le spese sostenute per le attività restano escluse dall’MVP.
 
 ## 10. Area Scuola
 
@@ -570,6 +583,8 @@ Configurazioni minime:
 - catalogo sezioni;
 - URL della cartella Google Drive;
 - categorie contabili (sezione 12);
+- rimborsi delle attività: importo per presenza per tipologia e, nella stessa pagina, rimborso chilometrico (tipologie abilitate, € per km, % di maggiorazione per passeggero, numero massimo di passeggeri conteggiati);
+- luoghi delle attività: nome, indirizzo, km di andata e ritorno (interi), pedaggio autostradale di andata e ritorno, note. I luoghi non si cancellano: si archiviano e restano visibili sulle attività già collegate;
 - gestione degli utenti responsabili;
 - salvataggi: esportazione di tutti i dati in un file `.arsis-save` e ripristino da un salvataggio;
 - eventuali valori predefiniti dell’applicazione.
@@ -641,8 +656,17 @@ erDiagram
         string titolo
         datetime inizio
         datetime fine
-        string luogo
+        int luogo_id FK
+        string dettaglio_luogo
         string stato
+    }
+
+    LUOGO {
+        int id PK
+        string nome
+        string indirizzo
+        int km_andata_ritorno
+        decimal pedaggio_andata_ritorno
     }
 
     PARTECIPAZIONE_ATTIVITA {
@@ -754,6 +778,7 @@ erDiagram
 | RB-15 | Il verso di un movimento deve essere ammesso dalla sua categoria. |
 | RB-16 | Se la categoria richiede un ruolo, la persona collegata deve averlo attivo alla data del movimento; per le rette l’allievo deve essere iscritto al corso a quella data, per i rimborsi l’insegnante deve essere assegnato al corso. |
 | RB-17 | Il saldo finale di un conto è saldo iniziale + entrate − uscite dell’esercizio. Gli importi sono espressi in euro con due decimali. |
+| RB-18 | Rimborso dell’autista = arrotondamento al centesimo di (km A/R del luogo × € per km) × (1 + min(passeggeri, massimo conteggiato) × % per passeggero), più il pedaggio A/R del luogo; si somma all’importo fisso della presenza. I passeggeri indicati non possono superare i presenti che non guidano. Gli importi si fissano alla registrazione della presenza. |
 
 ## 16. Requisiti non funzionali
 

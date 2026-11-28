@@ -1,6 +1,6 @@
 # Piano — Rimborso chilometrico e Luoghi
 
-Stato: in sviluppo sul branch `feature/rimborsi-km`.
+Stato: completato sul branch `feature/rimborsi-km`.
 
 ## Obiettivo
 
@@ -48,15 +48,15 @@ Segnare un autista come assente azzera i suoi dati di guida.
 ## Fasi
 
 1. ✅ Changeset, codice generato, modulo `places` (`/api/v1/places`) e test.
-2. Calcolatore unico dei rimborsi nel modulo attività, a parità di comportamento.
-3. Regole chilometriche nelle impostazioni, autisti nel registro presenze, snapshot.
-4. Frontend: configurazione Luoghi, campi km nella pagina rimborsi, selezione del luogo
+2. ✅ Calcolatore unico dei rimborsi nel modulo attività, a parità di comportamento.
+3. ✅ Regole chilometriche nelle impostazioni, autisti nel registro presenze, snapshot.
+4. ✅ Frontend: configurazione Luoghi, campi km nella pagina rimborsi, selezione del luogo
    sull'attività, autista/passeggeri nel registro presenze, dettaglio importi.
-5. Aggiornamento di `SPECIFICA_FUNZIONALE.md` e `STATO.md`.
+5. ✅ Aggiornamento di `SPECIFICA_FUNZIONALE.md` e `STATO.md`.
 
-## Punti aperti
+## Note
 
-- Modifica di luogo o tipo su un'attività con presenze già registrate: proposta di
-  ricalcolare lo snapshot di quell'attività con le regole correnti, previa conferma
-  nell'interfaccia.
+- Modifica di luogo o tipo su un'attività con presenze già registrate: l'API risponde
+  409 `ACTIVITY_REFUNDS_RECALCULATION_REQUIRED`; l'interfaccia chiede conferma e ripete
+  con `recalculate_refunds: true`, che ricalcola lo snapshot di quell'attività.
 - `€/km` è memorizzato con due decimali (convenzione dei campi `NUMERIC` del generatore).
