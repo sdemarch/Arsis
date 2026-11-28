@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 import { ApiError } from '../../core/api/api.types';
 import { DetailCardComponent } from '../../shared/ui/detail-card.component';
@@ -18,7 +18,7 @@ const ROLE_OPTIONS = [
 
 @Component({
   selector: 'arsis-person-detail',
-  imports: [DetailCardComponent, FormsModule, RouterLink],
+  imports: [DetailCardComponent, FormsModule],
   template: `
     @if (person(); as item) {
       <arsis-detail-card
@@ -80,24 +80,19 @@ const ROLE_OPTIONS = [
 
           <section>
             <header><div><p class="section-kicker">Rimborsi</p><h2>Totale maturato</h2></div></header>
-            <p class="refund-total">{{ currency(totalRefund()) }}</p>
-            <p class="empty-value">Calcolato sulle presenze registrate con la regola corrente. Non crea movimenti in contabilità.</p>
-          </section>
-
-          @if (participations().length) {
-            <section>
-              <header><div><p class="section-kicker">Storico</p><h2>Attività</h2></div><span class="history-summary">{{ attended() }} presenze su {{ recorded() }} registrate</span></header>
-              <ul class="history">
-                @for (p of participations(); track p.activity_id) {
-                  <li>
-                    <a [routerLink]="['/activities', p.activity_id, 'attendance']">{{ p.title }}</a>
-                    <small>{{ formatDate(p.starts_at) }}</small>
-                    <span class="status-badge" [class.status-badge--success]="p.attendance === 'present'" [class.status-badge--danger]="p.attendance === 'absent'">{{ p.attendance === 'present' ? 'Presente' : p.attendance === 'absent' ? 'Assente' : 'Non registrata' }}</span><strong class="refund">{{ currency(p.reimbursement_amount) }}</strong>
-                  </li>
+            <p class="refund-total">{{ currency(refunds().total) }}</p>
+            @if (refunds().total > 0) {
+              <dl class="refund-breakdown">
+                <div><dt>Presenze <small>{{ refunds().attended }}</small></dt><dd>{{ currency(refunds().flat) }}</dd></div>
+                @if (refunds().trips) {
+                  <div><dt>Chilometri <small>{{ refunds().trips }} {{ refunds().trips === 1 ? 'viaggio' : 'viaggi' }} da autista · {{ refunds().km }} km</small></dt><dd>{{ currency(refunds().mileage) }}</dd></div>
+                  <div><dt>Pedaggi</dt><dd>{{ currency(refunds().highway) }}</dd></div>
                 }
-              </ul>
-            </section>
-          }
+                <div class="refund-sum"><dt>Totale</dt><dd>{{ currency(refunds().total) }}</dd></div>
+              </dl>
+            }
+            <p class="empty-value">Importi registrati con le presenze, secondo le regole in vigore in quel momento. Non crea movimenti in contabilità.</p>
+          </section>
 
           @if (!item.archived_at) {
             <section class="danger-zone"><header><div><p class="section-kicker">Archiviazione</p><h2>Rimuovi dalla vista attiva</h2></div></header><p>La persona resta nello storico e può essere consultata.</p><button type="button" class="button button--secondary" (click)="archivePerson()">Archivia persona</button></section>
@@ -112,7 +107,12 @@ const ROLE_OPTIONS = [
     .role-list { display: grid; gap: var(--sp-2); } .role-list > div { align-items: center; background: var(--bg-raised); border-radius: var(--radius-md); display: flex; gap: var(--sp-3); padding: var(--sp-3); }
     .role-list small { color: var(--text-secondary); flex: 1; } .text-button { background: transparent; border: 0; color: var(--color-danger); cursor: pointer; }
     .role-add { display: grid; gap: var(--sp-3); grid-template-columns: 1fr 160px auto; margin-top: var(--sp-4); } .role-add .button { white-space: nowrap; }
-    .history { display: grid; gap: var(--sp-2); list-style: none; margin: 0; padding: 0; } .history li { align-items: center; display: grid; gap: var(--sp-3); grid-template-columns: 1fr auto auto auto; } .history small, .history-summary { color: var(--text-secondary); font-size: var(--text-sm); } .refund-total { color: var(--color-success); font-family: var(--font-display); font-size: var(--text-2xl); margin: 0; } .refund { color: var(--color-success); font-size: var(--text-sm); text-align: right; }
+    .refund-total { color: var(--color-success); font-family: var(--font-display); font-size: var(--text-2xl); margin: 0; }
+    .refund-breakdown { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; max-width: 440px; }
+    .refund-breakdown div { align-items: baseline; display: flex; gap: var(--sp-3); justify-content: space-between; }
+    .refund-breakdown dt small { color: var(--text-secondary); font-size: var(--text-sm); margin-left: var(--sp-2); }
+    .refund-breakdown dd { font-variant-numeric: tabular-nums; margin: 0; }
+    .refund-sum { border-top: var(--border-thin) solid var(--border-subtle); font-weight: var(--weight-semi); padding-top: var(--sp-2); }
     .danger-zone { border: var(--border-thin) solid color-mix(in srgb, var(--color-danger) 35%, var(--border-default)); border-radius: var(--radius-md); padding: var(--sp-5); } .danger-zone p { color: var(--text-secondary); }
     @media (max-width: 640px) { .role-add { grid-template-columns: 1fr; } .role-list > div { align-items: flex-start; flex-direction: column; } }
   `,
@@ -126,9 +126,21 @@ export class PersonDetailComponent {
   protected readonly person = signal<PersonDetail | null>(null);
   protected readonly roles = signal<PersonRole[]>([]);
   protected readonly participations = toSignal(inject(ActivitiesService).participations(this.personId).pipe(catchError(() => of<Participation[]>([]))), { initialValue: [] });
-  protected readonly attended = computed(() => this.participations().filter((p) => p.attendance === 'present').length);
-  protected readonly recorded = computed(() => this.participations().filter((p) => p.attendance !== null).length);
-  protected readonly totalRefund = computed(() => this.participations().reduce((total, participation) => total + Number(participation.reimbursement_amount), 0));
+  /** How the person's reimbursement total is made up. */
+  protected readonly refunds = computed(() => {
+    const present = this.participations().filter((p) => p.attendance === 'present');
+    const trips = present.filter((p) => p.distance_km !== null);
+    const sum = (pick: (p: Participation) => string | number | null) => present.reduce((total, p) => total + Number(pick(p) ?? 0), 0);
+    return {
+      attended: present.length,
+      flat: sum((p) => p.reimbursement_flat),
+      trips: trips.length,
+      km: sum((p) => p.distance_km),
+      mileage: sum((p) => p.reimbursement_mileage),
+      highway: sum((p) => p.reimbursement_highway),
+      total: sum((p) => p.reimbursement_amount),
+    };
+  });
   protected readonly editing = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -143,10 +155,6 @@ export class PersonDetailComponent {
   protected roleStartDate = new Date().toISOString().slice(0, 10);
 
   constructor() { this.load(); }
-
-  protected formatDate(value: string): string {
-    return new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium' }).format(new Date(value));
-  }
 
   protected currency(value: string | number): string { return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Number(value)); }
 

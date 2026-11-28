@@ -377,7 +377,7 @@ Azioni principali:
 - compilazione rapida dell’intero elenco;
 - impostazione individuale presente/assente;
 - salvataggio e modifica successiva;
-- consultazione dello storico nella scheda della persona.
+- consultazione del totale dei rimborsi, con il dettaglio di presenze, chilometri e pedaggi, nella scheda della persona.
 
 Per ciascun partecipante presente si può indicare se ha **guidato** e quanti **passeggeri** ha trasportato (solo il numero). Chi è assente o non registrato non può essere autista.
 

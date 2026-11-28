@@ -145,6 +145,10 @@ class ParticipationResponse(ApiModel):
     attendance: AttendanceStatus | None
     is_driver: bool = False
     passenger_count: int | None = None
+    distance_km: int | None = None
+    reimbursement_flat: Decimal = Decimal("0.00")
+    reimbursement_mileage: Decimal = Decimal("0.00")
+    reimbursement_highway: Decimal = Decimal("0.00")
     reimbursement_amount: Decimal = Decimal("0.00")
 
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { apiErrorMessage } from '../../core/api/api-error';
@@ -44,11 +44,12 @@ const TYPES: readonly { readonly value: RefundActivityType; readonly label: stri
       <footer><button class="button button--primary" [disabled]="saving() || !loaded">{{ saving() ? 'Salvataggio…' : 'Salva regole' }}</button><span class="feedback" [class.error]="errorMessage">{{ errorMessage || successMessage }}</span></footer>
     </form>
   `,
-  styles: `form{display:grid;gap:var(--sp-5);max-width:680px;padding:var(--sp-6)}p{color:var(--text-secondary);margin:0}label{display:grid;gap:var(--sp-2);max-width:280px}fieldset{border:var(--border-thin) solid var(--border-subtle);border-radius:var(--radius-lg);display:grid;gap:var(--sp-4);margin:0;padding:var(--sp-5)}legend{font-weight:600;padding:0 var(--sp-2)}.types{display:flex;flex-wrap:wrap;gap:var(--sp-5)}label.check{align-items:center;display:flex;gap:var(--sp-2)}.row{display:grid;gap:var(--sp-4);grid-template-columns:repeat(3,minmax(0,1fr))}.example{font-size:var(--text-sm)}input[type=checkbox]{min-height:auto}@media (max-width:640px){.row{grid-template-columns:1fr}}input{background:var(--bg-raised);border:var(--border-thin) solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);min-height:40px;padding:0 var(--sp-3)}small{color:var(--text-secondary)}footer{align-items:center;display:flex;gap:var(--sp-3)}.feedback{color:var(--color-success);font-size:var(--text-sm)}.error{color:var(--color-danger)}`,
+  styles: `form{display:grid;gap:var(--sp-5);max-width:680px;padding:var(--sp-6)}p{color:var(--text-secondary);margin:0}label{display:grid;gap:var(--sp-2);max-width:280px}fieldset{border:var(--border-thin) solid var(--border-subtle);border-radius:var(--radius-lg);display:grid;gap:var(--sp-4);margin:0;padding:var(--sp-5)}legend{font-weight:600;padding:0 var(--sp-2)}.types{display:flex;flex-wrap:wrap;gap:var(--sp-5)}label.check{align-items:center;display:flex;gap:var(--sp-2)}.row{display:grid;gap:var(--sp-5);grid-template-columns:repeat(3,minmax(0,1fr))}.row label{max-width:none;min-width:0}.example{font-size:var(--text-sm)}input[type=checkbox]{min-height:auto;width:auto}@media (max-width:640px){.row{grid-template-columns:1fr}}input{box-sizing:border-box;min-width:0;width:100%;background:var(--bg-raised);border:var(--border-thin) solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);min-height:40px;padding:0 var(--sp-3)}small{color:var(--text-secondary)}footer{align-items:center;display:flex;gap:var(--sp-3)}.feedback{color:var(--color-success);font-size:var(--text-sm)}.error{color:var(--color-danger)}`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ActivityRefundRulesPageComponent {
   private readonly settings = inject(SettingsService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   protected rehearsal = '0.00';
   protected concert = '0.00';
   protected event = '0.00';
@@ -64,7 +65,7 @@ export class ActivityRefundRulesPageComponent {
   private rules: ActivityRefundRules | null = null;
 
   constructor() {
-    this.settings.activityRefundRules().subscribe({ next: (rules) => this.setForm(rules), error: (error: unknown) => this.errorMessage = apiErrorMessage(error, 'Impossibile caricare le regole di rimborso.') });
+    this.settings.activityRefundRules().subscribe({ next: (rules) => this.setForm(rules), error: (error: unknown) => { this.errorMessage = apiErrorMessage(error, 'Impossibile caricare le regole di rimborso.'); this.changeDetector.markForCheck(); } });
   }
 
   protected save(): void {
@@ -93,6 +94,8 @@ export class ActivityRefundRulesPageComponent {
     this.enabledTypes = new Set(rules.mileage.enabled_types); this.ratePerKm = rules.mileage.rate_per_km;
     this.bonusPct = rules.mileage.passenger_bonus_pct; this.maxPassengers = rules.mileage.max_bonus_passengers;
     this.loaded = true;
+    // The form fields are plain properties: with OnPush the view must be told they changed.
+    this.changeDetector.markForCheck();
   }
 
   protected toggleType(type: RefundActivityType, enabled: boolean): void {

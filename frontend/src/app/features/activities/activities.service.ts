@@ -54,6 +54,10 @@ export interface Participation {
   readonly attendance: Attendance | null;
   readonly is_driver: boolean;
   readonly passenger_count: number | null;
+  readonly distance_km: number | null;
+  readonly reimbursement_flat: string;
+  readonly reimbursement_mileage: string;
+  readonly reimbursement_highway: string;
   readonly reimbursement_amount: string;
 }
 export interface RefundSummaryRow {

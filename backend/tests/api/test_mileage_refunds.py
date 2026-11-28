@@ -169,6 +169,12 @@ def test_drivers_get_km_with_passenger_bonus_plus_toll(client: TestClient) -> No
     history = client.get(f"/api/v1/activities/participations?person_id={driver_a}").json()
     assert history[0]["is_driver"] is True
     assert history[0]["reimbursement_amount"] == "42.60"
+    assert history[0]["distance_km"] == 84
+    assert (
+        history[0]["reimbursement_flat"],
+        history[0]["reimbursement_mileage"],
+        history[0]["reimbursement_highway"],
+    ) == ("5.00", "25.20", "12.40")
 
 
 def test_rule_and_place_changes_apply_only_to_later_recordings(client: TestClient) -> None:

@@ -228,6 +228,10 @@ def test_attendance_is_recorded_counted_and_listed_per_person(activities_app: Fa
                 "attendance": "absent",
                 "is_driver": False,
                 "passenger_count": None,
+                "distance_km": None,
+                "reimbursement_flat": "0.00",
+                "reimbursement_mileage": "0.00",
+                "reimbursement_highway": "0.00",
                 "reimbursement_amount": "0.00",
             }
         ]

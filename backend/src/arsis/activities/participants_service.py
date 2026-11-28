@@ -43,6 +43,10 @@ class ParticipationRow(TypedDict):
     attendance: AttendanceStatus | None
     is_driver: bool
     passenger_count: int | None
+    distance_km: int | None
+    reimbursement_flat: Decimal
+    reimbursement_mileage: Decimal
+    reimbursement_highway: Decimal
     reimbursement_amount: Decimal
 
 
@@ -336,22 +340,31 @@ class ParticipantsService:
 
     def participations(self, session: Session, *, person_id: int) -> list[ParticipationRow]:
         return [
-            {
-                "activity_id": activity.id,
-                "title": activity.title,
-                "type": cast(ActivityType, activity.type),
-                "starts_at": activity.starts_at,
-                "status": cast(ActivityStatus, activity.status),
-                "source": participant.source,
-                "attendance": cast(AttendanceStatus | None, participant.attendance),
-                "is_driver": bool(participant.is_driver),
-                "passenger_count": participant.passenger_count,
-                "reimbursement_amount": ReimbursementBreakdown.of(participant).total,
-            }
+            self._participation(participant, activity)
             for participant, activity in self._repository.participations(
                 session, person_id=person_id
             )
         ]
+
+    @staticmethod
+    def _participation(participant: ActivityParticipant, activity: Activity) -> ParticipationRow:
+        breakdown = ReimbursementBreakdown.of(participant)
+        return {
+            "activity_id": activity.id,
+            "title": activity.title,
+            "type": cast(ActivityType, activity.type),
+            "starts_at": activity.starts_at,
+            "status": cast(ActivityStatus, activity.status),
+            "source": participant.source,
+            "attendance": cast(AttendanceStatus | None, participant.attendance),
+            "is_driver": bool(participant.is_driver),
+            "passenger_count": participant.passenger_count,
+            "distance_km": participant.refund_distance_km,
+            "reimbursement_flat": breakdown.flat,
+            "reimbursement_mileage": breakdown.mileage,
+            "reimbursement_highway": breakdown.highway,
+            "reimbursement_amount": breakdown.total,
+        }
 
     def refund_summary(self, session: Session) -> list[RefundSummaryRow]:
         rows: dict[int, RefundSummaryRow] = {}
