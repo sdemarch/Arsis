@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "6d68eacd0bb8a352"
+SCHEMA_FINGERPRINT = "028d4f5408b1301e"
 
 
 class Base(DeclarativeBase):
@@ -328,6 +328,21 @@ class Member(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
+class MilestoneAchievement(Base):
+    __tablename__ = "milestone_achievements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    milestone_id: Mapped[int] = mapped_column(Integer, ForeignKey('milestones.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
+    person_id: Mapped[int] = mapped_column(Integer, ForeignKey('people.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
+    reached_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    progress: Mapped[Decimal] = mapped_column(Numeric(scale=2), primary_key=False, nullable=False)
+    status: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text("'open'"))
+    reset_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('milestone_resets.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    closed_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+
+
 class MilestoneReset(Base):
     __tablename__ = "milestone_resets"
 
@@ -523,4 +538,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneAchievement', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']

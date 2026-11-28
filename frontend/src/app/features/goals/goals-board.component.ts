@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { apiErrorMessage } from '../../core/api/api-error';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
-import { MilestoneBoardEntry, MilestoneProgress, MilestonesService, formatMetric } from './milestones.service';
+import { MilestoneBoardEntry, MilestoneProgress, MilestonesService, formatMetric, formatTimestamp } from './milestones.service';
 
 /** Who reached each milestone (RB-19), with per-person reset that keeps the excess. */
 @Component({
@@ -49,6 +49,7 @@ import { MilestoneBoardEntry, MilestoneProgress, MilestonesService, formatMetric
                     <span class="badge" aria-hidden="true">★</span>
                     <a [routerLink]="['/people', row.person_id]">{{ row.person_name }}</a>
                     @if (row.times_reached > 1) { <span class="times" title="Soglia raggiunta più volte">×{{ row.times_reached }}</span> }
+                    @if (row.reached_at) { <small class="since">dal {{ date(row.reached_at) }}</small> }
                   </span>
                   <span class="figure">{{ format(entry, row.progress) }}</span>
                   <span class="row-actions">
@@ -103,6 +104,7 @@ import { MilestoneBoardEntry, MilestoneProgress, MilestonesService, formatMetric
     li.reached { background: var(--color-success-soft); border-radius: var(--radius-sm, 6px); border-top-color: transparent; margin-bottom: var(--sp-1); }
     .who { align-items: center; display: flex; gap: var(--sp-2); min-width: 0; }
     .badge { color: var(--color-success); }
+    .since { color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; }
     .times { background: var(--color-success); border-radius: 999px; color: var(--text-inverse); font-size: var(--text-xs); font-weight: var(--weight-semi); padding: 0 var(--sp-2); }
     .figure { font-variant-numeric: tabular-nums; font-weight: var(--weight-semi); }
     .row-actions { align-items: center; display: flex; gap: var(--sp-2); justify-content: flex-end; }
@@ -142,7 +144,7 @@ export class GoalsBoardComponent {
   }
 
   protected date(value: string | null): string {
-    return value ? new Date(value.replace(' ', 'T') + (value.endsWith('Z') ? '' : 'Z')).toLocaleDateString('it-IT') : '';
+    return formatTimestamp(value);
   }
 
   protected resetAll(entry: MilestoneBoardEntry): void {

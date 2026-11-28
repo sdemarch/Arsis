@@ -39,8 +39,41 @@ export interface MilestoneProgress {
   readonly progress: string;
   readonly remaining: string;
   readonly times_reached: number;
+  /** When the oldest open achievement was logged; null if not reached. */
+  readonly reached_at: string | null;
   readonly last_reset_id: number | null;
   readonly last_reset_at: string | null;
+}
+
+export type AchievementStatus = 'open' | 'reset' | 'revoked';
+
+export const ACHIEVEMENT_STATUS_LABELS: Readonly<Record<AchievementStatus, string>> = {
+  open: 'Raggiunto',
+  reset: 'Azzerato',
+  revoked: 'Revocato',
+};
+
+/** One entry of the log: a person covering a milestone's threshold once. */
+export interface MilestoneAchievement {
+  readonly id: number;
+  readonly milestone_id: number;
+  readonly milestone_name: string;
+  readonly metric: MilestoneMetric;
+  readonly threshold: string;
+  readonly person_id: number;
+  readonly person_name: string;
+  readonly reached_at: string;
+  readonly progress: string;
+  readonly status: AchievementStatus;
+  readonly closed_at: string | null;
+  readonly reset_id: number | null;
+}
+
+export interface AchievementFilter {
+  readonly status?: AchievementStatus;
+  readonly milestone_id?: number;
+  readonly person_id?: number;
+  readonly limit?: number;
 }
 
 export interface MilestoneBoardEntry {
@@ -60,6 +93,14 @@ export class MilestonesService {
 
   board(): Observable<MilestoneBoardEntry[]> {
     return this.http.get<MilestoneBoardEntry[]>(`${API_URL}/board`);
+  }
+
+  achievements(filter: AchievementFilter = {}): Observable<MilestoneAchievement[]> {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(filter)) {
+      if (value !== undefined && value !== null) params = params.set(key, String(value));
+    }
+    return this.http.get<MilestoneAchievement[]>(`${API_URL}/achievements`, { params });
   }
 
   create(payload: MilestoneWrite): Observable<Milestone> {
@@ -91,6 +132,20 @@ export function formatMetric(metric: MilestoneMetric, value: string | number): s
   }
   const unit = METRIC_OPTIONS.find((option) => option.value === metric)?.unit ?? '';
   return `${Math.round(amount)} ${unit}`;
+}
+
+/**
+ * Local date of a stored timestamp: ISO 8601 with offset, or SQLite's
+ * `YYYY-MM-DD HH:MM:SS` (UTC, no zone). Empty for null.
+ */
+export function formatTimestamp(value: string | null, withTime = false): string {
+  if (!value) return '';
+  const iso = /[zZ]|[+-]\d{2}:\d{2}$/.test(value) ? value : `${value.replace(' ', 'T')}Z`;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return value;
+  return withTime
+    ? date.toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function metricLabel(metric: MilestoneMetric): string {

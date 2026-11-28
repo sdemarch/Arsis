@@ -23,6 +23,7 @@ EXPECTED_TABLES = {
     "lesson_attendances",
     "lessons",
     "members",
+    "milestone_achievements",
     "milestone_resets",
     "milestones",
     "musician_instruments",

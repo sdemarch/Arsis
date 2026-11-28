@@ -3,6 +3,11 @@
 Progress is derived from recorded attendance and its reimbursement snapshot, so a new
 milestone counts the whole history. A reset consumes one threshold from a person's
 progress and keeps the excess.
+
+Every time a person covers a threshold an *achievement* is logged (RB-20). Achievements
+stay open until a reset consumes them, or are revoked when progress drops below them
+(attendance removed, activity archived, threshold raised). ``sync_achievements`` keeps
+the log aligned and runs inside every write that can change progress.
 """
 
 from collections import defaultdict
@@ -19,7 +24,7 @@ from arsis.core.database import transaction
 from arsis.core.errors import ConflictError, ImportValidationError, ResourceNotFoundError
 from arsis.core.time import utc_now_iso
 from arsis.core.versioning import update_versioned
-from arsis.generated.models import Milestone, MilestoneReset
+from arsis.generated.models import Milestone, MilestoneAchievement, MilestoneReset, Person
 from arsis.generated.schemas import MilestoneCreateDTO, MilestoneUpdateDTO
 from arsis.milestones.repository import MilestonesRepository
 from arsis.milestones.schemas import COUNT_METRICS
@@ -39,8 +44,24 @@ class ProgressRow(TypedDict):
     progress: Decimal
     remaining: Decimal
     times_reached: int
+    reached_at: str | None
     last_reset_id: int | None
     last_reset_at: str | None
+
+
+class AchievementRow(TypedDict):
+    id: int
+    milestone_id: int
+    milestone_name: str
+    metric: str
+    threshold: Decimal
+    person_id: int
+    person_name: str
+    reached_at: str
+    progress: Decimal
+    status: str
+    closed_at: str | None
+    reset_id: int | None
 
 
 class BoardEntry(TypedDict):
@@ -104,6 +125,8 @@ class MilestonesService:
                 entity_id=milestone.id,
                 user_id=actor_id,
             )
+            # History counts: whoever is already past the threshold is logged now.
+            self.sync_achievements(session, actor_id=actor_id)
         return milestone
 
     def update_milestone(
@@ -130,6 +153,7 @@ class MilestonesService:
                 values["name"] = values["name"].strip()
                 self._require_unique_name(session, values["name"], exclude_id=milestone_id)
             self._update(session, milestone_id, values, expected_version, actor_id, "updated")
+            self.sync_achievements(session, actor_id=actor_id)
             return self.get_milestone(session, milestone_id)
 
     def archive_milestone(
@@ -157,15 +181,103 @@ class MilestonesService:
             for milestone in self._repository.list_milestones(session)
             if milestone_ids is None or milestone.id in milestone_ids
         ]
+        ids = [milestone.id for milestone in milestones]
         totals = self._totals(session)
-        resets = self._resets_by_key(session, [milestone.id for milestone in milestones])
-        return [self._entry(milestone, totals, resets) for milestone in milestones]
+        resets = self._resets_by_key(session, ids)
+        first_open: dict[tuple[int, int], str] = {}
+        for row in self._repository.open_achievements(session, milestone_ids=ids):
+            first_open.setdefault((row.milestone_id, row.person_id), row.reached_at)
+        return [self._entry(milestone, totals, resets, first_open) for milestone in milestones]
+
+    def achievements(
+        self,
+        session: Session,
+        *,
+        status: str | None = None,
+        milestone_id: int | None = None,
+        person_id: int | None = None,
+        limit: int = 200,
+    ) -> list[AchievementRow]:
+        return [
+            _achievement_row(achievement, milestone, person)
+            for achievement, milestone, person in self._repository.list_achievements(
+                session, status=status, milestone_id=milestone_id, person_id=person_id, limit=limit
+            )
+        ]
+
+    def sync_achievements(self, session: Session, *, actor_id: int | None) -> int:
+        """Align the achievement log with current progress (caller's transaction).
+
+        Opens one achievement per threshold newly covered and revokes the newest open ones
+        when progress no longer covers them. Returns the number of rows changed.
+        """
+        milestones = self._repository.list_milestones(session)
+        if not milestones:
+            return 0
+        ids = [milestone.id for milestone in milestones]
+        totals = self._totals(session)
+        resets = self._resets_by_key(session, ids)
+        open_rows: dict[tuple[int, int], list[MilestoneAchievement]] = {}
+        for row in self._repository.open_achievements(session, milestone_ids=ids):
+            open_rows.setdefault((row.milestone_id, row.person_id), []).append(row)
+        now = utc_now_iso()
+        changed = 0
+        for milestone in milestones:
+            own_resets = resets.get(milestone.id, {})
+            people = set(totals.names) | {pid for mid, pid in open_rows if mid == milestone.id}
+            for person_id in sorted(people):
+                consumed = sum((r.consumed for r in own_resets.get(person_id, [])), _ZERO)
+                # People no longer active (or with no attendance left) cover nothing.
+                active = person_id in totals.names
+                total = totals.values[person_id][milestone.metric] if active else _ZERO
+                progress, times = progress_of(total, consumed, milestone.threshold)
+                current = open_rows.get((milestone.id, person_id), [])
+                for _ in range(times - len(current)):
+                    session.add(
+                        MilestoneAchievement(
+                            milestone_id=milestone.id,
+                            person_id=person_id,
+                            reached_at=now,
+                            progress=progress,
+                            created_by=actor_id,
+                        )
+                    )
+                    record_audit_event(
+                        session,
+                        action="milestone.reached",
+                        entity_type="milestone",
+                        entity_id=milestone.id,
+                        user_id=actor_id,
+                        details={"person_id": person_id, "progress": str(progress)},
+                    )
+                    changed += 1
+                for row in reversed(current[times:]):
+                    row.status = "revoked"
+                    row.closed_at = now
+                    record_audit_event(
+                        session,
+                        action="milestone.revoked",
+                        entity_type="milestone",
+                        entity_id=milestone.id,
+                        user_id=actor_id,
+                        details={"person_id": person_id, "achievement_id": row.id},
+                    )
+                    changed += 1
+        if changed:
+            session.flush()
+        return changed
 
     def reset(
         self, session: Session, *, milestone_id: int, person_ids: Sequence[int], actor_id: int
     ) -> BoardEntry:
         with transaction(session):
             milestone = self._get_active(session, milestone_id)
+            self.sync_achievements(session, actor_id=actor_id)
+            open_rows: dict[int, list[MilestoneAchievement]] = {}
+            for achievement in self._repository.open_achievements(
+                session, milestone_ids=[milestone.id]
+            ):
+                open_rows.setdefault(achievement.person_id, []).append(achievement)
             totals = self._totals(session)
             resets = self._resets_by_key(session, [milestone.id]).get(milestone.id, {})
             for person_id in dict.fromkeys(person_ids):
@@ -182,16 +294,24 @@ class MilestonesService:
                         code="MILESTONE_NOT_REACHED",
                         details={"person_id": person_id, "progress": str(progress)},
                     )
-                session.add(
-                    MilestoneReset(
-                        milestone_id=milestone.id,
-                        person_id=person_id,
-                        consumed=milestone.threshold,
-                        progress_before=progress,
-                        created_by=actor_id,
-                    )
+                reset_row = MilestoneReset(
+                    milestone_id=milestone.id,
+                    person_id=person_id,
+                    consumed=milestone.threshold,
+                    progress_before=progress,
+                    created_by=actor_id,
                 )
+                session.add(reset_row)
+                session.flush()
+                # The reset consumes the oldest open achievement.
+                pending = open_rows.get(person_id)
+                if pending:
+                    oldest = pending.pop(0)
+                    oldest.status = "reset"
+                    oldest.reset_id = reset_row.id
+                    oldest.closed_at = utc_now_iso()
             session.flush()
+            self.sync_achievements(session, actor_id=actor_id)
             record_audit_event(
                 session,
                 action="milestone.reset",
@@ -212,6 +332,14 @@ class MilestonesService:
                 raise ResourceNotFoundError("Azzeramento", reset_id)
             row.archived_at = utc_now_iso()
             row.archived_by = actor_id
+            achievement = self._repository.achievement_for_reset(session, reset_id=row.id)
+            if achievement is not None:
+                # The achievement the reset had consumed is open again, with its date.
+                achievement.status = "open"
+                achievement.reset_id = None
+                achievement.closed_at = None
+            session.flush()
+            self.sync_achievements(session, actor_id=actor_id)
             record_audit_event(
                 session,
                 action="milestone.reset_undone",
@@ -252,6 +380,7 @@ class MilestonesService:
         milestone: Milestone,
         totals: _Totals,
         resets: dict[int, dict[int, list[MilestoneReset]]],
+        first_open: dict[tuple[int, int], str],
     ) -> BoardEntry:
         own = resets.get(milestone.id, {})
         reached: list[ProgressRow] = []
@@ -270,6 +399,7 @@ class MilestonesService:
                 "progress": progress,
                 "remaining": money(max(milestone.threshold - progress, _ZERO)),
                 "times_reached": times,
+                "reached_at": first_open.get((milestone.id, person_id)) if times >= 1 else None,
                 "last_reset_id": last.id if last else None,
                 "last_reset_at": last.created_at if last else None,
             }
@@ -324,6 +454,25 @@ class MilestonesService:
         )
         session.flush()
         session.expire_all()
+
+
+def _achievement_row(
+    achievement: MilestoneAchievement, milestone: Milestone, person: Person
+) -> AchievementRow:
+    return {
+        "id": achievement.id,
+        "milestone_id": milestone.id,
+        "milestone_name": milestone.name,
+        "metric": milestone.metric,
+        "threshold": milestone.threshold,
+        "person_id": person.id,
+        "person_name": f"{person.first_name} {person.last_name}",
+        "reached_at": achievement.reached_at,
+        "progress": achievement.progress,
+        "status": achievement.status,
+        "closed_at": achievement.closed_at,
+        "reset_id": achievement.reset_id,
+    }
 
 
 def _check_threshold(metric: str, threshold: Decimal) -> None:

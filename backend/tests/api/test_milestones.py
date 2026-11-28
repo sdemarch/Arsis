@@ -189,3 +189,78 @@ def test_milestone_configuration_rules(client: TestClient) -> None:
     assert client.get("/api/v1/milestones/board").json() == []
     listed = client.get("/api/v1/milestones", params={"include_archived": True}).json()
     assert listed["items"][0]["archived_at"] is not None
+
+
+def _log(client: TestClient, **params: object) -> list[dict]:
+    response = client.get("/api/v1/milestones/achievements", params=params)
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def test_achievement_log_follows_attendance_resets_and_undo(client: TestClient) -> None:
+    """RB-20: each threshold covered is logged; resets close entries, undo reopens them."""
+    anna = _person(client, "Anna")
+    milestone = _milestone(client, "Due prove", "rehearsal_count", "2")
+    assert _log(client) == []
+
+    _attend(client, "rehearsal", [anna], times=2)  # reached while recording attendance
+    (entry,) = _log(client, status="open")
+    assert entry["person_id"] == anna
+    assert entry["milestone_name"] == "Due prove"
+    assert entry["progress"] == "2.00"
+    assert entry["reached_at"]
+    board = _entry(client, milestone["id"])
+    assert board["reached"][0]["reached_at"] == entry["reached_at"]
+
+    reset = client.post(
+        f"/api/v1/milestones/{milestone['id']}/resets", json={"person_ids": [anna]}
+    ).json()
+    assert reset["in_progress"][0]["reached_at"] is None
+    (closed,) = _log(client, status="reset")
+    assert closed["id"] == entry["id"]
+    assert closed["closed_at"] is not None
+    assert _log(client, status="open") == []
+
+    reset_id = reset["in_progress"][0]["last_reset_id"]
+    client.delete(f"/api/v1/milestones/{milestone['id']}/resets/{reset_id}")
+    (reopened,) = _log(client, status="open")
+    assert reopened["id"] == entry["id"]  # same entry, original date kept
+    assert reopened["reached_at"] == entry["reached_at"]
+    assert reopened["reset_id"] is None
+
+
+def test_achievements_revoked_when_progress_drops(client: TestClient) -> None:
+    anna = _person(client, "Anna")
+    _attend(client, "rehearsal", [anna], times=3)
+    milestone = _milestone(client, "Tre prove", "rehearsal_count", "3")
+    assert len(_log(client, status="open")) == 1  # history counted at creation
+
+    extra = client.post(
+        "/api/v1/activities",
+        json={"type": "rehearsal", "title": "Extra", "starts_at": "2026-04-01T20:45"},
+    ).json()
+    client.put(
+        f"/api/v1/activities/{extra['id']}/attendances",
+        json={"rows": [{"person_id": anna, "attendance": "present"}]},
+    )
+    # Lowering the threshold to 2: four rehearsals cover it twice.
+    updated = client.patch(
+        f"/api/v1/milestones/{milestone['id']}",
+        json={"version": milestone["version"], "threshold": "2"},
+    ).json()
+    assert len(_log(client, status="open")) == 2
+
+    archived = client.delete(
+        f"/api/v1/activities/{extra['id']}", params={"version": extra["version"]}
+    )
+    assert archived.status_code == 200
+    assert len(_log(client, status="open")) == 1  # three rehearsals cover 2 only once
+    client.patch(
+        f"/api/v1/milestones/{milestone['id']}",
+        json={"version": updated["version"], "threshold": "5"},
+    )
+    assert _log(client, status="open") == []
+    revoked = _log(client, status="revoked")
+    assert len(revoked) == 2
+    assert all(row["closed_at"] for row in revoked)
+    assert len(_log(client, person_id=anna)) == 2

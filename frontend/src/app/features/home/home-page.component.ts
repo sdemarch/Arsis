@@ -5,6 +5,7 @@ import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
+import { MilestoneAchievement, MilestonesService, formatTimestamp } from '../goals/milestones.service';
 import { DashboardService, DashboardSummary } from './dashboard.service';
 
 const TYPE_LABELS = { rehearsal: 'Prova', concert: 'Concerto', event: 'Processione' } as const;
@@ -74,6 +75,31 @@ interface Loaded {
           @for (action of quickActions; track action.label) { <a [routerLink]="action.path"><i>{{ action.symbol }}</i><span>{{ action.label }}</span></a> }
         </div>
       </article>
+      <article class="panel panel--goals" [class.panel--celebrate]="goals().length">
+        <header>
+          <div><p class="section-label">Obiettivi</p><h2>Traguardi raggiunti @if (goals().length) { <span class="count">{{ goalPeople() }}</span> }</h2></div>
+          <a routerLink="/goals">Vedi tutti →</a>
+        </header>
+        @if (goalsFailed()) {
+          <p class="empty">Traguardi non disponibili al momento.</p>
+        } @else {
+          <p class="goals-intro">
+            @if (goalPeople()) { {{ goalPeople() === 1 ? 'Una persona ha' : goalPeople() + ' persone hanno' }} raggiunto un obiettivo da premiare. }
+          </p>
+          <div class="goal-list">
+            @for (goal of visibleGoals(); track goal.key) {
+              <a class="goal-row" routerLink="/goals">
+                <span class="star" aria-hidden="true">★</span>
+                <div><strong>{{ goal.person_name }}</strong><span>{{ goal.milestone_name }}@if (goal.times > 1) { · ×{{ goal.times }} }</span></div>
+                <small>dal {{ goal.since }}</small>
+              </a>
+            } @empty {
+              <p class="empty">Nessuno ha raggiunto un obiettivo da premiare.</p>
+            }
+          </div>
+          @if (goals().length > visibleGoals().length) { <p class="more">e altri {{ goals().length - visibleGoals().length }}…</p> }
+        }
+      </article>
     </section>
   `,
   styles: `
@@ -112,6 +138,17 @@ interface Loaded {
     .quick-grid a:hover { background: var(--bg-raised); }
     .quick-grid i { color: var(--color-accent); font-size: var(--text-lg); font-style: normal; }
     .empty { color: var(--text-tertiary); padding: var(--sp-4) 0; }
+    .panel--celebrate { border-top: 3px solid var(--color-success); }
+    .panel h2 .count { background: var(--color-success); border-radius: var(--radius-full); color: var(--text-inverse); font-size: var(--text-xs); margin-left: var(--sp-2); padding: 0 var(--sp-2); vertical-align: middle; }
+    .goals-intro { font-size: var(--text-sm); margin: 0 0 var(--sp-2); }
+    .goal-list { display: grid; }
+    .goal-row { align-items: center; border-top: var(--border-thin) solid var(--border-subtle); color: inherit; display: grid; gap: var(--sp-3); grid-template-columns: 20px 1fr auto; padding: var(--sp-3) 0; text-decoration: none; }
+    .goal-row:hover { background: var(--bg-raised); }
+    .goal-row > div { display: grid; }
+    .goal-row > div span { color: var(--text-secondary); font-size: var(--text-sm); }
+    .goal-row .star { color: var(--color-success); }
+    .goal-row small { color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
+    .more { color: var(--text-tertiary); font-size: var(--text-sm); margin: var(--sp-2) 0 0; }
     .error { color: var(--color-danger); }
     @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, 1fr); } .dashboard-grid { grid-template-columns: 1fr; } }
   `,
@@ -127,6 +164,35 @@ export class HomePageComponent {
     ),
   );
   private readonly summary = computed(() => this.state()?.summary ?? null);
+
+  // Loaded apart from the dashboard: a failure here must not hide the rest of the home.
+  private readonly openAchievements = toSignal(
+    inject(MilestonesService).achievements({ status: 'open', limit: 500 }).pipe(
+      map((rows) => ({ rows, failed: false })),
+      catchError(() => of({ rows: [] as MilestoneAchievement[], failed: true })),
+    ),
+  );
+  protected readonly goalsFailed = computed(() => this.openAchievements()?.failed ?? false);
+  /** Open achievements per person and milestone, newest first. */
+  protected readonly goals = computed(() => {
+    const groups = new Map<string, { key: string; person_id: number; person_name: string; milestone_name: string; times: number; first: string; latest: string }>();
+    for (const row of this.openAchievements()?.rows ?? []) {
+      const key = `${row.person_id}:${row.milestone_id}`;
+      const group = groups.get(key);
+      if (group) {
+        group.times += 1;
+        if (row.reached_at < group.first) group.first = row.reached_at;
+        if (row.reached_at > group.latest) group.latest = row.reached_at;
+      } else {
+        groups.set(key, { key, person_id: row.person_id, person_name: row.person_name, milestone_name: row.milestone_name, times: 1, first: row.reached_at, latest: row.reached_at });
+      }
+    }
+    return [...groups.values()]
+      .sort((a, b) => b.latest.localeCompare(a.latest) || a.person_name.localeCompare(b.person_name, 'it'))
+      .map((group) => ({ ...group, since: formatTimestamp(group.first) }));
+  });
+  protected readonly visibleGoals = computed(() => this.goals().slice(0, 6));
+  protected readonly goalPeople = computed(() => new Set(this.goals().map((goal) => goal.person_id)).size);
 
   protected readonly greeting = computed(() => {
     const hour = new Date().getHours();

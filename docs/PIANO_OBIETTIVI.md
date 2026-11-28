@@ -59,8 +59,20 @@ L'azzeramento è consentito solo se `progresso ≥ soglia`; registra `consumed =
    pagina di configurazione degli obiettivi.
 4. ✅ Aggiornamento di `SPECIFICA_FUNZIONALE.md` e `STATO.md`.
 
+## Storico dei traguardi e Home (changeset `0012-milestone-achievements`)
+
+| Tema | Decisione |
+|---|---|
+| Registro | `milestone_achievements`: una riga per ogni soglia coperta, con `reached_at`, progresso e stato `open` / `reset` / `revoked`. |
+| Allineamento (RB-20) | Traguardi aperti = floor(progresso / soglia). Si aggiungono quando il progresso cresce, si revocano i più recenti quando cala. |
+| Quando | Nella stessa transazione di presenze, ricalcolo rimborsi, archiviazione attività, creazione e modifica obiettivo, azzeramento e annullamento; le letture riallineano se serve. |
+| Azzeramento | Chiude il traguardo aperto più vecchio (`reset_id`); l'annullamento lo riapre con la data originale. |
+| Data | Momento della registrazione che ha fatto superare la soglia; per lo storico precedente a un obiettivo nuovo, il momento della sua creazione. |
+| Audit | `milestone.reached`, `milestone.revoked`. |
+| API | `GET /milestones/achievements?status=&milestone_id=&person_id=&limit=`; la bacheca espone `reached_at`. |
+| Interfaccia | Obiettivi → **Storico** con filtri; card **Traguardi raggiunti** in Home, caricata a parte dal riepilogo. |
+
 ## Possibili evoluzioni
 
 - Finestre temporali (obiettivo per anno sociale).
 - Collegamento con la contabilità: generare un movimento al momento dell'azzeramento.
-- Notifica in dashboard quando una persona raggiunge un obiettivo.

@@ -7,9 +7,11 @@ from sqlalchemy.orm import Session
 
 from arsis.auth.dependencies import CurrentUser
 from arsis.core.api_models import ERROR_RESPONSES, Page, PaginationParams, build_page
-from arsis.core.database import get_database_session
+from arsis.core.database import get_database_session, transaction
 from arsis.generated.schemas import MilestoneCreateDTO, MilestoneUpdateDTO
 from arsis.milestones.schemas import (
+    AchievementStatus,
+    MilestoneAchievementResponse,
     MilestoneBoardResponse,
     MilestoneCreateRequest,
     MilestoneResetRequest,
@@ -50,13 +52,46 @@ def list_milestones(
     )
 
 
-# Declared before /{milestone_id} so the literal path is not read as an id.
+def _synced(session: Session, actor_id: int) -> None:
+    """Self-heal the achievement log before reading (writes happen only on drift)."""
+    with transaction(session):
+        _service.sync_achievements(session, actor_id=actor_id)
+
+
+# Declared before /{milestone_id} so the literal paths are not read as an id.
 @router.get("/board", response_model=list[MilestoneBoardResponse], responses=ERROR_RESPONSES)
 def get_board(
     session: Annotated[Session, Depends(get_database_session)],
-    _current_user: CurrentUser,
+    current_user: CurrentUser,
 ) -> list[MilestoneBoardResponse]:
+    _synced(session, current_user.id)
     return [_board(entry) for entry in _service.board(session)]
+
+
+@router.get(
+    "/achievements",
+    response_model=list[MilestoneAchievementResponse],
+    responses=ERROR_RESPONSES,
+)
+def list_achievements(
+    session: Annotated[Session, Depends(get_database_session)],
+    current_user: CurrentUser,
+    status_filter: Annotated[AchievementStatus | None, Query(alias="status")] = None,
+    milestone_id: Annotated[int | None, Query(ge=1)] = None,
+    person_id: Annotated[int | None, Query(ge=1)] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+) -> list[MilestoneAchievementResponse]:
+    _synced(session, current_user.id)
+    return [
+        MilestoneAchievementResponse.model_validate(row)
+        for row in _service.achievements(
+            session,
+            status=status_filter,
+            milestone_id=milestone_id,
+            person_id=person_id,
+            limit=limit,
+        )
+    ]
 
 
 @router.get("/{milestone_id}", response_model=MilestoneResponse, responses=ERROR_RESPONSES)

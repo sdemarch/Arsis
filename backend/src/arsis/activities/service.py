@@ -167,6 +167,8 @@ class ActivitiesService:
             )
             session.flush()
             session.expire_all()
+            # Its attendance no longer counts: milestones it completed may be revoked.
+            self._participants.sync_milestones(session, actor_id=actor_id)
             return self.get_activity(session, activity_id, include_archived=True)
 
     def _require_active_place(self, session: Session, place_id: int | None) -> None:

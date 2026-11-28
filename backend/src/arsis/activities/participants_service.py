@@ -20,6 +20,7 @@ from arsis.core.database import transaction
 from arsis.core.errors import ImportValidationError, ResourceNotFoundError
 from arsis.core.time import utc_now_iso
 from arsis.generated.models import Activity, ActivityParticipant, Person, Place
+from arsis.milestones.service import MilestonesService
 from arsis.places.repository import PlacesRepository
 from arsis.settings.service import SettingsService
 
@@ -96,11 +97,13 @@ class ParticipantsService:
         activities: ActivitiesRepository | None = None,
         places: PlacesRepository | None = None,
         settings: SettingsService | None = None,
+        milestones: MilestonesService | None = None,
     ) -> None:
         self._repository = repository or ParticipantsRepository()
         self._activities = activities or ActivitiesRepository()
         self._places = places or PlacesRepository()
         self._settings = settings or SettingsService()
+        self._milestones = milestones or MilestonesService()
 
     def list_participants(self, session: Session, *, activity_id: int) -> list[dict[str, object]]:
         activity = self._get_activity(session, activity_id)
@@ -207,6 +210,8 @@ class ParticipantsService:
                 participant.updated_by = actor_id
                 participant.version += 1
             self._check_passengers(participants.values())
+            session.flush()
+            self.sync_milestones(session, actor_id=actor_id)
             record_audit_event(
                 session,
                 action="activity_attendance.recorded",
@@ -261,7 +266,13 @@ class ParticipantsService:
             participant.updated_by = actor_id
             participant.version += 1
             updated += 1
+        session.flush()
+        self.sync_milestones(session, actor_id=actor_id)
         return updated
+
+    def sync_milestones(self, session: Session, *, actor_id: int) -> None:
+        """Log milestones reached or lost after attendance changes (RB-20, caller's transaction)."""
+        self._milestones.sync_achievements(session, actor_id=actor_id)
 
     def _place_of(self, session: Session, activity: Activity) -> Place | None:
         if activity.place_id is None:

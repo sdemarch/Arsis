@@ -46,8 +46,27 @@ class MilestoneProgressResponse(ApiModel):
     progress: Decimal
     remaining: Decimal
     times_reached: int
+    reached_at: str | None
     last_reset_id: int | None
     last_reset_at: str | None
+
+
+AchievementStatus = Literal["open", "reset", "revoked"]
+
+
+class MilestoneAchievementResponse(ApiModel):
+    id: int
+    milestone_id: int
+    milestone_name: str
+    metric: MilestoneMetric
+    threshold: Decimal
+    person_id: int
+    person_name: str
+    reached_at: str
+    progress: Decimal
+    status: AchievementStatus
+    closed_at: str | None
+    reset_id: int | None
 
 
 class MilestoneBoardResponse(ApiModel):

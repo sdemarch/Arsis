@@ -40,6 +40,7 @@ export const NAVIGATION: readonly NavigationArea[] = [
     path: '/goals',
     children: [
       { label: 'Traguardi', path: '/goals' },
+      { label: 'Storico', path: '/goals/history' },
       { label: 'Configura obiettivi', path: '/goals/config' },
     ],
   },

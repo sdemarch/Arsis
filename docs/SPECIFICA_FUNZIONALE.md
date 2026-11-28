@@ -177,6 +177,7 @@ Contenuti iniziali suggeriti:
 - prossime lezioni registrate;
 - conteggio delle persone attive per ruolo;
 - accessi rapidi a “Nuova persona”, “Nuova attività” e “Nuova lezione”;
+- **traguardi raggiunti**: le persone con un obiettivo raggiunto e non ancora azzerato, dalla più recente, con il rimando all’area Obiettivi (§9.7);
 - pulsante per aprire l’archivio Google Drive.
 
 I widget devono privilegiare informazioni immediatamente operative ed evitare, nell’MVP, indicatori contabili.
@@ -394,6 +395,8 @@ Le spese sostenute per le attività restano escluse dall’MVP.
 Il responsabile configura **obiettivi** su presenze e rimborsi: presenze alle prove, ai concerti, alle processioni, presenze totali oppure rimborso totale maturato in euro, ciascuno con una **soglia** (intera per le presenze, in euro per i rimborsi). Un nuovo obiettivo conta tutto lo storico delle presenze registrate.
 
 L’area **Obiettivi** mostra per ogni obiettivo le persone che l’hanno raggiunto, evidenziate e con l’indicazione «×N» se hanno coperto la soglia più volte, e quelle in corso con quanto manca. Da qui il responsabile **azzera** l’obiettivo per una persona o per tutte quelle che l’hanno raggiunto, ad esempio dopo aver consegnato un premio. L’azzeramento sottrae una soglia e conserva l’eccedenza (RB-19); l’ultimo azzeramento può essere annullato. Gli obiettivi sono informativi e non generano movimenti nella prima nota.
+
+Ogni raggiungimento è **registrato nello storico** (Obiettivi → Storico) con data, persona, obiettivo e progresso (RB-20). Il traguardo resta *raggiunto* finché un azzeramento non lo chiude (*azzerato*); se il progresso scende sotto la soglia, per una presenza tolta, un’attività archiviata o una soglia alzata, viene *revocato*. Annullare un azzeramento riapre il traguardo con la sua data originale. Ogni registrazione compare anche nel tracciamento delle operazioni.
 
 ## 10. Area Scuola
 
@@ -781,6 +784,7 @@ erDiagram
 | RB-17 | Il saldo finale di un conto è saldo iniziale + entrate − uscite dell’esercizio. Gli importi sono espressi in euro con due decimali. |
 | RB-18 | Rimborso dell’autista = arrotondamento al centesimo di (km A/R del luogo × € per km) × (1 + min(passeggeri, massimo conteggiato) × % per passeggero), più il pedaggio A/R del luogo; si somma all’importo fisso della presenza. I passeggeri indicati non possono superare i presenti che non guidano. Gli importi si fissano alla registrazione della presenza. |
 | RB-19 | Progresso di una persona su un obiettivo = totale della metrica sulle presenze registrate − somma delle soglie consumate dagli azzeramenti attivi; l’obiettivo è raggiunto floor(progresso / soglia) volte. L’azzeramento è ammesso solo con progresso ≥ soglia e consuma la soglia in vigore in quel momento. |
+| RB-20 | Per ogni persona e obiettivo i traguardi aperti sono sempre floor(progresso / soglia): quando il progresso copre una soglia in più si registra un traguardo con la data del momento; quando ne copre meno si revocano i più recenti. L’azzeramento chiude il traguardo aperto più vecchio. |
 
 ## 16. Requisiti non funzionali
 
