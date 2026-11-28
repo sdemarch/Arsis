@@ -8,3 +8,5 @@
 .refund-breakdown dd { font-variant-numeric: tabular-nums; font-weight: var(--weight-semi); margin: 0; }
 .error { color: var(--color-danger); }
 @media (max-width: 800px) { .refund-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.when { display: grid; gap: var(--sp-2); grid-template-columns: 2fr 1fr; }
+input[type='date'], input[type='time'] { cursor: pointer; }
