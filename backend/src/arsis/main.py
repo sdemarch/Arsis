@@ -22,6 +22,7 @@ from arsis.dashboard.router import router as dashboard_router
 from arsis.health.router import router as health_router
 from arsis.maintenance.router import router as maintenance_router
 from arsis.people.router import router as people_router
+from arsis.places.router import router as places_router
 from arsis.school.router import enrollments_router, lessons_router
 from arsis.school.router import router as school_router
 from arsis.settings.router import router as settings_router
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(instruments_router)
     application.include_router(activities_router)
     application.include_router(people_router)
+    application.include_router(places_router)
     application.include_router(school_router)
     application.include_router(enrollments_router)
     application.include_router(lessons_router)
