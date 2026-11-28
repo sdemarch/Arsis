@@ -16,6 +16,24 @@ export interface Activity {
   readonly reimbursement_flat: string; readonly reimbursement_mileage: string;
   readonly reimbursement_highway: string; readonly reimbursement_total: string;
   readonly driver_count: number; readonly passenger_count: number;
+  readonly series_id: number | null; readonly series: ActivitySeriesSummary | null;
+}
+/** The series an activity belongs to (RB-22), with its position in it. */
+export interface ActivitySeriesSummary {
+  readonly id: number; readonly frequency: Frequency; readonly interval: number; readonly weekdays: number[];
+  readonly starts_on: string; readonly ends_on: string; readonly description: string;
+  readonly occurrence_count: number; readonly position: number;
+}
+export type Frequency = 'weekly' | 'monthly';
+/** Weekdays are ISO numbers: 1 = Monday … 7 = Sunday. */
+export interface Recurrence { readonly frequency: Frequency; readonly interval: number; readonly weekdays: number[] | null; readonly ends_on: string; }
+export interface SeriesPreview { readonly dates: string[]; readonly description: string; }
+export interface SeriesBulkResult { readonly updated: number; readonly archived: number; readonly kept: number; }
+export type SeriesFollowingWrite = Partial<Pick<ActivityWrite, 'type' | 'title' | 'status' | 'location' | 'place_id' | 'notes' | 'description' | 'recalculate_refunds'>>;
+export interface ActivitySeriesWrite extends Omit<ActivityWrite, 'starts_at' | 'version' | 'recalculate_refunds'> {
+  readonly starts_on: string; readonly recurrence: Recurrence;
+  /** One local-midnight timestamp per preview date, with the browser's own UTC offset. */
+  readonly occurrences: string[];
 }
 export interface ActivityPlace {
   readonly id: number; readonly name: string; readonly distance_km: number;
@@ -81,6 +99,13 @@ export class ActivitiesService {
   create(payload: ActivityWrite): Observable<Activity> { return this.http.post<Activity>(`${API_URL}/activities`, payload); }
   update(id: number, payload: ActivityWrite): Observable<Activity> { return this.http.patch<Activity>(`${API_URL}/activities/${id}`, payload); }
   archive(id: number, version: number): Observable<Activity> { return this.http.delete<Activity>(`${API_URL}/activities/${id}`, { params: new HttpParams().set('version', version) }); }
+
+  previewSeries(startsOn: string, recurrence: Recurrence): Observable<SeriesPreview> { return this.http.post<SeriesPreview>(`${API_URL}/activities/series/preview`, { starts_on: startsOn, recurrence }); }
+  createSeries(payload: ActivitySeriesWrite): Observable<Activity[]> { return this.http.post<Activity[]>(`${API_URL}/activities/series`, payload); }
+  /** Same changes on this occurrence and all the following ones of its series. */
+  updateFollowing(id: number, payload: SeriesFollowingWrite): Observable<SeriesBulkResult> { return this.http.patch<SeriesBulkResult>(`${API_URL}/activities/${id}/following`, payload); }
+  /** Archive the occurrences after this one; those with recorded attendance stay. */
+  endSeries(id: number): Observable<SeriesBulkResult> { return this.http.post<SeriesBulkResult>(`${API_URL}/activities/${id}/end-series`, {}); }
 
   participants(id: number): Observable<Participant[]> { return this.http.get<Participant[]>(`${API_URL}/activities/${id}/participants`); }
   saveAttendance(id: number, rows: AttendanceWrite[]): Observable<Participant[]> { return this.http.put<Participant[]>(`${API_URL}/activities/${id}/attendances`, { rows }); }

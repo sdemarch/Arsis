@@ -10,3 +10,6 @@
 @media (max-width: 800px) { .refund-breakdown { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .when { display: grid; gap: var(--sp-2); grid-template-columns: 2fr 1fr; }
 input[type='date'], input[type='time'] { cursor: pointer; }
+.series-badge { color: var(--color-accent-hover); font-size: var(--text-xl); }
+.series .check { align-items: center; display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+.notice { color: var(--color-success); margin: var(--sp-3) 0 0; }
