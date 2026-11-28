@@ -90,6 +90,7 @@ class MilestonesService:
     ) -> Milestone:
         values = data.model_dump(exclude_none=True)
         values["name"] = values["name"].strip()
+        values["threshold"] = money(values["threshold"])
         _check_threshold(values["metric"], values["threshold"])
         with transaction(session):
             self._require_unique_name(session, values["name"])
@@ -118,6 +119,8 @@ class MilestonesService:
         for required in ("name", "metric", "threshold"):
             if required in values and values[required] is None:
                 values.pop(required)
+        if "threshold" in values:
+            values["threshold"] = money(values["threshold"])
         with transaction(session):
             current = self._get_active(session, milestone_id)
             _check_threshold(

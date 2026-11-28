@@ -111,9 +111,10 @@ La topbar contiene le aree principali:
 1. **Home**
 2. **Soci**
 3. **Attività**
-4. **Scuola**
-5. **Archivio**
-6. **Contabilità**
+4. **Obiettivi**
+5. **Scuola**
+6. **Archivio**
+7. **Contabilità**
 
 La selezione di un’area aggiorna il contenuto della sidebar sinistra.
 
@@ -124,6 +125,7 @@ La selezione di un’area aggiorna il contenuto della sidebar sinistra.
 | Home | Dashboard |
 | Soci | Tutte le persone; Soci; Musicanti; Allievi; Insegnanti |
 | Attività | Calendario; Tutte le attività; Prove; Concerti; Processioni; Presenze |
+| Obiettivi | Traguardi; Configura obiettivi |
 | Scuola | Corsi; Iscrizioni; Lezioni; Registro presenze |
 | Archivio | Apri Google Drive |
 | Contabilità | Registro contabile; Bilancio |
@@ -386,6 +388,12 @@ Gli importi sono **registrati sulla presenza al momento della registrazione**, i
 La scheda attività mostra il totale suddiviso tra presenze, chilometri e pedaggi, con il numero di autisti e passeggeri; il riepilogo rimborsi lo mostra per persona. I rimborsi sono informativi e non generano movimenti nella prima nota.
 
 Le spese sostenute per le attività restano escluse dall’MVP.
+
+### 9.7 Obiettivi
+
+Il responsabile configura **obiettivi** su presenze e rimborsi: presenze alle prove, ai concerti, alle processioni, presenze totali oppure rimborso totale maturato in euro, ciascuno con una **soglia** (intera per le presenze, in euro per i rimborsi). Un nuovo obiettivo conta tutto lo storico delle presenze registrate.
+
+L’area **Obiettivi** mostra per ogni obiettivo le persone che l’hanno raggiunto, evidenziate e con l’indicazione «×N» se hanno coperto la soglia più volte, e quelle in corso con quanto manca. Da qui il responsabile **azzera** l’obiettivo per una persona o per tutte quelle che l’hanno raggiunto, ad esempio dopo aver consegnato un premio. L’azzeramento sottrae una soglia e conserva l’eccedenza (RB-19); l’ultimo azzeramento può essere annullato. Gli obiettivi sono informativi e non generano movimenti nella prima nota.
 
 ## 10. Area Scuola
 
@@ -772,6 +780,7 @@ erDiagram
 | RB-16 | Se la categoria richiede un ruolo, la persona collegata deve averlo attivo alla data del movimento; per le rette l’allievo deve essere iscritto al corso a quella data, per i rimborsi l’insegnante deve essere assegnato al corso. |
 | RB-17 | Il saldo finale di un conto è saldo iniziale + entrate − uscite dell’esercizio. Gli importi sono espressi in euro con due decimali. |
 | RB-18 | Rimborso dell’autista = arrotondamento al centesimo di (km A/R del luogo × € per km) × (1 + min(passeggeri, massimo conteggiato) × % per passeggero), più il pedaggio A/R del luogo; si somma all’importo fisso della presenza. I passeggeri indicati non possono superare i presenti che non guidano. Gli importi si fissano alla registrazione della presenza. |
+| RB-19 | Progresso di una persona su un obiettivo = totale della metrica sulle presenze registrate − somma delle soglie consumate dagli azzeramenti attivi; l’obiettivo è raggiunto floor(progresso / soglia) volte. L’azzeramento è ammesso solo con progresso ≥ soglia e consuma la soglia in vigore in quel momento. |
 
 ## 16. Requisiti non funzionali
 

@@ -36,6 +36,14 @@ export const NAVIGATION: readonly NavigationArea[] = [
     ],
   },
   {
+    label: 'Obiettivi',
+    path: '/goals',
+    children: [
+      { label: 'Traguardi', path: '/goals' },
+      { label: 'Configura obiettivi', path: '/goals/config' },
+    ],
+  },
+  {
     label: 'Scuola',
     path: '/school/courses',
     children: [

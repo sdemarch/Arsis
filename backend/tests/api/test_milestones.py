@@ -112,6 +112,7 @@ def test_new_milestone_counts_history_and_reset_keeps_excess(client: TestClient)
     _attend(client, "rehearsal", [anna, bruno], times=3)
     _attend(client, "rehearsal", [anna], times=2)
     milestone = _milestone(client, "Due prove", "rehearsal_count", "2")
+    assert milestone["threshold"] == "2.00"
 
     entry = _entry(client, milestone["id"])
     reached = {row["person_id"]: row for row in entry["reached"]}

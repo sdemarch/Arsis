@@ -22,6 +22,7 @@ completi in [Specifica funzionale](SPECIFICA_FUNZIONALE.md).
 | **Home** | persone attive per ruolo, prossime attività con i presenti registrati, lezioni del giorno, indicatori della scuola, accessi rapidi | — |
 | **Soci** | anagrafica unica con ricerca e filtro per ruolo; scheda con dati personali, ruoli con date, contatti, note, totale rimborsi con dettaglio; archiviazione | contatti associati, dati specifici dei ruoli (tessera, quota, strumenti del musicante), foto, riattivazione dei record archiviati, corsi e presenze lezioni nella scheda |
 | **Attività** | prove, concerti, processioni; elenco filtrato per tipo e calendario mensile; registro presenze aperto a tutte le persone attive, con ricerca e compilazione rapida; luogo collegato; rimborsi per presenza e chilometrici agli autisti (km A/R, maggiorazione per passeggero, pedaggio) registrati con la presenza; riepilogo rimborsi | elenco oltre 100 attività |
+| **Obiettivi** | obiettivi configurabili su presenze per tipo, presenze totali e rimborsi maturati, con storico; traguardi raggiunti evidenziati, azzeramento per persona o per tutti che conserva l'eccedenza, annullamento dell'ultimo azzeramento | finestre temporali (anno sociale), collegamento con la prima nota |
 | **Scuola** | corsi con colore, insegnante e tariffa; iscrizioni; lezioni manuali; registro presenze con modello e import Excel `.xlsx`; panoramica | piano rate proposto, agevolazioni sulle iscrizioni |
 | **Archivio** | apertura della cartella Google Drive configurata | — |
 | **Contabilità** | prima nota Banca e Cassa, categorie configurabili con regole su persona e corso, filtri ed evidenziazione, saldi iniziali, bilancio annuale per conto e categoria | tutto ciò che va oltre la prima nota (vedi TODO) |
@@ -31,7 +32,7 @@ completi in [Specifica funzionale](SPECIFICA_FUNZIONALE.md).
 
 | Ambito | Stato |
 |---|---|
-| Database | SQLite WAL, 8 changeset (`0001`–`0008`), modelli e DTO generati dallo schema |
+| Database | SQLite WAL, 11 changeset (`0001`–`0011`), modelli e DTO generati dallo schema |
 | API | convenzioni uniformi su errori, liste, versioni, request ID e audit ([Architettura §5](ARCHITETTURA.md#5-contratto-api)) |
 | Migrazioni | automatiche all'avvio senza Java, con backup e rifiuto dei database più recenti |
 | Salvataggi | export, verifica e import `.arsis-save` da Configurazioni, con modalità manutenzione e backup pre-import |

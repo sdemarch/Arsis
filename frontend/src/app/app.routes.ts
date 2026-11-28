@@ -31,6 +31,10 @@ export const appRoutes: Routes = [
           import('./features/activities/activities.routes').then((module) => module.ACTIVITIES_ROUTES),
       },
       {
+        path: 'goals',
+        loadChildren: () => import('./features/goals/goals.routes').then((module) => module.GOALS_ROUTES),
+      },
+      {
         path: 'school',
         loadChildren: () => import('./features/school/school.routes').then((module) => module.SCHOOL_ROUTES),
       },
