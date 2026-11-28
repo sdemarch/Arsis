@@ -3,8 +3,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 
-import { NAVIGATION } from './navigation';
+import { NAVIGATION, PEOPLE_AREA_PATH } from './navigation';
 import { AuthService } from '../auth/auth.service';
+import { RoleTypesService } from '../roles/role-types.service';
 import { ThemeService } from '../theme/theme.service';
 import { SettingsService } from '../../features/settings/settings.service';
 import { openPickerOnClick } from '../../shared/ui/open-picker';
@@ -39,7 +40,7 @@ function firstSegment(url: string): string {
         </a>
         <p class="sidebar__eyebrow">{{ activeArea().label }}</p>
         <nav aria-label="Navigazione area">
-          @for (item of activeArea().children; track item.label) {
+          @for (item of sidebarItems(); track item.label) {
             <a
               [routerLink]="item.path"
               [queryParams]="item.queryParams ?? null"
@@ -99,6 +100,19 @@ export class AppShellComponent {
   });
   // A URL outside every area (only possible for unknown routes) falls back to Home.
   protected readonly activeArea = computed(() => this.matchedArea() ?? this.navigation[0]);
+  private readonly roleTypes = inject(RoleTypesService);
+  /** The Soci sidebar lists one filtered view per configured role (RB-21). */
+  protected readonly sidebarItems = computed(() => {
+    const area = this.activeArea();
+    if (area.path !== PEOPLE_AREA_PATH) return area.children;
+    this.roleTypes.ensureLoaded();
+    const roles = this.roleTypes.active();
+    if (!roles.length) return area.children;
+    return [
+      area.children[0],
+      ...roles.map((role) => ({ label: role.plural_name, path: PEOPLE_AREA_PATH, queryParams: { role: role.code } })),
+    ];
+  });
 
   constructor() {
     this.settings.loadGeneral().subscribe({

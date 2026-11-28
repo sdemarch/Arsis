@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { RoleTypesService } from '../../core/roles/role-types.service';
 import { PersonListItem } from '../people/people.service';
 import { Course } from '../school/courses.service';
 import {
@@ -9,7 +10,6 @@ import {
   AccountingAccount,
   AccountingMovement,
   AccountingService,
-  ROLE_LABELS,
   apiErrorMessage,
 } from './accounting.service';
 
@@ -108,6 +108,7 @@ function emptyDraft(): MovementDraft {
 })
 export class MovementFormComponent {
   private readonly api = inject(AccountingService);
+  private readonly roleTypes = inject(RoleTypesService);
 
   readonly categories = input.required<AccountingCategory[]>();
   readonly people = input.required<PersonListItem[]>();
@@ -133,7 +134,7 @@ export class MovementFormComponent {
   protected readonly showCourse = computed(() => this.courseRequired() || this.requiredRole() === 'student' || this.requiredRole() === 'teacher');
   protected readonly personLabel = computed(() => {
     const role = this.requiredRole();
-    return role ? ROLE_LABELS[role] : 'Persona (facoltativa)';
+    return role ? this.roleTypes.label(role) : 'Persona (facoltativa)';
   });
   protected readonly eligiblePeople = computed(() => {
     const role = this.requiredRole();

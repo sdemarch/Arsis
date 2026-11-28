@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { ApiError } from '../../core/api/api.types';
+import { RoleTypesService } from '../../core/roles/role-types.service';
 import { PeopleService } from './people.service';
 import { BackLinkComponent } from '../../shared/ui/back-link.component';
 
@@ -18,7 +19,7 @@ import { BackLinkComponent } from '../../shared/ui/back-link.component';
         <label>Cognome <input name="lastName" [(ngModel)]="lastName" required /></label>
         <label>Email <input name="email" type="email" [(ngModel)]="email" /></label>
         <label>Telefono <input name="phone" type="tel" [(ngModel)]="phone" /></label>
-        <fieldset class="wide roles"><legend>Ruoli</legend><p>Seleziona uno o più ruoli da assegnare subito.</p>@for (role of roleOptions; track role.value) { <label><input type="checkbox" [checked]="roles.includes(role.value)" (change)="toggleRole(role.value, $any($event.target).checked)" /> {{ role.label }}</label> }</fieldset>
+        <fieldset class="wide roles"><legend>Ruoli</legend><p>Seleziona uno o più ruoli da assegnare subito.</p>@for (role of roleOptions(); track role.value) { <label><input type="checkbox" [checked]="roles.includes(role.value)" (change)="toggleRole(role.value, $any($event.target).checked)" /> {{ role.label }}</label> }</fieldset>
         <label class="wide">Note <textarea name="notes" [(ngModel)]="notes" rows="4"></textarea></label>
         @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
         <div class="actions"><a class="button button--secondary" routerLink="/people">Annulla</a><button class="button button--primary" [disabled]="saving()">{{ saving() ? 'Salvataggio…' : 'Crea persona' }}</button></div>
@@ -45,10 +46,8 @@ export class PersonCreateComponent {
   protected phone = '';
   protected notes = '';
   protected roles: string[] = [];
-  protected readonly roleOptions = [
-    { value: 'member', label: 'Socio' }, { value: 'musician', label: 'Musicante' },
-    { value: 'student', label: 'Allievo' }, { value: 'teacher', label: 'Insegnante' },
-  ];
+  private readonly roleTypes = inject(RoleTypesService);
+  protected readonly roleOptions = computed(() => this.roleTypes.active().map((role) => ({ value: role.code, label: role.name })));
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
 

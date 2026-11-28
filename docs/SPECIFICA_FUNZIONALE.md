@@ -123,7 +123,7 @@ La selezione di un’area aggiorna il contenuto della sidebar sinistra.
 | Area | Voci della sidebar |
 |---|---|
 | Home | Dashboard |
-| Soci | Tutte le persone; Soci; Musicanti; Allievi; Insegnanti |
+| Soci | Tutte le persone; una voce per ogni ruolo attivo del catalogo, con il nome al plurale (predefiniti: Soci; Musicanti; Allievi; Insegnanti) |
 | Attività | Calendario; Tutte le attività; Prove; Concerti; Processioni; Presenze |
 | Obiettivi | Traguardi; Configura obiettivi |
 | Scuola | Corsi; Iscrizioni; Lezioni; Registro presenze |
@@ -186,12 +186,14 @@ I widget devono privilegiare informazioni immediatamente operative ed evitare, n
 
 ### 8.1 Principio dell’anagrafica unica
 
-Ogni individuo è registrato una sola volta come **Persona**. Alla persona possono essere assegnati uno o più ruoli tra:
+Ogni individuo è registrato una sola volta come **Persona**. Alla persona possono essere assegnati uno o più ruoli tra quelli del **catalogo dei ruoli** (sezione 13). Il catalogo comprende i quattro ruoli predefiniti:
 
 - Socio;
 - Musicante;
 - Allievo;
-- Insegnante.
+- Insegnante;
+
+e i ruoli personalizzati aggiunti dal responsabile (es. Volontario, Presidente). I ruoli predefiniti si possono rinominare ma non archiviare, perché corsi, iscrizioni, strumenti e dati del socio dipendono da loro; i ruoli personalizzati non hanno comportamenti specifici (RB-21).
 
 Esempio: una persona può essere contemporaneamente insegnante, socio e musicante.
 
@@ -582,6 +584,7 @@ Le configurazioni possono essere accessibili dal menu utente o da un’icona ded
 
 Configurazioni minime:
 
+- catalogo dei ruoli: nome, nome al plurale, descrizione e ordine; i quattro ruoli predefiniti si rinominano, quelli personalizzati si aggiungono e si archiviano quando nessuno li ricopre e nessuna categoria contabile attiva li richiede;
 - catalogo strumenti;
 - catalogo sezioni;
 - URL della cartella Google Drive;
@@ -752,7 +755,7 @@ erDiagram
 
 ### 14.1 Note sul modello
 
-- `RUOLO_PERSONA` consente ruoli multipli e conserva le date di validità.
+- `RUOLO_PERSONA` consente ruoli multipli e conserva le date di validità; il tipo di ruolo rimanda al catalogo `TIPO_RUOLO` (tabella `role_types`).
 - I dati specifici dei ruoli possono essere implementati in tabelle dedicate collegate a `RUOLO_PERSONA`; il diagramma mostra il livello concettuale.
 - Le presenze usano tre condizioni tecniche: non registrata, presente e assente. Nell’interfaccia operativa gli stati selezionabili sono solo presente e assente.
 - Una partecipazione viene creata alla prima registrazione della presenza di una persona e conserva presenza e rimborsi registrati.
@@ -784,6 +787,7 @@ erDiagram
 | RB-18 | Rimborso dell’autista = arrotondamento al centesimo di (km A/R del luogo × € per km) × (1 + min(passeggeri, massimo conteggiato) × % per passeggero), più il pedaggio A/R del luogo; si somma all’importo fisso della presenza. I passeggeri indicati non possono superare i presenti che non guidano. Gli importi si fissano alla registrazione della presenza. |
 | RB-19 | Progresso di una persona su un obiettivo = totale della metrica sulle presenze registrate − somma delle soglie consumate dagli azzeramenti attivi; l’obiettivo è raggiunto floor(progresso / soglia) volte. L’azzeramento è ammesso solo con progresso ≥ soglia e consuma la soglia in vigore in quel momento. |
 | RB-20 | Per ogni persona e obiettivo i traguardi aperti sono sempre floor(progresso / soglia): quando il progresso copre una soglia in più si registra un traguardo con la data del momento; quando ne copre meno si revocano i più recenti. L’azzeramento chiude il traguardo aperto più vecchio. |
+| RB-21 | Il ruolo assegnato a una persona o richiesto da una categoria contabile deve esistere nel catalogo dei ruoli ed essere attivo. I ruoli predefiniti non si archiviano; un ruolo personalizzato si archivia solo se nessuno lo ricopre e nessuna categoria contabile attiva lo richiede. Il codice di un ruolo non cambia mai. |
 
 ## 16. Requisiti non funzionali
 

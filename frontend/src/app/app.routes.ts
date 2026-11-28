@@ -51,6 +51,11 @@ export const appRoutes: Routes = [
           ),
       },
       {
+        path: 'settings/roles',
+        loadComponent: () =>
+          import('./features/settings/roles-page.component').then((module) => module.RolesPageComponent),
+      },
+      {
         path: 'settings/catalogues',
         loadComponent: () =>
           import('./features/settings/catalogues-page.component').then((module) => module.CataloguesPageComponent),

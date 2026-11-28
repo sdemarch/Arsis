@@ -5,16 +5,10 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 
 import { ApiError } from '../../core/api/api.types';
+import { RoleTypesService } from '../../core/roles/role-types.service';
 import { DetailCardComponent } from '../../shared/ui/detail-card.component';
 import { ActivitiesService, Participation } from '../activities/activities.service';
 import { PeopleService, PersonDetail, PersonRole, PersonUpdate } from './people.service';
-
-const ROLE_OPTIONS = [
-  { value: 'member', label: 'Socio' },
-  { value: 'musician', label: 'Musicante' },
-  { value: 'student', label: 'Allievo' },
-  { value: 'teacher', label: 'Insegnante' },
-] as const;
 
 @Component({
   selector: 'arsis-person-detail',
@@ -58,7 +52,7 @@ const ROLE_OPTIONS = [
             </div>
             @if (editing()) {
               <div class="role-add">
-                <select name="newRole" [(ngModel)]="newRole"><option value="">Aggiungi un ruolo…</option>@for (role of roleOptions; track role.value) { <option [value]="role.value">{{ role.label }}</option> }</select>
+                <select name="newRole" [(ngModel)]="newRole"><option value="">Aggiungi un ruolo…</option>@for (role of roleOptions(); track role.value) { <option [value]="role.value">{{ role.label }}</option> }</select>
                 <input name="roleStart" type="date" [(ngModel)]="roleStartDate" />
                 <button type="button" class="button button--secondary" [disabled]="!newRole || saving()" (click)="addRole()">Aggiungi</button>
               </div>
@@ -144,7 +138,12 @@ export class PersonDetailComponent {
   protected readonly editing = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly roleOptions = ROLE_OPTIONS;
+  private readonly roleTypes = inject(RoleTypesService);
+  /** Assignable roles the person does not hold right now. */
+  protected readonly roleOptions = computed(() => {
+    const held = new Set(this.roles().filter((role) => role.status === 'active' && !role.end_date).map((role) => role.role_type));
+    return this.roleTypes.active().filter((role) => !held.has(role.code)).map((role) => ({ value: role.code, label: role.name }));
+  });
   protected readonly roleNames = computed(() => this.roles().map((role) => this.roleLabel(role.role_type)));
   protected readonly initials = computed(() => {
     const person = this.person();
@@ -201,7 +200,7 @@ export class PersonDetailComponent {
     this.peopleService.archivePerson(person.id, person.version).subscribe({ next: () => this.finishAndReload(), error: (response) => this.fail(response) });
   }
 
-  protected roleLabel(type: string): string { return ROLE_OPTIONS.find((role) => role.value === type)?.label ?? type; }
+  protected roleLabel(type: string): string { return this.roleTypes.label(type); }
 
   private load(): void {
     forkJoin({ person: this.peopleService.getPerson(this.personId), roles: this.peopleService.listRoles(this.personId) }).subscribe({

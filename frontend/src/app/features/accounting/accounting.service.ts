@@ -10,11 +10,11 @@ const API_URL = '/api/v1/accounting';
 
 export type AccountingDirection = 'income' | 'expense';
 export type AccountingAccount = 'bank' | 'cash';
-export type AccountingPersonRole = 'student' | 'teacher' | 'member';
+/** Code of a configurable role (see RoleTypesService for labels). */
+export type AccountingPersonRole = string;
 
 export const ACCOUNT_LABELS: Record<AccountingAccount, string> = { bank: 'Banca', cash: 'Cassa' };
 export const DIRECTION_LABELS: Record<AccountingDirection | 'both', string> = { income: 'Entrata', expense: 'Uscita', both: 'Entrata o uscita' };
-export const ROLE_LABELS: Record<AccountingPersonRole, string> = { student: 'Allievo', teacher: 'Insegnante', member: 'Socio' };
 
 export interface AccountingCategory {
   readonly id: number;

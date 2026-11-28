@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, combineLatest, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 
+import { RoleTypesService } from '../../core/roles/role-types.service';
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { PeopleService } from './people.service';
@@ -26,7 +27,7 @@ import { PeopleService } from './people.service';
     <div class="toolbar">
       <div class="toolbar__group">
         <input class="search-input" type="search" placeholder="Cerca nome, email o telefono…" aria-label="Cerca persone" [ngModel]="search()" (ngModelChange)="setSearch($event)" />
-        <arsis-filter-dropdown label="Tutti i ruoli" [options]="roleOptions" [selected]="selectedRoles()" [multiple]="true" (selectionChange)="setRoles($event)" />
+        <arsis-filter-dropdown label="Tutti i ruoli" [options]="roleOptions()"[selected]="selectedRoles()" [multiple]="true" (selectionChange)="setRoles($event)" />
         <arsis-filter-dropdown label="Tutti gli stati" [options]="statusOptions" [selected]="selectedStatuses()" (selectionChange)="setStatuses($event)" />
       </div>
       <button class="button button--secondary" type="button" [disabled]="!hasFilters()" (click)="clearFilters()">Azzera filtri</button>
@@ -106,12 +107,10 @@ export class PeoplePageComponent {
     active: this.people().filter((person) => !person.archived_at).length,
     archived: this.people().filter((person) => Boolean(person.archived_at)).length,
   }));
-  protected readonly roleOptions: readonly FilterOption[] = [
-    { label: 'Socio', value: 'member' },
-    { label: 'Musicante', value: 'musician' },
-    { label: 'Allievo', value: 'student' },
-    { label: 'Insegnante', value: 'teacher' },
-  ];
+  private readonly roles = inject(RoleTypesService);
+  protected readonly roleOptions = computed<readonly FilterOption[]>(() =>
+    this.roles.active().map((role) => ({ label: role.name, value: role.code })),
+  );
   protected readonly statusOptions: readonly FilterOption[] = [
     { label: 'Attive', value: 'active' },
     { label: 'Archiviate', value: 'archived' },
@@ -180,7 +179,7 @@ export class PeoplePageComponent {
   }
 
   protected roleLabel(role: string): string {
-    return this.roleOptions.find((option) => option.value === role)?.label ?? role;
+    return this.roles.label(role);
   }
 
   private updateQuery(queryParams: Record<string, string | string[] | null>): void {

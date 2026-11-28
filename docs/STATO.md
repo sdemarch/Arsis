@@ -26,13 +26,13 @@ completi in [Specifica funzionale](SPECIFICA_FUNZIONALE.md).
 | **Scuola** | corsi con colore, insegnante e tariffa; iscrizioni; lezioni manuali; registro presenze con modello e import Excel `.xlsx`; panoramica | piano rate proposto, agevolazioni sulle iscrizioni |
 | **Archivio** | apertura della cartella Google Drive configurata | — |
 | **Contabilità** | prima nota Banca e Cassa, categorie configurabili con regole su persona e corso, filtri ed evidenziazione, saldi iniziali, bilancio annuale per conto e categoria | tutto ciò che va oltre la prima nota (vedi TODO) |
-| **Configurazioni** | nome organizzazione, URL Drive, tema predefinito, responsabili, strumenti e sezioni, categorie contabili, rimborsi attività, luoghi, salvataggi | selettore del tema per utente |
+| **Configurazioni** | nome organizzazione, URL Drive, tema predefinito, responsabili, catalogo dei ruoli (predefiniti rinominabili, personalizzati), strumenti e sezioni, categorie contabili, rimborsi attività, luoghi, salvataggi | selettore del tema per utente |
 
 ## Piattaforma
 
 | Ambito | Stato |
 |---|---|
-| Database | SQLite WAL, 12 changeset (`0001`–`0012`), modelli e DTO generati dallo schema |
+| Database | SQLite WAL, 13 changeset (`0001`–`0013`), modelli e DTO generati dallo schema |
 | API | convenzioni uniformi su errori, liste, versioni, request ID e audit ([Architettura §5](ARCHITETTURA.md#5-contratto-api)) |
 | Migrazioni | automatiche all'avvio senza Java, con backup e rifiuto dei database più recenti |
 | Salvataggi | export, verifica e import `.arsis-save` da Configurazioni, con modalità manutenzione e backup pre-import |

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
+import { RoleTypesService } from '../../core/roles/role-types.service';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { BackLinkComponent } from '../../shared/ui/back-link.component';
 import {
@@ -10,7 +11,6 @@ import {
   AccountingPersonRole,
   AccountingService,
   DIRECTION_LABELS,
-  ROLE_LABELS,
   apiErrorMessage,
 } from '../accounting/accounting.service';
 
@@ -46,9 +46,7 @@ const emptyDraft = (): CategoryDraft => ({ name: '', direction: 'income', requir
         <label>Persona richiesta
           <select name="role" [(ngModel)]="draft.required_person_role">
             <option [ngValue]="null">Nessuna</option>
-            <option value="student">Allievo</option>
-            <option value="teacher">Insegnante</option>
-            <option value="member">Socio</option>
+            @for (role of roleOptions(); track role.code) { <option [ngValue]="role.code">{{ role.name }}</option> }
           </select>
         </label>
         <label class="check"><input type="checkbox" name="course" [(ngModel)]="draft.course_required" />Corso obbligatorio</label>
@@ -112,7 +110,15 @@ const emptyDraft = (): CategoryDraft => ({ name: '', direction: 'income', requir
 })
 export class AccountingCategoriesPageComponent {
   private readonly api = inject(AccountingService);
+  private readonly roleTypes = inject(RoleTypesService);
   private readonly categories = signal<AccountingCategory[]>([]);
+  /** Active roles, plus the one being edited if it was archived meanwhile. */
+  protected readonly roleOptions = computed(() => {
+    const active = this.roleTypes.active();
+    const current = this.editing()?.required_person_role;
+    const kept = current && !active.some((role) => role.code === current) ? this.roleTypes.archived().filter((role) => role.code === current) : [];
+    return [...active, ...kept];
+  });
 
   protected readonly active = computed(() => this.categories().filter((c) => !c.archived_at));
   protected readonly archived = computed(() => this.categories().filter((c) => c.archived_at));
@@ -126,7 +132,7 @@ export class AccountingCategoriesPageComponent {
 
   protected describe(item: AccountingCategory): string {
     const parts = [DIRECTION_LABELS[item.direction]];
-    if (item.required_person_role) parts.push(`${ROLE_LABELS[item.required_person_role].toLowerCase()} richiesto`);
+    if (item.required_person_role) parts.push(`${this.roleTypes.label(item.required_person_role).toLowerCase()} richiesto`);
     if (item.course_required) parts.push('corso richiesto');
     return parts.join(' · ');
   }

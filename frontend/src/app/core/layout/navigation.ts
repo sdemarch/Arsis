@@ -10,11 +10,15 @@ export interface NavigationArea {
   }[];
 }
 
+/** The Soci area: its sidebar is rebuilt from the configured roles (see AppShellComponent). */
+export const PEOPLE_AREA_PATH = '/people';
+
 export const NAVIGATION: readonly NavigationArea[] = [
   { label: 'Home', path: '/home', children: [{ label: 'Dashboard', path: '/home' }] },
   {
     label: 'Soci',
-    path: '/people',
+    path: PEOPLE_AREA_PATH,
+    // Fallback while the role catalogue loads.
     children: [
       { label: 'Tutte le persone', path: '/people' },
       { label: 'Soci', path: '/people', queryParams: { role: 'member' } },
@@ -70,6 +74,7 @@ export const NAVIGATION: readonly NavigationArea[] = [
     inTopbar: false,
     children: [
       { label: 'Generali e responsabili', path: '/settings' },
+      { label: 'Ruoli', path: '/settings/roles' },
       { label: 'Strumenti e sezioni', path: '/settings/catalogues' },
       { label: 'Categorie contabili', path: '/settings/accounting-categories' },
       { label: 'Salvataggi', path: '/settings/saves' },
