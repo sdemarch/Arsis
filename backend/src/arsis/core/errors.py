@@ -75,6 +75,22 @@ class ImportValidationError(DomainError):
         )
 
 
+class InvalidPersonRoleError(DomainError, ValueError):
+    """A role assignment that breaks the catalogue or date rules (422).
+
+    Also a ValueError, so callers that validate row by row (Excel import) keep
+    catching it as before.
+    """
+
+    def __init__(self, message: str, *, details: Mapping[str, Any] | None = None) -> None:
+        super().__init__(
+            code="INVALID_PERSON_ROLE",
+            message=message,
+            status_code=422,
+            details=details,
+        )
+
+
 class UnauthorizedError(DomainError):
     def __init__(
         self,

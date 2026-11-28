@@ -11,13 +11,19 @@ from arsis.core.errors import ConflictError, ResourceNotFoundError
 from arsis.core.time import utc_now_iso
 from arsis.core.versioning import update_versioned
 from arsis.generated.models import AccountingCategory, AccountingMovement, AccountingOpeningBalance
+from arsis.roles.service import RoleTypesService
 
 ZERO = Decimal("0")
 
 
 class AccountingService:
-    def __init__(self, repository: AccountingRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: AccountingRepository | None = None,
+        roles: RoleTypesService | None = None,
+    ) -> None:
         self._repository = repository or AccountingRepository()
+        self._roles = roles or RoleTypesService()
 
     def list_categories(
         self, session: Session, *, include_archived: bool = False
@@ -29,6 +35,8 @@ class AccountingService:
     ) -> AccountingCategory:
         with transaction(session):
             self._ensure_unique_category_name(session, values["name"])
+            if values.get("required_person_role"):
+                self._roles.require_assignable(session, values["required_person_role"])
             category = AccountingCategory(**values, created_by=actor_id, updated_by=actor_id)
             session.add(category)
             session.flush()
@@ -51,9 +59,12 @@ class AccountingService:
         actor_id: int,
     ) -> AccountingCategory:
         with transaction(session):
-            self._get_category(session, category_id)
+            current = self._get_category(session, category_id)
             if "name" in values:
                 self._ensure_unique_category_name(session, values["name"], exclude_id=category_id)
+            role = values.get("required_person_role")
+            if role and role != current.required_person_role:
+                self._roles.require_assignable(session, role)
             if values:
                 values["updated_by"] = actor_id
                 update_versioned(

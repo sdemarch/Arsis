@@ -32,6 +32,7 @@ EXPECTED_TABLES = {
     "person_roles",
     "places",
     "refresh_sessions",
+    "role_types",
     "sections",
     "students",
     "teachers",

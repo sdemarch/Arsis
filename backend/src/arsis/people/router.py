@@ -92,9 +92,12 @@ def create_person(
 
 
 @router.get("/import/template", responses=ERROR_RESPONSES)
-def download_people_import_template(_current_user: CurrentUser) -> Response:
+def download_people_import_template(
+    session: Annotated[Session, Depends(get_database_session)],
+    _current_user: CurrentUser,
+) -> Response:
     return Response(
-        content=_service.build_import_template(),
+        content=_service.build_import_template(session),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": 'attachment; filename="modello-anagrafiche.xlsx"'},
     )

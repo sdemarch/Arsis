@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "028d4f5408b1301e"
+SCHEMA_FINGERPRINT = "77d9187285b63207"
 
 
 class Base(DeclarativeBase):
@@ -21,7 +21,7 @@ class AccountingCategory(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
     direction: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
-    required_person_role: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    required_person_role: Mapped[str | None] = mapped_column(Text, ForeignKey('role_types.code', ondelete='RESTRICT'), primary_key=False, nullable=True)
     course_required: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
     color: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('1'))
@@ -430,7 +430,7 @@ class PersonRole(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     person_id: Mapped[int] = mapped_column(Integer, ForeignKey('people.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
-    role_type: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    role_type: Mapped[str] = mapped_column(Text, ForeignKey('role_types.code', ondelete='RESTRICT'), primary_key=False, nullable=False)
     start_date: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
     end_date: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     status: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text("'active'"))
@@ -472,6 +472,25 @@ class RefreshSession(Base):
     revoked_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     client_info: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
     created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+
+
+class RoleType(Base):
+    __tablename__ = "role_types"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    code: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    plural_name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    is_system: Mapped[bool] = mapped_column(Boolean, primary_key=False, nullable=False, server_default=text('0'))
+    display_order: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('0'))
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
 class Section(Base):
@@ -538,4 +557,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneAchievement', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneAchievement', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'RoleType', 'Section', 'Student', 'Teacher', 'User']

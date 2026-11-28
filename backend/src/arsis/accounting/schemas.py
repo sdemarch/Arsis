@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field
 
@@ -8,7 +8,8 @@ from arsis.core.api_models import ApiModel, Money
 Direction = Literal["income", "expense", "both"]
 MovementDirection = Literal["income", "expense"]
 Account = Literal["bank", "cash"]
-PersonRole = Literal["student", "teacher", "member"]
+# Code of a configurable role (RB-21); the service checks it is active.
+PersonRole = Annotated[str, Field(min_length=1, max_length=50, pattern=r"^[a-z][a-z0-9-]*$")]
 
 
 class CategoryCreateRequest(ApiModel):

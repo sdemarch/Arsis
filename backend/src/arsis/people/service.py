@@ -9,7 +9,12 @@ from sqlalchemy.orm import Session
 
 from arsis.audit.service import record_audit_event
 from arsis.core.database import transaction
-from arsis.core.errors import ConflictError, ImportValidationError, ResourceNotFoundError
+from arsis.core.errors import (
+    ConflictError,
+    ImportValidationError,
+    InvalidPersonRoleError,
+    ResourceNotFoundError,
+)
 from arsis.core.time import utc_now_iso
 from arsis.core.versioning import update_versioned
 from arsis.generated.models import Person, PersonRole
@@ -20,27 +25,22 @@ from arsis.generated.schemas import (
     PersonUpdateDTO,
 )
 from arsis.people.repository import PeopleRepository
+from arsis.roles.service import RoleCatalogue, RoleTypesService
 
-_ROLE_DEFINITIONS: dict[str, tuple[str, tuple[str, ...]]] = {
-    "member": ("Socio", ("socio",)),
-    "musician": ("Musicante", ("musicante",)),
-    "student": ("Allievo", ("allievo",)),
-    "teacher": ("Insegnante", ("insegnante",)),
-}
-_ROLE_TYPES = set(_ROLE_DEFINITIONS)
+# Roles come from the configurable catalogue (RB-21); only statuses are fixed here.
 _ROLE_STATUSES = {"active", "inactive"}
-_ROLE_ALIASES = {
-    alias: role_type
-    for role_type, definition in _ROLE_DEFINITIONS.items()
-    for alias in (role_type, *definition[1])
-}
 _IMPORT_HEADERS = {"first_name", "last_name"}
 _MAX_IMPORT_BYTES = 5 * 1024 * 1024
 
 
 class PeopleService:
-    def __init__(self, repository: PeopleRepository | None = None) -> None:
+    def __init__(
+        self,
+        repository: PeopleRepository | None = None,
+        roles: RoleTypesService | None = None,
+    ) -> None:
         self._repository = repository or PeopleRepository()
+        self._roles = roles or RoleTypesService()
 
     def list_people(
         self,
@@ -62,8 +62,8 @@ class PeopleService:
     def create_person(
         self, session: Session, *, data: PersonCreateDTO, actor_id: int, roles: Sequence[str] = ()
     ) -> Person:
-        normalized_roles = self._validate_roles(roles)
         with transaction(session):
+            normalized_roles = self._validate_roles(self._roles.catalogue(session), roles)
             person = self._repository.add_person(
                 session,
                 Person(
@@ -97,8 +97,8 @@ class PeopleService:
     def import_excel(self, session: Session, *, content: bytes, actor_id: int) -> int:
         if len(content) > _MAX_IMPORT_BYTES:
             raise ImportValidationError("Il file Excel supera la dimensione massima di 5 MB")
-        rows = self._parse_excel(content)
         with transaction(session):
+            rows = self._parse_excel(content, self._roles.catalogue(session))
             for data, roles in rows:
                 person = self._repository.add_person(
                     session, Person(**data.model_dump(), created_by=actor_id, updated_by=actor_id)
@@ -119,7 +119,8 @@ class PeopleService:
                 )
         return len(rows)
 
-    def build_import_template(self) -> bytes:
+    def build_import_template(self, session: Session) -> bytes:
+        active_roles = self._roles.catalogue(session).active
         workbook = Workbook()
         worksheet = workbook.active
         worksheet.title = "Anagrafiche"
@@ -145,12 +146,16 @@ class PeopleService:
         legend.append(["last_name", "Obbligatorio: cognome della persona"])
         legend.append(["birth_date", "Facoltativo: data nel formato AAAA-MM-GG"])
         legend.append(
-            ["roles", "Facoltativo: uno o più ruoli, separati da virgola o punto e virgola"]
+            [
+                "roles",
+                "Facoltativo: uno o più ruoli, separati da virgola o punto e virgola; "
+                "si può usare il nome del ruolo o il valore tecnico",
+            ]
         )
         legend.append([])
         legend.append(["Ruolo ammesso", "Valore tecnico"])
-        for role_type, definition in _ROLE_DEFINITIONS.items():
-            legend.append([definition[0], role_type])
+        for role in active_roles:
+            legend.append([role.name, role.code])
         legend.freeze_panes = "A2"
         legend.column_dimensions["A"].width = 28
         legend.column_dimensions["B"].width = 70
@@ -243,8 +248,14 @@ class PeopleService:
         self, session: Session, *, data: PersonRoleCreateDTO, actor_id: int
     ) -> PersonRole:
         status = data.status or "active"
-        self._validate_role_values(data.role_type, status, data.start_date, data.end_date)
         with transaction(session):
+            self._validate_role_values(
+                self._roles.catalogue(session),
+                data.role_type,
+                status,
+                data.start_date,
+                data.end_date,
+            )
             self.get_person(session, data.person_id)
             if status == "active" and data.end_date is None and self._repository.has_active_role(
                 session, person_id=data.person_id, role_type=data.role_type
@@ -286,17 +297,21 @@ class PeopleService:
             if role is None:
                 raise ResourceNotFoundError("Ruolo persona", role_id)
             if "status" in values and values["status"] is None:
-                raise ValueError("Lo stato ruolo non può essere nullo")
+                raise InvalidPersonRoleError("Lo stato ruolo non può essere nullo")
             if "role_type" in values and values["role_type"] is None:
-                raise ValueError("Il tipo ruolo non può essere nullo")
+                raise InvalidPersonRoleError("Il tipo ruolo non può essere nullo")
             person_id = int(values.get("person_id", role.person_id))
             if person_id != role.person_id:
                 self.get_person(session, person_id)
+            new_type = str(values.get("role_type", role.role_type))
             self._validate_role_values(
-                str(values.get("role_type", role.role_type)),
+                self._roles.catalogue(session),
+                new_type,
                 str(values.get("status", role.status)),
                 str(values.get("start_date", role.start_date)),
                 values.get("end_date", role.end_date),
+                # Dates of an assignment can still change after its role is archived.
+                keeps_type=new_type == role.role_type,
             )
             if (
                 str(values.get("status", role.status)) == "active"
@@ -369,27 +384,37 @@ class PeopleService:
 
     @staticmethod
     def _validate_role_values(
-        role_type: str, status: str | None, start_date: str, end_date: str | None
+        catalogue: RoleCatalogue,
+        role_type: str,
+        status: str | None,
+        start_date: str,
+        end_date: str | None,
+        *,
+        keeps_type: bool = False,
     ) -> None:
-        if role_type not in _ROLE_TYPES:
-            raise ValueError("Tipo ruolo non valido")
+        valid = catalogue.exists(role_type) if keeps_type else catalogue.is_assignable(role_type)
+        if not valid:
+            raise InvalidPersonRoleError("Tipo ruolo non valido o non più attivo")
         if status is not None and status not in _ROLE_STATUSES:
-            raise ValueError("Stato ruolo non valido")
+            raise InvalidPersonRoleError("Stato ruolo non valido")
         if end_date is not None and end_date < start_date:
-            raise ValueError("La data di fine non può precedere la data di inizio")
+            raise InvalidPersonRoleError("La data di fine non può precedere la data di inizio")
 
     @staticmethod
-    def _validate_roles(roles: Sequence[str]) -> list[str]:
-        normalized = []
+    def _validate_roles(catalogue: RoleCatalogue, roles: Sequence[str]) -> list[str]:
+        """Codes of active roles given by code, name or plural name."""
+        normalized: list[str] = []
         for role in roles:
-            canonical = _ROLE_ALIASES.get(role.strip().casefold())
+            canonical = catalogue.resolve(role)
             if canonical is None:
-                raise ValueError("Tipo ruolo non valido")
+                raise InvalidPersonRoleError("Tipo ruolo non valido o non più attivo")
             if canonical not in normalized:
                 normalized.append(canonical)
         return normalized
 
-    def _parse_excel(self, content: bytes) -> list[tuple[PersonCreateDTO, list[str]]]:
+    def _parse_excel(
+        self, content: bytes, catalogue: RoleCatalogue
+    ) -> list[tuple[PersonCreateDTO, list[str]]]:
         try:
             workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
             values = workbook.active.iter_rows(values_only=True)
@@ -434,7 +459,8 @@ class PeopleService:
             raw_roles = "" if row.get("roles") is None else str(row["roles"])
             try:
                 roles = self._validate_roles(
-                    [item for item in raw_roles.replace(";", ",").split(",") if item.strip()]
+                    catalogue,
+                    [item for item in raw_roles.replace(";", ",").split(",") if item.strip()],
                 )
             except ValueError as exc:
                 raise ImportValidationError(
