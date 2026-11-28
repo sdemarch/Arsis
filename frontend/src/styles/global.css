@@ -112,3 +112,6 @@ tbody tr:hover { background: var(--bg-raised); }
     transition-duration: .01ms !important;
   }
 }
+
+/* Date and time fields open their calendar on click (see shared/ui/open-picker.ts). */
+input:is([type="date"], [type="time"], [type="datetime-local"], [type="month"], [type="week"]):not(:disabled) { cursor: pointer; }
