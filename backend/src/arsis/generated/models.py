@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "162a1999cea12056"
+SCHEMA_FINGERPRINT = "6d68eacd0bb8a352"
 
 
 class Base(DeclarativeBase):
@@ -328,6 +328,37 @@ class Member(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
+class MilestoneReset(Base):
+    __tablename__ = "milestone_resets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    milestone_id: Mapped[int] = mapped_column(Integer, ForeignKey('milestones.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
+    person_id: Mapped[int] = mapped_column(Integer, ForeignKey('people.id', ondelete='RESTRICT'), primary_key=False, nullable=False)
+    consumed: Mapped[Decimal] = mapped_column(Numeric(scale=2), primary_key=False, nullable=False)
+    progress_before: Mapped[Decimal] = mapped_column(Numeric(scale=2), primary_key=False, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+
+
+class Milestone(Base):
+    __tablename__ = "milestones"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    name: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    metric: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    threshold: Mapped[Decimal] = mapped_column(Numeric(scale=2), primary_key=False, nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    archived_at: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+
+
 class MusicianInstrument(Base):
     __tablename__ = "musician_instruments"
 
@@ -492,4 +523,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'Section', 'Student', 'Teacher', 'User']
