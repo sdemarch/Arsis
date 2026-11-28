@@ -62,7 +62,7 @@ function firstSegment(url: string): string {
         </div>
       </aside>
       <div class="page-column">
-        <main class="content" id="main-content"><router-outlet /></main>
+        <div class="page-scroll"><main class="content" id="main-content"><router-outlet /></main></div>
         <footer class="app-footer">
           <span>{{ settings.general()?.organization_name ?? 'Arsis' }}</span>
         </footer>

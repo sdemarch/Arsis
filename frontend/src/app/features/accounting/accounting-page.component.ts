@@ -110,7 +110,7 @@ export class AccountingPageComponent {
 
   protected edit(movement: AccountingMovement): void {
     this.editing.set(movement);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.querySelector('.page-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   protected onSaved(): void {

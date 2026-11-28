@@ -8,6 +8,7 @@ import { localDateKey } from '../../core/time/local-datetime';
 import { FilterDropdownComponent, FilterOption } from '../../shared/ui/filter-dropdown.component';
 import { PageHeaderComponent } from '../../shared/ui/page-header.component';
 import { ActivitiesService, Activity } from './activities.service';
+import { ActivityRefundsPageComponent } from './activity-refunds-page.component';
 
 const TYPE_LABELS: Record<Activity['type'], string> = { rehearsal: 'Prova', concert: 'Concerto', event: 'Processione' };
 const STATUS_LABELS: Record<Activity['status'], string> = { planned: 'Pianificata', confirmed: 'Confermata', cancelled: 'Annullata', completed: 'Conclusa' };
@@ -59,19 +60,21 @@ function shiftMonth(month: string, delta: number): string {
 
 @Component({
   selector: 'arsis-activities-page',
-  imports: [FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
+  imports: [ActivityRefundsPageComponent, FilterDropdownComponent, FormsModule, PageHeaderComponent, RouterLink],
   template: `
     <arsis-page-header eyebrow="Attività" [title]="attendanceMode ? 'Presenze alle attività' : 'Calendario e attività'" [description]="attendanceMode ? 'Scegli un’attività per registrare le presenze.' : 'Organizza prove, concerti, processioni e presenze.'">
       <a class="button button--primary" routerLink="/activities/new">＋ Nuova attività</a>
     </arsis-page-header>
 
     <nav class="view-tabs" aria-label="Vista">
-      <a routerLink="/activities" queryParamsHandling="preserve" [class.is-active]="!calendarView">Elenco</a>
+      <a routerLink="/activities" queryParamsHandling="preserve" [class.is-active]="!calendarView && !refundsView">Elenco</a>
       <a routerLink="/activities/calendar" queryParamsHandling="preserve" [class.is-active]="calendarView">Calendario</a>
-      <a routerLink="/activities/refunds">Rimborsi</a>
+      <a routerLink="/activities/refunds" [class.is-active]="refundsView">Rimborsi</a>
     </nav>
 
-    @if (calendarView) {
+    @if (refundsView) {
+      <arsis-activity-refunds-page />
+    } @else if (calendarView) {
       <section class="month card">
         <header>
           <h2>{{ monthLabel() }}</h2>
@@ -213,6 +216,7 @@ export class ActivitiesPageComponent {
   /** Opened from the "Presenze" entry: each card leads to the attendance register. */
   protected readonly attendanceMode = this.route.snapshot.routeConfig?.path === 'attendance';
   protected readonly calendarView = this.route.snapshot.routeConfig?.path === 'calendar';
+  protected readonly refundsView = this.route.snapshot.routeConfig?.path === 'refunds';
 
   private readonly response = toSignal(toObservable(computed(() => this.queryParams().get('q')?.trim() ?? '')).pipe(debounceTime(200), distinctUntilChanged(), switchMap((query) => this.activitiesService.list(query))), { initialValue: null });
   protected readonly activities = computed(() => (this.response()?.items ?? []).map(decorate));
