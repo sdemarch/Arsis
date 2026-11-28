@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, Text, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-SCHEMA_FINGERPRINT = "77d9187285b63207"
+SCHEMA_FINGERPRINT = "2da5e92d50523ba4"
 
 
 class Base(DeclarativeBase):
@@ -92,6 +92,7 @@ class Activity(Base):
     archived_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
     place_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('places.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    series_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('activity_series.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
 
 
 class ActivityParticipant(Base):
@@ -119,6 +120,22 @@ class ActivityParticipant(Base):
     refund_bonus_pct: Mapped[int | None] = mapped_column(Integer, primary_key=False, nullable=True)
     refund_mileage_amount: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
     refund_highway_amount: Mapped[Decimal | None] = mapped_column(Numeric(scale=2), primary_key=False, nullable=True)
+
+
+class ActivitySeries(Base):
+    __tablename__ = "activity_series"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    frequency: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    interval_count: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
+    weekdays: Mapped[str | None] = mapped_column(Text, primary_key=False, nullable=True)
+    starts_on: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    ends_on: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False)
+    created_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    updated_at: Mapped[str] = mapped_column(Text, primary_key=False, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    updated_by: Mapped[int | None] = mapped_column(Integer, ForeignKey('users.id', ondelete='RESTRICT'), primary_key=False, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
 class AppSetting(Base):
@@ -557,4 +574,4 @@ class User(Base):
     version: Mapped[int] = mapped_column(Integer, primary_key=False, nullable=False, server_default=text('1'))
 
 
-__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneAchievement', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'RoleType', 'Section', 'Student', 'Teacher', 'User']
+__all__ = ['Base', 'SCHEMA_FINGERPRINT', 'AccountingCategory', 'AccountingMovement', 'AccountingOpeningBalance', 'Activity', 'ActivityParticipant', 'ActivitySeries', 'AppSetting', 'AssociatedContact', 'AuditEvent', 'CourseInstallmentTemplate', 'Course', 'EnrollmentDiscount', 'Enrollment', 'Instrument', 'LessonAttendance', 'Lesson', 'Member', 'MilestoneAchievement', 'MilestoneReset', 'Milestone', 'MusicianInstrument', 'Musician', 'Person', 'PersonRole', 'Place', 'RefreshSession', 'RoleType', 'Section', 'Student', 'Teacher', 'User']

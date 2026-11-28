@@ -57,6 +57,92 @@ class ActivityPlaceSummary(ApiModel):
     archived: bool
 
 
+DATE_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
+Frequency = Literal["weekly", "monthly"]
+
+
+class RecurrenceRequest(ApiModel):
+    frequency: Frequency
+    interval: int = Field(default=1, ge=1, le=12)
+    weekdays: list[int] | None = Field(
+        default=None, description="Giorni ISO (1 = lunedì … 7 = domenica), solo settimanale."
+    )
+    ends_on: str = Field(pattern=DATE_PATTERN)
+
+
+class SeriesPreviewRequest(ApiModel):
+    starts_on: str = Field(pattern=DATE_PATTERN)
+    recurrence: RecurrenceRequest
+
+
+class SeriesPreviewResponse(ApiModel):
+    dates: list[str]
+    description: str
+
+
+class ActivitySeriesCreateRequest(ApiModel):
+    type: ActivityType
+    title: str = Field(min_length=1, max_length=300)
+    description: str | None = None
+    location: str | None = None
+    place_id: int | None = Field(default=None, ge=1)
+    status: ActivityStatus | None = None
+    reference_person_id: int | None = Field(default=None, ge=1)
+    notes: str | None = None
+    starts_on: str = Field(pattern=DATE_PATTERN)
+    recurrence: RecurrenceRequest
+    occurrences: list[str] = Field(
+        min_length=1,
+        max_length=200,
+        description="Timestamp con fuso orario di ogni data della regola, nell'ordine "
+        "restituito dall'anteprima: il browser fornisce lo scostamento corretto.",
+    )
+
+
+class ActivitySeriesSummary(ApiModel):
+    id: int
+    frequency: Frequency
+    interval: int
+    weekdays: list[int]
+    starts_on: str
+    ends_on: str
+    description: str
+    occurrence_count: int
+    position: int = Field(description="Posizione di questa attività nella serie (da 1).")
+
+
+class SeriesOccurrenceResponse(ApiModel):
+    id: int
+    starts_at: str
+    status: ActivityStatus
+    participant_count: int
+
+
+class ActivitySeriesResponse(ApiModel):
+    series: ActivitySeriesSummary
+    occurrences: list[SeriesOccurrenceResponse]
+
+
+class SeriesFollowingUpdateRequest(ApiModel):
+    """Changes applied to an occurrence and all the following ones (dates excluded)."""
+
+    type: ActivityType | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    description: str | None = None
+    location: str | None = None
+    place_id: int | None = Field(default=None, ge=1)
+    status: ActivityStatus | None = None
+    reference_person_id: int | None = Field(default=None, ge=1)
+    notes: str | None = None
+    recalculate_refunds: bool = False
+
+
+class SeriesBulkResponse(ApiModel):
+    updated: int = 0
+    archived: int = 0
+    kept: int = Field(default=0, description="Attività lasciate perché hanno presenze registrate.")
+
+
 class ActivityResponse(ApiModel):
     id: int
     type: ActivityType
@@ -77,6 +163,8 @@ class ActivityResponse(ApiModel):
     archived_at: str | None
     archived_by: int | None
     version: int
+    series_id: int | None = None
+    series: ActivitySeriesSummary | None = None
     participant_count: int = Field(
         default=0, description="Persone con presenza registrata (presenti + assenti)."
     )
